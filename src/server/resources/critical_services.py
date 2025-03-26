@@ -25,7 +25,7 @@
 
 from kubernetes import client
 from flask import json
-from resources.k8s_zones import get_k8s_nodes_data, load_k8s_config
+from resources.k8s_zones import parse_k8s_zones, load_k8s_config
 # import os
 
 load_k8s_config()
@@ -36,7 +36,7 @@ def get_namespaced_pods(service_info, service_name):
     resource_type = service_info["type"]
     v1 = client.CoreV1Api()
 
-    nodes_data = get_k8s_nodes_data()
+    nodes_data = parse_k8s_zones()
     if isinstance(nodes_data, dict) and "error" in nodes_data:
         return {"error": nodes_data["error"]}
 

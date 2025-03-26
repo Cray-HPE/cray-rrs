@@ -23,6 +23,7 @@
 #
 """Resource to fetch the K8s zone data"""
 from kubernetes import client, config
+import yaml
 
 def load_k8s_config():
     """Load Kubernetes configuration for API access."""
@@ -31,49 +32,56 @@ def load_k8s_config():
     except Exception:
         config.load_kube_config()  # Fall back to kube config if in-cluster config fails.
 
-def get_k8s_nodes():
-    """Retrieve all Kubernetes nodes."""
+def get_configmap_data(namespace="rack-resiliency", configmap_name="rrs-mon-dynamic"):
+    """Fetch the specified ConfigMap data."""
     try:
         load_k8s_config()
         v1 = client.CoreV1Api()
-        return v1.list_node().items
+        configmap = v1.read_namespaced_config_map(name=configmap_name, namespace=namespace)
+        return configmap.data.get("dynamic-data.yaml", None)
     except client.exceptions.ApiException as e:
         return {"error": f"API error: {str(e)}"}
     except Exception as e:
         return {"error": f"Unexpected error: {str(e)}"}
 
-def get_node_status(node):
-    """Extract and return the status of a node."""
-    # If the node has conditions, we check the last one.
-    status = node.status.conditions[-1].status if node.status.conditions else 'Unknown'
-    return "Ready" if status == "True" else "NotReady"
-
-def get_k8s_nodes_data():
-    """Fetch Kubernetes nodes and organize them by topology zone."""
-    nodes = get_k8s_nodes()
-
-    if isinstance(nodes, dict) and "error" in nodes:
-        return {"error": nodes["error"]}
-
-    zone_mapping = {}
-
-    for node in nodes:
-        node_name = node.metadata.name
-        node_status = get_node_status(node)  # Get status using the helper function.
-        node_zone = node.metadata.labels.get('topology.kubernetes.io/zone')
-
-        # Skip nodes without a zone label
-        if not node_zone:
-            continue
-
-        # Initialize the zone if it doesn't exist
-        if node_zone not in zone_mapping:
-            zone_mapping[node_zone] = {'masters': [], 'workers': []}
-
-        # Classify nodes as master or worker based on name prefix
-        if node_name.startswith("ncn-m"):
-            zone_mapping[node_zone]['masters'].append({"name": node_name, "status": node_status})
-        elif node_name.startswith("ncn-w"):
-            zone_mapping[node_zone]['workers'].append({"name": node_name, "status": node_status})
-
-    return zone_mapping if zone_mapping else "No K8s topology zone present"
+def parse_k8s_zones():
+    """Extract Kubernetes zone details from the ConfigMap."""
+    configmap_yaml = get_configmap_data()
+    
+    if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
+        return configmap_yaml
+    
+    if not configmap_yaml:
+        return {"error": "ConfigMap data is empty or missing."}
+    
+    try:
+        parsed_data = yaml.safe_load(configmap_yaml)
+        k8s_zones = parsed_data.get("zone", {}).get("k8s_zones_with_nodes", {})
+        
+        zone_mapping = {}
+        
+        for zone_name, nodes in k8s_zones.items():
+            zone_mapping[zone_name] = {"masters": [], "workers": []}
+            
+            for node in nodes:
+                node_name = node.get("name")
+                node_status = node.get("Status", "Unknown")
+                
+                node_info = {
+                    "name": node_name,
+                    "status": node_status
+                }
+                
+                if node_name.startswith("ncn-m"):
+                    zone_mapping[zone_name]["masters"].append(node_info)
+                elif node_name.startswith("ncn-w"):
+                    zone_mapping[zone_name]["workers"].append(node_info)
+                else:
+                    zone_mapping[zone_name].setdefault("unknown", []).append(node_info)
+        
+        return zone_mapping if zone_mapping else "No Kubernetes zones present"
+    
+    except yaml.YAMLError as e:
+        return {"error": f"YAML parsing error: {str(e)}"}
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}

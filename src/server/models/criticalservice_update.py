@@ -27,7 +27,6 @@ Model handles updates to critical services in the ConfigMap.
 
 import json
 import logging
-from flask import jsonify
 from kubernetes import client
 from resources.critical_services import get_configmap
 from resources.error_print import pretty_print_error
@@ -81,21 +80,21 @@ def update_critical_services(new_data):
     """Function to update critical services in the ConfigMap."""
     try:
         if not new_data or "from_file" not in new_data:
-            return jsonify({"error": "Invalid request format"}), 400
+            return ({"error": "Invalid request format"}), 400
 
         try:
             new_services = json.loads(new_data["from_file"])
         except json.JSONDecodeError as json_err:
             LOGGER.error("Invalid JSON format in request: %s", json_err)
-            return jsonify({"error": "Invalid JSON format in services"}), 400
+            return ({"error": "Invalid JSON format in services"}), 400
 
         if "critical-services" not in new_services:
-            return jsonify({"error": "Missing 'critical-services' in payload"}), 400
+            return ({"error": "Missing 'critical-services' in payload"}), 400
 
         existing_data = get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY)
         result = update_configmap(json.dumps(new_services), existing_data)
-        return jsonify(result)
+        return (result)
 
     except Exception as e:
         LOGGER.error("Unhandled error in update_critical_services: %s", e)
-        return jsonify({"error": f"Unexpected error: {pretty_print_error(e)}"}), 500
+        return ({"error": f"Unexpected error: {pretty_print_error(e)}"}), 500

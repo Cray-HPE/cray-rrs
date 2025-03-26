@@ -22,86 +22,46 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """Resource to fetch the Zone details for ceph"""
-import json
-import subprocess
-import concurrent.futures
+from resources.k8s_zones import get_configmap_data
+import yaml
 
-# Define constant for the host
-HOST = 'ncn-m001'
+def parse_ceph_zones():
+    """Extract Ceph zone details from the ConfigMap."""
+    configmap_yaml = get_configmap_data()
+    
+    if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
+        return configmap_yaml
 
-def fetch_ceph_data():
-    """
-    Fetch Ceph OSD and host details in parallel using SSH commands.
-    This function retrieves the OSD tree and host status using ceph commands executed remotely.
-    Returns:
-        tuple: A tuple containing the Ceph OSD tree and host details.
-    """
-    ceph_details_cmd = f"ssh {HOST} 'ceph osd tree -f json-pretty'"
-    ceph_hosts_cmd = f"ssh {HOST} 'ceph orch host ls -f json-pretty'"
+    if not configmap_yaml:
+        return {"error": "ConfigMap data is empty or missing."}
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_ceph_tree = executor.submit(subprocess.run, ceph_details_cmd, shell=True,
-                                           check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                           universal_newlines=True)
-        future_ceph_hosts = executor.submit(subprocess.run, ceph_hosts_cmd, shell=True,
-                                            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                            universal_newlines=True)
+    try:
+        parsed_data = yaml.safe_load(configmap_yaml)
+        ceph_zones = parsed_data.get("zone", {}).get("ceph_zones_with_nodes", {})
+        
+        zone_mapping = {}
+        
+        for zone_name, nodes in ceph_zones.items():
+            zone_mapping[zone_name] = []
+ 
+            for node in nodes:
+                node_name = node.get("name")
+                node_status = node.get("status", "Unknown")
+                osds = node.get("osds", [])
 
-        ceph_tree_result = future_ceph_tree.result()
-        ceph_hosts_result = future_ceph_hosts.result()
+                osd_list = [{"name": osd["name"], "status": osd["status"]} for osd in osds]
 
-        if ceph_tree_result.returncode != 0 or ceph_hosts_result.returncode != 0:
-            raise ValueError(f"Error fetching Ceph details: {ceph_tree_result.stderr} / "
-                             f"{ceph_hosts_result.stderr}")
+                node_info = {
+                    "name": node_name,
+                    "status": node_status,
+                    "osds": osd_list
+                }
 
-        ceph_tree = json.loads(ceph_tree_result.stdout)
-        ceph_hosts = json.loads(ceph_hosts_result.stdout)
+                zone_mapping[zone_name].append(node_info)
 
-        return ceph_tree, ceph_hosts
+        return zone_mapping if zone_mapping else "No Ceph zones present"
 
-def get_ceph_storage_nodes():
-    """
-    Fetch Ceph storage nodes and their OSD statuses.
-    This function processes Ceph data fetched from the Ceph OSD tree and the host status.
-    Returns:
-        dict or str: A dictionary of storage nodes with their OSD status or an error message.
-    """
-    ceph_tree, ceph_hosts = fetch_ceph_data()
-
-    if isinstance(ceph_tree, dict) and "error" in ceph_tree:
-        return {"error": ceph_tree["error"]}
-
-    if isinstance(ceph_hosts, dict) and "error" in ceph_hosts:
-        return {"error": ceph_hosts["error"]}
-
-    host_status_map = {host["hostname"]: host["status"] for host in ceph_hosts}
-
-    zones = {}
-
-    for item in ceph_tree.get('nodes', []):
-        if item['type'] == 'rack':  # Zone (Rack)
-            rack_name = item['name']
-            storage_nodes = []
-
-            for child_id in item.get('children', []):
-                host_node = next((x for x in ceph_tree['nodes'] if x['id'] == child_id), None)
-
-                if host_node and host_node['type'] == 'host' and host_node['name'].startswith("ncn-s"):
-                    osd_ids = host_node.get('children', [])
-
-                    osds = [osd for osd in ceph_tree['nodes'] if osd['id'] in osd_ids and osd['type'] == 'osd']
-                    osd_status_list = [{"name": osd['name'], "status": osd.get('status', 'unknown')} for osd in osds]
-
-                    node_status = host_status_map.get(host_node['name'], "No Status")
-                    if node_status in ["", "online"]:
-                        node_status = "Ready"
-
-                    storage_nodes.append({
-                        "name": host_node['name'],
-                        "status": node_status,
-                        "osds": osd_status_list
-                    })
-
-            zones[rack_name] = storage_nodes
-
-    return zones if zones else "No Ceph zones present"
+    except yaml.YAMLError as e:
+        return {"error": f"YAML parsing error: {str(e)}"}
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}

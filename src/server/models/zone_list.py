@@ -27,8 +27,8 @@ Maps zone data from K8s and Ceph, and returns summarized information.
 """
 
 from flask import jsonify
-from resources.k8s_zones import get_k8s_nodes_data
-from resources.ceph_zones import get_ceph_storage_nodes
+from resources.k8s_zones import parse_k8s_zones
+from resources.ceph_zones import parse_ceph_zones
 
 def zone_exist(k8s_zones, ceph_zones):
     """Function to check if any types of zones (K8s Topology or CEPH) exist."""
@@ -93,6 +93,6 @@ def map_zones(k8s_zones, ceph_zones):
 
 def get_zones():
     """Endpoint to get summary of all zones in the new format."""
-    k8s_zones = get_k8s_nodes_data()
-    ceph_zones = get_ceph_storage_nodes()
-    return jsonify(map_zones(k8s_zones, ceph_zones))
+    k8s_zones = parse_k8s_zones()
+    ceph_zones = parse_ceph_zones()
+    return (map_zones(k8s_zones, ceph_zones))

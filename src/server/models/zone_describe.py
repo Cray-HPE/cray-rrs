@@ -27,18 +27,12 @@ Model to describe the requested zone
 """
 
 from flask import jsonify
-from resources.k8s_zones import get_k8s_nodes_data
-from resources.ceph_zones import get_ceph_storage_nodes
+from resources.k8s_zones import parse_k8s_zones
+from resources.ceph_zones import parse_ceph_zones
 from models.zone_list import zone_exist  # Renamed to snake_case
 
 def get_zone_info(zone_name, k8s_zones, ceph_zones):
     """Function to get detailed information of a specific zone."""
-    # Check if K8s or Ceph zones contain an error and return the error message
-    if isinstance(k8s_zones, dict) and "error" in k8s_zones:
-        return {"error": k8s_zones["error"]}
-
-    if isinstance(ceph_zones, dict) and "error" in ceph_zones:
-        return {"error": ceph_zones["error"]}
 
     # Handle cases where zone data is missing
     if isinstance(k8s_zones, str) or isinstance(ceph_zones, str):
@@ -99,7 +93,7 @@ def get_zone_info(zone_name, k8s_zones, ceph_zones):
 def describe_zone(zone_name):
     """Endpoint to describe a specific zone."""
     # Get K8s and Ceph zones data
-    k8s_zones = get_k8s_nodes_data()
-    ceph_zones = get_ceph_storage_nodes()
+    k8s_zones = parse_k8s_zones()
+    ceph_zones = parse_ceph_zones()
     # Return the zone information as a JSON response
-    return jsonify(get_zone_info(zone_name, k8s_zones, ceph_zones))
+    return (get_zone_info(zone_name, k8s_zones, ceph_zones))

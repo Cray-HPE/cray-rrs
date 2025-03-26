@@ -26,7 +26,6 @@
 Model to fetch and format critical services from a Kubernetes ConfigMap.
 """
 
-from flask import jsonify
 from resources.critical_services import get_configmap
 from resources.error_print import pretty_print_error
 
@@ -70,7 +69,7 @@ def get_critical_service_list():
     try:
         config_data = get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY)
         services = config_data.get("critical-services", {})
-        return jsonify({"critical-services": get_critical_services(services)})
+        return ({"critical-services": get_critical_services(services)})
 
     except (KeyError, TypeError, ValueError) as exc:
-        return jsonify({"error": str(pretty_print_error(exc))}), 500
+        return ({"error": str(pretty_print_error(exc))}), 500

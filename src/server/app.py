@@ -31,7 +31,8 @@ from models.zone_describe import describe_zone
 from models.criticalservice_list import get_critical_service_list
 from models.criticalservice_describe import describe_service
 from models.criticalservice_update import update_critical_services
-from models.criticalservice_status_list import get_critical_services_status
+from models.criticalservice_status_list import get_criticalservice_status_list
+from models.criticalservice_status_describe import describe_service_status
 
 app = Flask(__name__)
 
@@ -133,8 +134,28 @@ def list_status_crtiticalservices():
         JSON response with the status of critical services.
     """
     try:
-        status = get_critical_services_status()
+        status = get_criticalservice_status_list()
         return jsonify(status), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Endpoint to describe the critical service entered
+@app.route("/criticalservices/status/<service_name>", methods=["GET"])
+def status_describe_criticalservice(service_name):
+    """
+    Get the description of a specific critical service by its name.
+    
+    Args:
+        service_name (str): The name of the critical service to describe.
+    
+    Returns:
+        JSON response with the service description or an error message.
+    """
+    try:
+        service = describe_service_status(service_name)
+        if not service:
+            return jsonify({"error": "Critical service not found"}), 404
+        return jsonify(service), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
