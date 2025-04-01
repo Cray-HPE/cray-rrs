@@ -26,7 +26,7 @@
 from flask import jsonify
 from resources.critical_services import get_configmap
 from resources.error_print import pretty_print_error
-from models.criticalservice_list import CM_KEY, CM_NAME, CM_NAMESPACE
+from models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from models.criticalservice_status_describe import get_service_details
 
 def describe_service(service_name):
