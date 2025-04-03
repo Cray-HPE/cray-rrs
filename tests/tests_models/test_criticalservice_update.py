@@ -30,6 +30,7 @@ These tests validate the update behavior of critical services in a ConfigMap.
 
 import unittest
 from src.server.models.criticalservice_update import update_configmap
+from src.server import app
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,
@@ -42,6 +43,14 @@ class TestCriticalServicesUpdate(unittest.TestCase):
     """
     Test class for updating critical services in a ConfigMap.
     """
+    def setUp(self):
+        """Set up an application context before each test."""
+        self.app_context = app.app_context()
+        self.app_context.push()
+
+    def tearDown(self):
+        """Tear down the application context after each test."""
+        self.app_context.pop()
 
     def test_update_critical_service_success(self):
         """

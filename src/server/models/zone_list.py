@@ -21,42 +21,57 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-"""
-Model to handle and process Kubernetes and Ceph zones.
+"""Model to handle and process Kubernetes and Ceph zones.
 Maps zone data from K8s and Ceph, and returns summarized information.
 """
 
-from flask import jsonify
 from resources.k8s_zones import parse_k8s_zones
 from resources.ceph_zones import parse_ceph_zones
+from flask import current_app as app
+from resources.rrs_logging import get_log_id
 
 def zone_exist(k8s_zones, ceph_zones):
     """Function to check if any types of zones (K8s Topology or CEPH) exist."""
+    log_id = get_log_id()
+    app.logger.info(f"[{log_id}] Checking if zones (K8s Topology or Ceph) exist")
+    
     if isinstance(k8s_zones, str) and isinstance(ceph_zones, str):
+        app.logger.warning(f"[{log_id}] No zones (K8s topology and Ceph) configured")
         return {"Zones": [], "Information": "No zones (K8s topology and Ceph) configured"}
     if isinstance(k8s_zones, str):
+        app.logger.warning(f"[{log_id}] No K8s topology zones configured")
         return {"Zones": [], "Information": "No K8s topology zones configured"}
     if isinstance(ceph_zones, str):
+        app.logger.warning(f"[{log_id}] No CEPH zones configured")
         return {"Zones": [], "Information": "No CEPH zones configured"}
+    
+    app.logger.info(f"[{log_id}] Zones found")
     return None  # No error, zones exist
 
 def get_node_names(node_list):
     """Extracts node names from a list of node dictionaries."""
-    return [node.get("name") for node in node_list if "name" in node]
+    node_names = [node.get("name") for node in node_list if "name" in node]
+    app.logger.info(f"Extracted node names: {node_names}")
+    return node_names
 
 def map_zones(k8s_zones, ceph_zones):
     """Map Kubernetes and Ceph zones and provide summarized data in the new format."""
+    log_id = get_log_id()
+    app.logger.info(f"[{log_id}] Mapping Kubernetes and Ceph zones")
 
     # Check for error in zone data early and handle it
     if isinstance(k8s_zones, dict) and "error" in k8s_zones:
+        app.logger.error(f"[{log_id}] Error in K8s zones: {k8s_zones['error']}")
         return {"error": k8s_zones["error"]}
 
     if isinstance(ceph_zones, dict) and "error" in ceph_zones:
+        app.logger.error(f"[{log_id}] Error in Ceph zones: {ceph_zones['error']}")
         return {"error": ceph_zones["error"]}
 
     # Early exit if any zone data is missing
     zone_check_result = zone_exist(k8s_zones, ceph_zones)
     if zone_check_result:
+        app.logger.warning(f"[{log_id}] {zone_check_result['Information']}")
         return zone_check_result
 
     # Initialize the list to hold the mapped zone data
@@ -64,9 +79,12 @@ def map_zones(k8s_zones, ceph_zones):
 
     # Merge keys from both K8s and Ceph zones
     all_zone_names = set(k8s_zones.keys()) | set(ceph_zones.keys())
+    app.logger.info(f"[{log_id}] All zone names: {all_zone_names}")
 
     # Iterate over each zone and extract node data
     for zone_name in all_zone_names:
+        app.logger.info(f"[{log_id}] Processing zone: {zone_name}")
+        
         # Extract node names for masters, workers, and storage nodes
         masters = get_node_names(k8s_zones.get(zone_name, {}).get("masters", []))
         workers = get_node_names(k8s_zones.get(zone_name, {}).get("workers", []))
@@ -89,10 +107,15 @@ def map_zones(k8s_zones, ceph_zones):
 
         zones_list.append(zone_data)
 
+    app.logger.info(f"[{log_id}] Mapped {len(zones_list)} zones")
     return {"Zones": zones_list}
 
 def get_zones():
     """Endpoint to get summary of all zones in the new format."""
+    log_id = get_log_id()
+    app.logger.info(f"[{log_id}] Fetching zones data")
     k8s_zones = parse_k8s_zones()
     ceph_zones = parse_ceph_zones()
-    return (map_zones(k8s_zones, ceph_zones))
+    result = map_zones(k8s_zones, ceph_zones)
+    app.logger.info(f"[{log_id}] Zones data fetched successfully")
+    return result

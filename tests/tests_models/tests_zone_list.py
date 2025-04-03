@@ -28,64 +28,52 @@ Unit tests for the 'map_zones' function in the 'zone_list' module.
 These tests validate the function's behavior when retrieving and mapping zone details.
 """
 
+from flask import Flask
 import unittest
 from src.server.models.zone_list import map_zones
 from tests.tests_models.mock_data import MOCK_K8S_RESPONSE, MOCK_ERROR_RESPONSE, MOCK_CEPH_RESPONSE
-
+from src.server import app  # Import your Flask app
 
 class TestZoneMapping(unittest.TestCase):
-    """
-    Test class for validating zone mapping functionality using 'map_zones'.
-    """
+    """Test class for validating zone mapping functionality using 'map_zones'."""
+
+    def setUp(self):
+        """Set up an application context before each test."""
+        self.app_context = app.app_context()
+        self.app_context.push()
+
+    def tearDown(self):
+        """Tear down the application context after each test."""
+        self.app_context.pop()
 
     def test_zone_mapping_success(self):
-        """
-        Test case to verify successful zone mapping.
-
-        Ensures that the function correctly maps zones and includes 'x3002' in the results.
-        """
+        """Test case to verify successful zone mapping."""
         result = map_zones(MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)
         self.assertIn("Zones", result)
         self.assertGreater(len(result["Zones"]), 0)
         self.assertTrue(any(zone["Zone Name"] == "x3002" for zone in result["Zones"]))
 
     def test_k8s_api_failure(self):
-        """
-        Test case to verify behavior when Kubernetes API fails.
-
-        The function should return an error message indicating failure to fetch data.
-        """
+        """Test case to verify behavior when Kubernetes API fails."""
         result = map_zones(MOCK_ERROR_RESPONSE, MOCK_CEPH_RESPONSE)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Failed to fetch data")
 
     def test_ceph_api_failure(self):
-        """
-        Test case to verify behavior when Ceph API fails.
-
-        The function should return an error message indicating failure to fetch data.
-        """
+        """Test case to verify behavior when Ceph API fails."""
         result = map_zones(MOCK_K8S_RESPONSE, MOCK_ERROR_RESPONSE)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Failed to fetch data")
 
     def test_no_zones_configured(self):
-        """
-        Test case for when no Kubernetes or Ceph zones are configured.
-
-        The function should return an empty list and an informational message.
-        """
+        """Test case for when no Kubernetes or Ceph zones are configured."""
         result = map_zones("No K8s topology zone present", "No Ceph zones present")
         self.assertIn("Zones", result)
         self.assertEqual(len(result["Zones"]), 0)
         self.assertEqual(result.get("Information"), "No zones (K8s topology and Ceph) configured")
 
     def test_node_status(self):
-        """
-        Test case to verify correct node status mapping in the response.
-
-        Ensures that 'x3002' has both Kubernetes and Ceph details with expected nodes.
-        """
+        """Test case to verify correct node status mapping in the response."""
         result = map_zones(MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)
         zone = next(zone for zone in result["Zones"] if zone["Zone Name"] == "x3002")
 

@@ -26,22 +26,21 @@ Model handles updates to critical services in the ConfigMap.
 """
 
 import json
-import logging
 from kubernetes import client
 from resources.critical_services import get_configmap
 from resources.error_print import pretty_print_error
 from models.criticalservice_list import CM_KEY, CM_NAME, CM_NAMESPACE
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-LOGGER = logging.getLogger(__name__)
+from flask import current_app as app
+from resources.rrs_logging import get_log_id
 
 def update_configmap(new_data, existing_data, test=False):
     """Update the ConfigMap with new critical services."""
+    log_id = get_log_id()  # Generate a unique log ID
     try:
         v1 = client.CoreV1Api()
 
         if "error" in existing_data:
+            app.logger.error(f"[{log_id}] Error in existing data: {existing_data}")
             return existing_data
 
         existing_services = existing_data.get("critical-services", {})
@@ -59,6 +58,10 @@ def update_configmap(new_data, existing_data, test=False):
             body = {"data": {CM_KEY: json.dumps({"critical-services": existing_services}, indent=2)}}
             v1.patch_namespaced_config_map(CM_NAME, CM_NAMESPACE, body)
 
+        # Log the event using app.logger
+        app.logger.info(f"[{log_id}] Successfully added {len(added_services)} services to ConfigMap")
+        app.logger.info(f"[{log_id}] Skipped {len(skipped_services)} services that already exist")
+
         return {
             "Update": "Successful" if added_services else "Services Already Exist",
             "Successfully Added Services": added_services or [],
@@ -66,29 +69,37 @@ def update_configmap(new_data, existing_data, test=False):
         }
 
     except json.JSONDecodeError as json_err:
+        app.logger.error(f"[{log_id}] Invalid JSON format: {pretty_print_error(json_err)}")
         return {"error": f"Invalid JSON format: {pretty_print_error(json_err)}"}
     except client.exceptions.ApiException as api_exc:
+        app.logger.error(f"[{log_id}] Failed to update ConfigMap: {pretty_print_error(api_exc)}")
         return {"error": f"Failed to update ConfigMap: {pretty_print_error(api_exc)}"}
     except KeyError as key_exc:
+        app.logger.error(f"[{log_id}] Missing key: {pretty_print_error(key_exc)}")
         return {"error": f"Missing key: {pretty_print_error(key_exc)}"}
     except (TypeError, ValueError, AttributeError) as parse_exc:
+        app.logger.error(f"[{log_id}] Parsing error: {pretty_print_error(parse_exc)}")
         return {"error": f"Parsing error: {pretty_print_error(parse_exc)}"}
     except Exception as e:
+        app.logger.error(f"[{log_id}] Unexpected error: {pretty_print_error(e)}")
         return {"error": f"Unexpected error: {pretty_print_error(e)}"}
 
 def update_critical_services(new_data):
     """Function to update critical services in the ConfigMap."""
+    log_id = get_log_id()  # Generate a unique log ID
     try:
         if not new_data or "from_file" not in new_data:
+            app.logger.error(f"[{log_id}] Invalid request format: Missing 'from_file' key")
             return ({"error": "Invalid request format"}), 400
 
         try:
             new_services = json.loads(new_data["from_file"])
         except json.JSONDecodeError as json_err:
-            LOGGER.error("Invalid JSON format in request: %s", json_err)
+            app.logger.error(f"[{log_id}] Invalid JSON format in request: {json_err}")
             return ({"error": "Invalid JSON format in services"}), 400
 
         if "critical-services" not in new_services:
+            app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
             return ({"error": "Missing 'critical-services' in payload"}), 400
 
         existing_data = get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY)
@@ -96,5 +107,5 @@ def update_critical_services(new_data):
         return (result)
 
     except Exception as e:
-        LOGGER.error("Unhandled error in update_critical_services: %s", e)
+        app.logger.error(f"[{log_id}] Unhandled error in update_critical_services: {e}")
         return ({"error": f"Unexpected error: {pretty_print_error(e)}"}), 500

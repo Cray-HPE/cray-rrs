@@ -29,14 +29,15 @@ These tests validate the function's behavior when retrieving details of critical
 """
 
 import unittest
-from src.server.models.criticalservice_describe import get_service_details
-from tests.tests_models.mock_data import MOCK_ERROR_CRT_SVC, MOCK_CRITICAL_SERVICES_RESPONSE
+from src.server.models.criticalservice_status_describe import get_service_details
+from tests.tests_models.mock_data import MOCK_ERROR_CRT_SVC, MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
 from src.server import app  # Import your Flask app
 
 class TestCriticalServicesDescribe(unittest.TestCase):
     """
     Test class for describing critical services using 'get_service_details'.
     """
+
     def setUp(self):
         """Set up an application context before each test."""
         self.app_context = app.app_context()
@@ -52,12 +53,16 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         
         The test checks if the service details contain the expected 'Name' and 'Type'.
         """
-        result = get_service_details(MOCK_CRITICAL_SERVICES_RESPONSE, "coredns")
+        result = get_service_details(MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "coredns")
         self.assertIn("Critical Service", result)
         self.assertIn("Name", result["Critical Service"])
         self.assertEqual(result["Critical Service"]["Name"], "coredns")
         self.assertIn("Type", result["Critical Service"])
         self.assertEqual(result["Critical Service"]["Type"], "Deployment")
+        self.assertEqual(result["Critical Service"]["Status"], "Configured")
+        self.assertEqual(result["Critical Service"]["Balanced"], "True")
+        self.assertEqual(result["Critical Service"]["Namespace"], "kube-system")
+        self.assertGreater(len(result["Critical Service"]["Pods"]), 0)
 
     def test_describe_critical_service_not_found(self):
         """
@@ -65,7 +70,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating that the service doesn't exist.
         """
-        result = get_service_details(MOCK_CRITICAL_SERVICES_RESPONSE, "unknown-service")
+        result = get_service_details(MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service")
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 

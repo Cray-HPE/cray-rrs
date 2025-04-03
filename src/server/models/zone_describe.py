@@ -22,20 +22,23 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-"""
-Model to describe the requested zone
-"""
+"""Model to describe the requested zone"""
 
-from flask import jsonify
 from resources.k8s_zones import parse_k8s_zones
 from resources.ceph_zones import parse_ceph_zones
 from models.zone_list import zone_exist  # Renamed to snake_case
+from flask import current_app as app
+from resources.rrs_logging import get_log_id
 
 def get_zone_info(zone_name, k8s_zones, ceph_zones):
     """Function to get detailed information of a specific zone."""
 
+    log_id = get_log_id()
+    app.logger.info(f"[{log_id}] Fetching information for zone: {zone_name}")
+
     # Handle cases where zone data is missing
     if isinstance(k8s_zones, str) or isinstance(ceph_zones, str):
+        app.logger.error(f"[{log_id}] Invalid zone data: K8s Zones: {k8s_zones}, Ceph Zones: {ceph_zones}")
         return zone_exist(k8s_zones, ceph_zones)
 
     # Fetch nodes for the given zone
@@ -45,6 +48,7 @@ def get_zone_info(zone_name, k8s_zones, ceph_zones):
 
     # Return an error if no valid nodes are found for the zone
     if not (masters or workers or storage):
+        app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
         return {"error": "Zone not found"}
 
     # Prepare the zone data to be returned
@@ -61,6 +65,7 @@ def get_zone_info(zone_name, k8s_zones, ceph_zones):
             "Type": "Kubernetes Topology Zone",
             "Nodes": [{"Name": node["name"], "Status": node["status"]} for node in masters]
         }
+        app.logger.info(f"[{log_id}] Added {len(masters)} management master nodes for zone: {zone_name}")
 
     # Include details about management worker nodes if available
     if workers:
@@ -68,6 +73,7 @@ def get_zone_info(zone_name, k8s_zones, ceph_zones):
             "Type": "Kubernetes Topology Zone",
             "Nodes": [{"Name": node["name"], "Status": node["status"]} for node in workers]
         }
+        app.logger.info(f"[{log_id}] Added {len(workers)} management worker nodes for zone: {zone_name}")
 
     # Include details about management storage nodes if available
     if storage:
@@ -87,13 +93,23 @@ def get_zone_info(zone_name, k8s_zones, ceph_zones):
                 "OSDs": osd_status_map
             }
             zone_data["Management Storage"]["Nodes"].append(storage_node)
+        
+        app.logger.info(f"[{log_id}] Added {len(storage)} management storage nodes for zone: {zone_name}")
 
+    app.logger.info(f"[{log_id}] Zone information fetched successfully for zone: {zone_name}")
     return zone_data
 
 def describe_zone(zone_name):
     """Endpoint to describe a specific zone."""
+    
+    log_id = get_log_id()
+    app.logger.info(f"[{log_id}] Request received to describe zone: {zone_name}")
+
     # Get K8s and Ceph zones data
     k8s_zones = parse_k8s_zones()
     ceph_zones = parse_ceph_zones()
+
     # Return the zone information as a JSON response
-    return (get_zone_info(zone_name, k8s_zones, ceph_zones))
+    result = get_zone_info(zone_name, k8s_zones, ceph_zones)
+    app.logger.info(f"[{log_id}] Zone description response generated for zone: {zone_name}")
+    return result

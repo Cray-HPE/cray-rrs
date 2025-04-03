@@ -2,3 +2,4 @@
 
 kubernetes
 flask
+flask-restful

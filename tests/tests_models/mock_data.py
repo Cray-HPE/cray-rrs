@@ -37,6 +37,21 @@ MOCK_CRITICAL_SERVICES_RESPONSE = {
        "type": "DaemonSet"
    }
 }
+# This response will come from configMap
+MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC = {
+   "coredns": {
+        "namespace": "kube-system",
+        "type": "Deployment",
+        "status": "Configured",
+        "balanced": "True"
+   },
+   "kube-proxy": {
+       "namespace": "kube-system",
+       "type": "DaemonSet",
+         "status": "PartiallyConfigured",
+         "balanced": "False"
+   }
+}
 
 # Sample file to update in config map(though the test case won't update the config map)
 MOCK_CRITICAL_SERVICES_UPDATE_FILE = """{

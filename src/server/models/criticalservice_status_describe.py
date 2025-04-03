@@ -21,13 +21,16 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-"""Model to desribe the status of criticalservice"""
+"""
+Model to describe the status of critical services.
+"""
 
 from kubernetes import client
 from resources.critical_services import get_configmap, get_namespaced_pods
 from resources.error_print import pretty_print_error
 from models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
-
+from flask import current_app as app
+from resources.rrs_logging import get_log_id
 
 def get_service_details(services, service_name):
     """
@@ -41,8 +44,10 @@ def get_service_details(services, service_name):
         dict: Service details including name, namespace, type, configured instances,
               running instances, and pod details.
     """
+    log_id = get_log_id()  # Generate a unique log ID
     try:
         if service_name not in services:
+            app.logger.warning(f"[{log_id}] Service '{service_name}' not found in the ConfigMap.")
             return {"error": "Service not found"}
 
         service_info = services[service_name]
@@ -65,6 +70,8 @@ def get_service_details(services, service_name):
                 else resource.status.desired_number_scheduled
             )
 
+        app.logger.info(f"[{log_id}] Service '{service_name}' details retrieved successfully.")
+        
         return {
             "Critical Service": {
                 "Name": service_name,
@@ -77,14 +84,20 @@ def get_service_details(services, service_name):
                 "Pods": filtered_pods,
             }
         }
+
     except client.exceptions.ApiException as api_exc:
+        app.logger.error(f"[{log_id}] API exception occurred while retrieving service '{service_name}': {pretty_print_error(api_exc)}")
         return {"error": str(pretty_print_error(api_exc))}
     except KeyError as key_exc:
+        app.logger.error(f"[{log_id}] Missing key while processing service '{service_name}': {key_exc}")
         return {"error": f"Missing key: {key_exc}"}
     except (TypeError, ValueError) as parse_exc:
+        app.logger.error(f"[{log_id}] Parsing error occurred while processing service '{service_name}': {str(parse_exc)}")
         return {"error": f"Parsing error: {parse_exc}"}
     except Exception as exc:  # Catch-all, but logs properly
+        app.logger.error(f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {pretty_print_error(exc)}")
         return {"error": str(pretty_print_error(exc))}
+
 
 def describe_service_status(service_name):
     """
@@ -96,10 +109,14 @@ def describe_service_status(service_name):
     Returns:
         JSON: JSON response with service details or error message.
     """
+    log_id = get_log_id()  # Generate a unique log ID
     try:
+        app.logger.info(f"[{log_id}] Fetching details for service '{service_name}'.")
         services = get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY).get(
             "critical-services", {}
         )
-        return (get_service_details(services, service_name))
+        return get_service_details(services, service_name)
+
     except Exception as exc:
-        return ({"error": str(pretty_print_error(exc))})
+        app.logger.error(f"[{log_id}] Error while fetching details for service '{service_name}': {pretty_print_error(exc)}")
+        return {"error": str(pretty_print_error(exc))}

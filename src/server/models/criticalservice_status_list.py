@@ -28,13 +28,20 @@ Model to fetch and format critical services from a Kubernetes ConfigMap.
 
 from resources.critical_services import get_configmap
 from resources.error_print import pretty_print_error
+from flask import current_app as app
+from resources.rrs_logging import get_log_id
 
 CM_NAME = "rrs-mon-dynamic"
 CM_NAMESPACE = "rack-resiliency"
 CM_KEY = "critical-service-config.json"
 
+
 def get_critical_services_status(services):
     """Fetch and format critical services grouped by namespace in the required structure."""
+    log_id = get_log_id()  # Generate a unique log ID
+    if isinstance(services, str) and "error" in services:
+        app.logger.warning(f"[{log_id}] Could not critical services.")
+        return {[], "No Services Found"}
     try:
         result = {"namespace": {}}
         for name, details in services.items():
@@ -48,9 +55,11 @@ def get_critical_services_status(services):
                 "balanced": details["balanced"]
             })
 
+        app.logger.info(f"[{log_id}] Formatted critical services by namespace.")
         return result
 
     except Exception as e:
+        app.logger.error(f"[{log_id}] Error while formatting critical services: {pretty_print_error(e)}")
         return {"error": str(pretty_print_error(e))}
 
 def get_criticalservice_status_list():
@@ -60,10 +69,27 @@ def get_criticalservice_status_list():
     Returns:
         Flask Response: JSON response containing critical services or an error message.
     """
+    log_id = get_log_id()  # Generate a unique log ID
     try:
+        app.logger.info(f"[{log_id}] Fetching ConfigMap: {CM_NAME} from namespace: {CM_NAMESPACE}")
         config_data = get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY)
+        
+        if not config_data:
+            app.logger.warning(f"[{log_id}] ConfigMap {CM_NAME} is empty or missing in {CM_NAMESPACE}")
+            return ({"error": "ConfigMap not found or empty"}), 404
+        
         services = config_data.get("critical-services", {})
+        if not services:
+            app.logger.warning(f"[{log_id}] No 'critical-services' found in the ConfigMap")
+            return ({"error": "'critical-services' not found in the ConfigMap"}), 404
+        
+        # app.logger.info(f"[{log_id}] Successfully fetched critical services from ConfigMap: {CM_NAME}")
         return ({"critical-services": get_critical_services_status(services)})
 
     except (KeyError, TypeError, ValueError) as exc:
+        app.logger.error(f"[{log_id}] Error while processing the ConfigMap: {pretty_print_error(exc)}")
         return ({"error": str(pretty_print_error(exc))}), 500
+
+    except Exception as e:
+        app.logger.error(f"[{log_id}] Unexpected error while fetching critical services: {pretty_print_error(e)}")
+        return ({"error": str(pretty_print_error(e))}), 500

@@ -30,14 +30,24 @@ and Ceph responses.
 """
 
 import unittest
+from flask import Flask
 from src.server.models.zone_describe import get_zone_info
 from tests.tests_models.mock_data import MOCK_K8S_RESPONSE, MOCK_ERROR_RESPONSE, MOCK_CEPH_RESPONSE
-
+from src.server import app  # Import your Flask app
 
 class TestZoneDescribe(unittest.TestCase):
     """
     Test class for describing zones using the 'get_zone_info' function.
     """
+
+    def setUp(self):
+        """Set up an application context before each test."""
+        self.app_context = app.app_context()
+        self.app_context.push()
+
+    def tearDown(self):
+        """Tear down the application context after each test."""
+        self.app_context.pop()
 
     def test_describe_zone_success(self):
         """
