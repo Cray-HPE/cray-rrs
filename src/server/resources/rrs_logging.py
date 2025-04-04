@@ -1,14 +1,13 @@
-import logging
-import os
 import uuid
 from flask import g
 from flask import current_app as app
+import logging
 
 def get_log_id():
     """ Return a unique string id that can be used to help tie related log entries together. """
     return str(uuid.uuid4())[:8]
 
-"""
+
 def str_to_log_level(level: str) -> int:
     # Mapping of string levels to corresponding logging levels
     name_to_level = {
@@ -23,8 +22,7 @@ def str_to_log_level(level: str) -> int:
     }
     # Default to INFO if the level is not recognized
     return name_to_level.get(level.upper(), logging.INFO)
-"""
-"""
+
 # Function to log events with automatic log_id generation and dynamic log level
 def log_event(message: str, level: str = "INFO"):
     log_id = g.get('log_id')  # Fetch log_id from the request context (Flask's g)
@@ -50,9 +48,9 @@ def log_event(message: str, level: str = "INFO"):
         app.logger.debug(log_message)
     elif log_level == logging.NOTSET:
         app.logger.log(logging.NOTSET, log_message)
-"""
+
     
-# Function to log events with automatic log_id generation
+"""# Function to log events with automatic log_id generation
 def log_event(message, level="INFO"):
     log_id = g.get('log_id')  # Fetch log_id from the request context (Flask's g)
     if not log_id:
@@ -64,4 +62,4 @@ def log_event(message, level="INFO"):
     elif level == "ERROR":
         app.logger.error(log_message)
     elif level == "DEBUG":
-        app.logger.debug(log_message)
+        app.logger.debug(log_message)"""

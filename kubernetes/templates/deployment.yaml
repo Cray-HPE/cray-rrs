@@ -40,12 +40,30 @@ spec:
       serviceAccountName: {{ .Values.auth.serviceAccount }}
       containers:
       - name: {{ .Values.name }}
-        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        image: {{ .Values.image.repository }}: {{ .Values.image.tag }}
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - containerPort: {{ .Values.service.port }}
           name: http
           protocol: TCP
+        livenessProbe:
+          httpGet:
+            port: 9000
+            path: /healthz/live
+          initialDelaySeconds: 5
+          periodSeconds: 180
+          timeoutSeconds: 90
+          failureThreshold: 5
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            port: 9000
+            path: /healthz/ready
+          initialDelaySeconds: 5
+          periodSeconds: 90
+          timeoutSeconds: 90
+          failureThreshold: 10
+          successThreshold: 1
         volumeMounts:
         - name: ceph-config
           mountPath: /etc/ceph

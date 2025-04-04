@@ -9,27 +9,21 @@ RUN apk update && \
 RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"
 
-# Enable and start SSH service (consider security implications)
-RUN mkdir -p /var/run/sshd && \
-    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config && \
-    ssh-keygen -A
-
 # Set the working directory in the container
-WORKDIR /src/server
+WORKDIR /app
 
 # Copy the current directory contents into the container
-COPY . .
+COPY /src/server/ .
 
 # Install Python packages within the virtual environment
 RUN pip3 install --no-cache-dir -U pip -c constraints.txt && \
     pip3 install --no-cache-dir -U wheel -c constraints.txt && \
     pip3 install --no-cache-dir -r requirements.txt
 
-EXPOSE 80 22
+EXPOSE 80
 
 # Set Flask environment variable
 ENV FLASK_APP=app.py
 
 # Start SSH and Flask app
-CMD /usr/sbin/sshd && flask run --host=0.0.0.0 --port=80
+CMD flask run --host=0.0.0.0 --port=80
