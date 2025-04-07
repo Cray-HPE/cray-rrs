@@ -27,8 +27,7 @@
 FROM alpine:3.21.3 AS base
 
 WORKDIR /app
-RUN mkdir -p /app /results && \
-    chown -Rv 65534:65534 /app /results
+RUN mkdir -p /app /results
 VOLUME ["/results"]
 
 # Install dependencies
@@ -37,8 +36,6 @@ RUN apk add --upgrade --no-cache apk-tools && \
     apk add --no-cache curl ca-certificates python3 py3-pip && \
     apk -U upgrade --no-cache && \
     update-ca-certificates
-
-USER 65534:65534
 
 # Set up virtualenv and install app requirements
 ADD requirements.txt constraints.txt /app/
@@ -54,7 +51,6 @@ COPY src/ /app/src/
 
 # -------- Stage for testing --------
 FROM base AS testing
-ENTRYPOINT []  # override inherited ENTRYPOINT
 
 ADD docker_test_entry.sh /app/
 ADD requirements-test.txt /app/
@@ -65,7 +61,6 @@ CMD ["./docker_test_entry.sh"]
 
 # -------- Stage for code style checking --------
 FROM testing AS codestyle
-ENTRYPOINT []  # override inherited ENTRYPOINT
 
 ADD .pylintrc .pycodestyle /app/
 ADD runCodeStyleCheck.sh /app/
@@ -73,7 +68,7 @@ ARG FORCE_STYLE_CHECKS=null
 CMD ["./runCodeStyleCheck.sh"]
 
 # -------- Final image to run the Flask app --------
-FROM base AS runtime
+FROM base AS application
 
 # Set Flask environment and app path
 ENV FLASK_APP=src/server/app.py
@@ -81,5 +76,6 @@ ENV PYTHONPATH=/app/src
 
 EXPOSE 80
 
-# Final runtime entrypoint
-ENTRYPOINT ["flask", "run", "--host=0.0.0.0", "--port=80"]
+# Final application entrypoint
+CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
+

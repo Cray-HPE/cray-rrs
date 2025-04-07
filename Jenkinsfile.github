@@ -1,0 +1,120 @@
+/*
+ *
+ *  MIT License
+ *
+ *  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a
+ *  copy of this software and associated documentation files (the "Software"),
+ *  to deal in the Software without restriction, including without limitation
+ *  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ *  and/or sell copies of the Software, and to permit persons to whom the
+ *  Software is furnished to do so, subject to the following conditions:
+ *
+ *  The above copyright notice and this permission notice shall be included
+ *  in all copies or substantial portions of the Software.
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ *  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ *  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ *  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ *  OTHER DEALINGS IN THE SOFTWARE.
+ *
+ */
+@Library('cms-meta-tools') _
+@Library('csm-shared-library') __
+
+pipeline {
+    agent {
+        label "metal-gcp-builder"
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: "10"))
+        disableConcurrentBuilds()
+        timeout(time: 90, unit: 'MINUTES')
+        timestamps()
+    }
+
+    environment {
+        NAME = "cray-rrs"
+        DESCRIPTION = "Cray Management Rack Resiliency Service"
+        IS_STABLE = getBuildIsStable()
+        DOCKER_NAME = "cray-rrs-service"
+    }
+
+    stages {
+        stage("Clone cms_meta_tools repo") {
+            steps {
+                // This function is defined in cms-meta-tools:vars/cloneCMSMetaTools.groovy
+                cloneCMSMetaTools()
+            }
+        }
+
+        stage("Set Versions") {
+            steps {
+                // This function is defined in cms-meta-tools:vars/setVersionFiles.groovy
+                setVersionFiles()
+            }
+        }
+
+        stage("runBuildPrep") {
+            steps {
+	        withCredentials([usernamePassword(credentialsId: 'artifactory-algol60-readonly', passwordVariable: 'ARTIFACTORY_PASSWORD', usernameVariable: 'ARTIFACTORY_USERNAME')]) {
+                    sh "make runbuildprep"
+                }
+            }
+        }
+
+        stage("Lint") {
+            steps {
+                sh "make lint"
+            }
+        }
+
+        stage("Unittests") {
+            steps {
+                sh "make unittests"
+            }
+        }
+
+        stage("Build") {
+            parallel {
+                stage('Image') {
+                    environment {
+                        DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+                        DOCKER_ARGS = getDockerBuildArgs(name: env.NAME, description: env.DESCRIPTION, version: env.DOCKER_VERSION)
+                    }
+
+                    steps {
+                        sh "make image"
+                    }
+                }
+
+                stage('Chart') {
+                    environment {
+                        DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+                    }
+
+                    steps {
+                        updateCsmHelmChartAppVersion(chartPath: "${WORKSPACE}/kubernetes/${NAME}", appVersion:  env.DOCKER_VERSION)
+                        sh "make chart"
+                    }
+                }
+            }
+        }
+
+        stage('Publish ') {
+            environment {
+                DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+            }
+
+            steps {
+                publishCsmDockerImage(image: env.DOCKER_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE)
+                publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/kubernetes/.packaged", isStable: env.IS_STABLE)
+            }
+        }
+    }
+}
