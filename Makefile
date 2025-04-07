@@ -38,9 +38,6 @@ chart: chart_setup chart_package
 runbuildprep:
 		./cms_meta_tools/scripts/runBuildPrep.sh
 
-lint:
-		./cms_meta_tools/scripts/runLint.sh
-
 image:
 		docker build --pull ${DOCKER_ARGS} --tag '${DOCKER_NAME}:${DOCKER_VERSION}' .
 
