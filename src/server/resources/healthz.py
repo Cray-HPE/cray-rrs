@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -33,6 +33,7 @@ from src.server.resources.rrs_logging import get_log_id
 
 class Ready(Resource):
     """Return k8s readiness check"""
+
     def get(self):
         """Return k8s readiness check"""
         log_id = get_log_id()
@@ -42,6 +43,7 @@ class Ready(Resource):
 
 class Live(Resource):
     """Return k8s liveness check"""
+
     def get(self):
         """Return k8s liveness check"""
         log_id = get_log_id()

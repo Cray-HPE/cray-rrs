@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -25,37 +25,46 @@
 This Flask application exposes endpoints to interact with zone and critical service data.
 It allows retrieving, describing, updating, and checking the status of zones and critical services.
 """
+# Standard library imports
 import logging
-from resources.rrs_logging import log_event
+
+# Third-party imports
 from flask import Flask, request, jsonify
-from models.zone_list import get_zones
-from models.zone_describe import describe_zone
-from models.criticalservice_list import get_critical_service_list
-from models.criticalservice_describe import describe_service
-from models.criticalservice_update import update_critical_services
-from models.criticalservice_status_list import get_criticalservice_status_list
-from models.criticalservice_status_describe import describe_service_status
+
+# Local application imports
+from src.server.resources.rrs_logging import log_event
+from src.server.models.zone_list import get_zones
+from src.server.models.zone_describe import describe_zone
+from src.server.models.criticalservice_list import get_critical_service_list
+from src.server.models.criticalservice_describe import describe_service
+from src.server.models.criticalservice_update import update_critical_services
+from src.server.models.criticalservice_status_list import (
+    get_criticalservice_status_list,
+)
+from src.server.models.criticalservice_status_describe import describe_service_status
 
 app = Flask(__name__)
+
 
 # Set up logging configuration using Flask's built-in logging system
 app.logger.setLevel(logging.INFO)
 
 # Add a handler to log into a file
-file_handler = logging.FileHandler('app.log')  # Log to a file named 'app.log'
+file_handler = logging.FileHandler("app.log")  # Log to a file named 'app.log'
 file_handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 
 # Add the file handler to the Flask app's logger
 app.logger.addHandler(file_handler)
+
 
 # Endpoint to get the list of zones
 @app.route("/zones", methods=["GET"])
 def list_zones():
     """
     Get the list of all zones.
-    
+
     Returns:
         JSON response with the list of zones.
     """
@@ -67,15 +76,16 @@ def list_zones():
         log_event(f"Error fetching zones: {str(e)}", level="ERROR")
         return jsonify({"error": str(e)}), 500
 
+
 # Endpoint to describe the zone entered
-@app.route('/zones/<zone_name>', methods=['GET'])
+@app.route("/zones/<zone_name>", methods=["GET"])
 def desc_zone(zone_name):
     """
     Get the description of a specific zone by its name.
-    
+
     Args:
         zone_name (str): The name of the zone to describe.
-    
+
     Returns:
         JSON response with the zone description or an error message.
     """
@@ -90,12 +100,13 @@ def desc_zone(zone_name):
         log_event(f"Error describing zone {zone_name}: {str(e)}", level="ERROR")
         return jsonify({"error": str(e)}), 500
 
+
 # Endpoint to get the list of critical services
-@app.route('/criticalservices', methods=['GET'])
+@app.route("/criticalservices", methods=["GET"])
 def list_critical_service():
     """
     Get the list of all critical services.
-    
+
     Returns:
         JSON response with the list of critical services.
     """
@@ -107,15 +118,16 @@ def list_critical_service():
         log_event(f"Error fetching critical services: {str(e)}", level="ERROR")
         return jsonify({"error": str(e)}), 500
 
+
 # Endpoint to describe the critical service entered
 @app.route("/criticalservices/<service_name>", methods=["GET"])
 def describe_criticalservice(service_name):
     """
     Get the description of a specific critical service by its name.
-    
+
     Args:
         service_name (str): The name of the critical service to describe.
-    
+
     Returns:
         JSON response with the service description or an error message.
     """
@@ -130,12 +142,13 @@ def describe_criticalservice(service_name):
         log_event(f"Error describing service {service_name}: {str(e)}", level="ERROR")
         return jsonify({"error": str(e)}), 500
 
+
 # Endpoint to update the critical services list
 @app.route("/criticalservices", methods=["PATCH"])
 def update_criticalservice():
     """
     Update the list of critical services.
-    
+
     Returns:
         JSON response with the updated list of critical services.
     """
@@ -151,12 +164,13 @@ def update_criticalservice():
         log_event(f"Error updating critical services: {str(e)}", level="ERROR")
         return jsonify({"error": str(e)}), 500
 
+
 # Endpoint to get the list of critical services status
 @app.route("/criticalservices/status", methods=["GET"])
 def list_status_crtiticalservices():
     """
     Get the status of all critical services.
-    
+
     Returns:
         JSON response with the status of critical services.
     """
@@ -168,15 +182,16 @@ def list_status_crtiticalservices():
         log_event(f"Error fetching critical service status: {str(e)}", level="ERROR")
         return jsonify({"error": str(e)}), 500
 
+
 # Endpoint to describe the critical service entered
 @app.route("/criticalservices/status/<service_name>", methods=["GET"])
 def status_describe_criticalservice(service_name):
     """
     Get the description of a specific critical service by its name.
-    
+
     Args:
         service_name (str): The name of the critical service to describe.
-    
+
     Returns:
         JSON response with the service description or an error message.
     """
@@ -188,12 +203,14 @@ def status_describe_criticalservice(service_name):
             return jsonify({"error": "Critical service not found"}), 404
         return jsonify(service), 200
     except Exception as e:
-        log_event(f"Error describing critical service status {service_name}: {str(e)}", level="ERROR")
+        log_event(
+            f"Error describing critical service status {service_name}: {str(e)}",
+            level="ERROR",
+        )
         return jsonify({"error": str(e)}), 500
+
 
 # Running the Flask app
 if __name__ == "__main__":
-    """
-    Run the Flask app on host '0.0.0.0' and port '80' in debug mode.
-    """
+    # Run the Flask app on host '0.0.0.0' and port '80' in debug mode.
     app.run(host="0.0.0.0", port=80, debug=True)

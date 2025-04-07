@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2018-2022 Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """
-Image Management Services Version API
+Rack Resiliency Service Version API
 """
 
 from flask import current_app as app
@@ -31,16 +31,16 @@ from rrs_logging import get_log_id
 
 
 class Version(Resource):
-    """ Return IMS version information """
+    """Return RRS version information"""
 
     def get(self):
-        """ Return IMS version information """
+        """Return RRS version information"""
 
         log_id = get_log_id()
         app.logger.info("%s ++ version.GET", log_id)
 
         return_value = {
-            'version': app.config["VERSION"],
+            "version": app.config["VERSION"],
         }
 
         app.logger.debug("%s Returning json response: %s", log_id, return_value)

@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -26,11 +26,12 @@ Model to describe the critical service.
 """
 
 from flask import jsonify, current_app as app
-from resources.critical_services import get_configmap
-from resources.error_print import pretty_print_error
-from resources.rrs_logging import get_log_id
-from models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
-from models.criticalservice_status_describe import get_service_details
+from src.server.resources.critical_services import get_configmap
+from src.server.resources.error_print import pretty_print_error
+from src.server.resources.rrs_logging import get_log_id
+from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
+from src.server.models.criticalservice_status_describe import get_service_details
+
 
 def describe_service(service_name):
     """
@@ -44,22 +45,28 @@ def describe_service(service_name):
     """
     log_id = get_log_id()  # Generate a unique log ID
     try:
-        app.logger.info(f"[{log_id}] Attempting to retrieve details for service: {service_name}")
-        
+        app.logger.info(
+            f"[{log_id}] Attempting to retrieve details for service: {service_name}"
+        )
+
         services = get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY).get(
             "critical-services", {}
         )
-        
+
         result = get_service_details(services, service_name)
-        
+
         # Remove unnecessary fields
         del result["Critical Service"]["Pods"]
         del result["Critical Service"]["Balanced"]
         del result["Critical Service"]["Status"]
-        
-        app.logger.info(f"[{log_id}] Successfully retrieved details for service: {service_name}")
+
+        app.logger.info(
+            f"[{log_id}] Successfully retrieved details for service: {service_name}"
+        )
         return jsonify(result)
 
     except Exception as exc:
-        app.logger.error(f"[{log_id}] Error occurred while describing service {service_name}: {pretty_print_error(exc)}")
+        app.logger.error(
+            f"[{log_id}] Error occurred while describing service {service_name}: {pretty_print_error(exc)}"
+        )
         return jsonify({"error": str(pretty_print_error(exc))}), 500

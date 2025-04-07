@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -26,13 +26,14 @@ Model to describe the status of critical services.
 """
 
 from kubernetes import client
-from resources.critical_services import get_configmap, get_namespaced_pods
-from resources.error_print import pretty_print_error
-from models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
+from src.server.resources.critical_services import get_configmap, get_namespaced_pods
+from src.server.resources.error_print import pretty_print_error
+from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from flask import current_app as app
-from resources.rrs_logging import get_log_id
+from src.server.resources.rrs_logging import get_log_id
 
-def get_service_details(services, service_name):
+
+def get_service_details(services, service_name, test=False):
     """
     Retrieve details of a specific critical service.
 
@@ -47,31 +48,46 @@ def get_service_details(services, service_name):
     log_id = get_log_id()  # Generate a unique log ID
     try:
         if service_name not in services:
-            app.logger.warning(f"[{log_id}] Service '{service_name}' not found in the ConfigMap.")
+            app.logger.warning(
+                f"[{log_id}] Service '{service_name}' not found in the ConfigMap."
+            )
             return {"error": "Service not found"}
 
         service_info = services[service_name]
-        namespace, resource_type, balance, status = service_info["namespace"], service_info["type"], service_info["balanced"], service_info["status"]
-        filtered_pods, running_pods = get_namespaced_pods(service_info, service_name)
-
+        namespace, resource_type, balance, status = (
+            service_info["namespace"],
+            service_info["type"],
+            service_info["balanced"],
+            service_info["status"],
+        )
+        filtered_pods = []
+        running_pods = 0
         configured_instances = None
-        apps_v1 = client.AppsV1Api()
-
-        resource_methods = {
-            "Deployment": apps_v1.read_namespaced_deployment,
-            "StatefulSet": apps_v1.read_namespaced_stateful_set,
-            "DaemonSet": apps_v1.read_namespaced_daemon_set
-        }
-
-        if resource_type in resource_methods:
-            resource = resource_methods[resource_type](service_name, namespace)
-            configured_instances = (
-                resource.spec.replicas if hasattr(resource.spec, "replicas")
-                else resource.status.desired_number_scheduled
+        if not test:
+            filtered_pods, running_pods = get_namespaced_pods(
+                service_info, service_name
             )
 
-        app.logger.info(f"[{log_id}] Service '{service_name}' details retrieved successfully.")
-        
+            apps_v1 = client.AppsV1Api()
+
+            resource_methods = {
+                "Deployment": apps_v1.read_namespaced_deployment,
+                "StatefulSet": apps_v1.read_namespaced_stateful_set,
+                "DaemonSet": apps_v1.read_namespaced_daemon_set,
+            }
+
+            if resource_type in resource_methods:
+                resource = resource_methods[resource_type](service_name, namespace)
+                configured_instances = (
+                    resource.spec.replicas
+                    if hasattr(resource.spec, "replicas")
+                    else resource.status.desired_number_scheduled
+                )
+
+        app.logger.info(
+            f"[{log_id}] Service '{service_name}' details retrieved successfully."
+        )
+
         return {
             "Critical Service": {
                 "Name": service_name,
@@ -86,16 +102,26 @@ def get_service_details(services, service_name):
         }
 
     except client.exceptions.ApiException as api_exc:
-        app.logger.error(f"[{log_id}] API exception occurred while retrieving service '{service_name}': {pretty_print_error(api_exc)}")
+        app.logger.error(
+            f"[{log_id}] API exception occurred while retrieving service '{service_name}': "
+            f"{pretty_print_error(api_exc)}"
+        )
+
         return {"error": str(pretty_print_error(api_exc))}
     except KeyError as key_exc:
-        app.logger.error(f"[{log_id}] Missing key while processing service '{service_name}': {key_exc}")
+        app.logger.error(
+            f"[{log_id}] Missing key while processing service '{service_name}': {key_exc}"
+        )
         return {"error": f"Missing key: {key_exc}"}
     except (TypeError, ValueError) as parse_exc:
-        app.logger.error(f"[{log_id}] Parsing error occurred while processing service '{service_name}': {str(parse_exc)}")
+        app.logger.error(
+            f"[{log_id}] Parsing error occurred while processing service '{service_name}': {str(parse_exc)}"
+        )
         return {"error": f"Parsing error: {parse_exc}"}
     except Exception as exc:  # Catch-all, but logs properly
-        app.logger.error(f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {pretty_print_error(exc)}")
+        app.logger.error(
+            f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {pretty_print_error(exc)}"
+        )
         return {"error": str(pretty_print_error(exc))}
 
 
@@ -118,5 +144,7 @@ def describe_service_status(service_name):
         return get_service_details(services, service_name)
 
     except Exception as exc:
-        app.logger.error(f"[{log_id}] Error while fetching details for service '{service_name}': {pretty_print_error(exc)}")
+        app.logger.error(
+            f"[{log_id}] Error while fetching details for service '{service_name}': {pretty_print_error(exc)}"
+        )
         return {"error": str(pretty_print_error(exc))}
