@@ -1,0 +1,7 @@
+-c constraints.txt
+
+pytest
+pytest-cov
+pycodestyle
+pylint
+mypy
