@@ -1,7 +1,6 @@
-#
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -22,10 +21,11 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """Resource to fetch the K8s zone data"""
-from kubernetes import client, config
+
+# Corrected import order
 import yaml
-import uuid
 from flask import current_app as app
+from kubernetes import client, config
 from src.server.resources.rrs_logging import get_log_id
 
 
@@ -101,9 +101,8 @@ def parse_k8s_zones():
         if zone_mapping:
             app.logger.info(f"[{log_id}] Successfully parsed Kubernetes zone details")
             return zone_mapping
-        else:
-            app.logger.warning(f"[{log_id}] No Kubernetes zones present")
-            return "No Kubernetes zones present"
+        app.logger.warning(f"[{log_id}] No Kubernetes zones present")
+        return "No Kubernetes zones present"
 
     except yaml.YAMLError as e:
         app.logger.error(f"[{log_id}] YAML parsing error: {str(e)}")

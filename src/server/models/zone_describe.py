@@ -24,10 +24,11 @@
 
 """Model to describe the requested zone"""
 
+from flask import current_app as app
+
 from src.server.resources.k8s_zones import parse_k8s_zones
 from src.server.resources.ceph_zones import parse_ceph_zones
-from src.server.models.zone_list import zone_exist  # Renamed to snake_case
-from flask import current_app as app
+from src.server.models.zone_list import zone_exist
 from src.server.resources.rrs_logging import get_log_id
 
 

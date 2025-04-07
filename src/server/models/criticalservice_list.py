@@ -26,9 +26,10 @@
 Model to fetch and format critical services from a Kubernetes ConfigMap.
 """
 
+from flask import current_app as app
+
 from src.server.resources.critical_services import get_configmap
 from src.server.resources.error_print import pretty_print_error
-from flask import current_app as app
 from src.server.resources.rrs_logging import get_log_id
 
 CM_NAME = "rrs-mon-static"

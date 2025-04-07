@@ -1,7 +1,6 @@
-#
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -21,14 +20,13 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-
 """
 Model to fetch and format critical services from a Kubernetes ConfigMap.
 """
 
+from flask import current_app as app
 from src.server.resources.critical_services import get_configmap
 from src.server.resources.error_print import pretty_print_error
-from flask import current_app as app
 from src.server.resources.rrs_logging import get_log_id
 
 CM_NAME = "rrs-mon-dynamic"
@@ -40,8 +38,8 @@ def get_critical_services_status(services):
     """Fetch and format critical services grouped by namespace in the required structure."""
     log_id = get_log_id()  # Generate a unique log ID
     if isinstance(services, str) and "error" in services:
-        app.logger.warning(f"[{log_id}] Could not critical services.")
-        return {[], "No Services Found"}
+        app.logger.warning(f"[{log_id}] Could not fetch critical services.")
+        return {("No Services Found",)}  # Fixed the unhashable set error
     try:
         result = {"namespace": {}}
         for name, details in services.items():
@@ -94,7 +92,6 @@ def get_criticalservice_status_list():
             )
             return ({"error": "'critical-services' not found in the ConfigMap"}), 404
 
-        # app.logger.info(f"[{log_id}] Successfully fetched critical services from ConfigMap: {CM_NAME}")
         return {"critical-services": get_critical_services_status(services)}
 
     except (KeyError, TypeError, ValueError) as exc:

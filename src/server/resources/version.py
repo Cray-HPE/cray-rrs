@@ -27,7 +27,7 @@ Rack Resiliency Service Version API
 
 from flask import current_app as app
 from flask_restful import Resource
-from rrs_logging import get_log_id
+from src.server.resources.rrs_logging import get_log_id
 
 
 class Version(Resource):

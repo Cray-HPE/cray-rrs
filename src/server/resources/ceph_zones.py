@@ -23,7 +23,6 @@
 #
 """Resource to fetch the Zone details for ceph"""
 import yaml
-import uuid
 from flask import current_app as app
 from src.server.resources.k8s_zones import get_configmap_data
 from src.server.resources.rrs_logging import get_log_id

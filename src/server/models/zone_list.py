@@ -25,9 +25,10 @@
 Maps zone data from K8s and Ceph, and returns summarized information.
 """
 
+from flask import current_app as app
+
 from src.server.resources.k8s_zones import parse_k8s_zones
 from src.server.resources.ceph_zones import parse_ceph_zones
-from flask import current_app as app
 from src.server.resources.rrs_logging import get_log_id
 
 

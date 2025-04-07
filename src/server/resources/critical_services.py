@@ -1,7 +1,6 @@
-#
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -22,12 +21,13 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """Resource to get information about the critical services"""
+
+from flask import json, current_app as app
 from kubernetes import client
-from flask import json
 from src.server.resources.k8s_zones import parse_k8s_zones, load_k8s_config
-from flask import current_app as app
 from src.server.resources.rrs_logging import get_log_id
 
+# Initialize Kubernetes config loading
 load_k8s_config()
 
 

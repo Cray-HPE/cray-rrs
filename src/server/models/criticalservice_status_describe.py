@@ -25,11 +25,12 @@
 Model to describe the status of critical services.
 """
 
+from flask import current_app as app
 from kubernetes import client
+
 from src.server.resources.critical_services import get_configmap, get_namespaced_pods
 from src.server.resources.error_print import pretty_print_error
 from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
-from flask import current_app as app
 from src.server.resources.rrs_logging import get_log_id
 
 
