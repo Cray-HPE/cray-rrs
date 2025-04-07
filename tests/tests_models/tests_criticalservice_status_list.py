@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -20,7 +20,8 @@
 # OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
-# 
+#
+
 """
 Unit tests for the 'get_critical_service_status' function in the 'criticalservice_list' module.
 
@@ -28,9 +29,14 @@ These tests validate the function's behavior when retrieving critical services.
 """
 
 import unittest
-from src.server.models.criticalservice_status_list import get_critical_services_status
-from tests.tests_models.mock_data import MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, MOCK_ERROR_CRT_SVC
+
 from src.server import app
+from src.server.models.criticalservice_status_list import get_critical_services_status
+from tests.tests_models.mock_data import (
+    MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
+    MOCK_ERROR_CRT_SVC,
+)
+
 
 class TestCriticalServicesList(unittest.TestCase):
     """
@@ -49,24 +55,28 @@ class TestCriticalServicesList(unittest.TestCase):
     def test_list_critical_services_success(self):
         """
         Test case to verify that 'get_critical_services' correctly retrieves critical services.
-
-        The test ensures that the expected 'namespace' and 'kube-system' entries are present
-        and that at least one critical service is listed.
         """
-        result = {"critical-services": get_critical_services_status(MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC)}
+        result = {
+            "critical-services": get_critical_services_status(
+                MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
+            )
+        }
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertIn("kube-system", result["critical-services"]["namespace"])
-        self.assertGreater(len(result["critical-services"]["namespace"]["kube-system"]), 0)
-        self.assertTrue(any(service["name"] == "coredns" for service in result["critical-services"]["namespace"]["kube-system"]))
-        self.assertTrue(any(s["name"] == "coredns" and s["balanced"] for s in result["critical-services"]["namespace"]["kube-system"]))
-        self.assertTrue(any(s["name"] == "coredns" and s["status"] == "Configured" for s in result["critical-services"]["namespace"]["kube-system"]))
+        services = result["critical-services"]["namespace"]["kube-system"]
+        self.assertGreater(len(services), 0)
+        self.assertTrue(any(s["name"] == "coredns" for s in services))
+        self.assertTrue(any(s["name"] == "coredns" and s["balanced"] for s in services))
+        self.assertTrue(
+            any(
+                s["name"] == "coredns" and s["status"] == "Configured" for s in services
+            )
+        )
 
     def test_list_critical_services_failure(self):
         """
         Test case for handling errors when fetching critical services.
-
-        If an error occurs, the function should return an appropriate error message.
         """
         result = get_critical_services_status(MOCK_ERROR_CRT_SVC)
         self.assertIn("error", result)
@@ -75,8 +85,6 @@ class TestCriticalServicesList(unittest.TestCase):
     def test_list_no_services(self):
         """
         Test case for when no critical services are available.
-
-        The function should return an empty namespace dictionary.
         """
         result = {"critical-services": get_critical_services_status({})}
         self.assertIn("critical-services", result)

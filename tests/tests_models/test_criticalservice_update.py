@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -30,7 +30,7 @@ These tests validate the update behavior of critical services in a ConfigMap.
 
 import unittest
 from src.server.models.criticalservice_update import update_configmap
-from src.server import app
+from src.server.app import app
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,
@@ -43,6 +43,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
     """
     Test class for updating critical services in a ConfigMap.
     """
+
     def setUp(self):
         """Set up an application context before each test."""
         self.app_context = app.app_context()
@@ -83,7 +84,9 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         Ensures that an error key is present in the response.
         """
-        result = update_configmap(MOCK_ERROR_CRT_SVC, MOCK_CRITICAL_SERVICES_RESPONSE, True)
+        result = update_configmap(
+            MOCK_ERROR_CRT_SVC, MOCK_CRITICAL_SERVICES_RESPONSE, True
+        )
         self.assertIn("error", result)
 
 

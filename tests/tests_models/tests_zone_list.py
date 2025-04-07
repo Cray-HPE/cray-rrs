@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -28,11 +28,16 @@ Unit tests for the 'map_zones' function in the 'zone_list' module.
 These tests validate the function's behavior when retrieving and mapping zone details.
 """
 
-from flask import Flask
 import unittest
+
+from src.server import app
 from src.server.models.zone_list import map_zones
-from tests.tests_models.mock_data import MOCK_K8S_RESPONSE, MOCK_ERROR_RESPONSE, MOCK_CEPH_RESPONSE
-from src.server import app  # Import your Flask app
+from tests.tests_models.mock_data import (
+    MOCK_K8S_RESPONSE,
+    MOCK_ERROR_RESPONSE,
+    MOCK_CEPH_RESPONSE,
+)
+
 
 class TestZoneMapping(unittest.TestCase):
     """Test class for validating zone mapping functionality using 'map_zones'."""
@@ -70,7 +75,9 @@ class TestZoneMapping(unittest.TestCase):
         result = map_zones("No K8s topology zone present", "No Ceph zones present")
         self.assertIn("Zones", result)
         self.assertEqual(len(result["Zones"]), 0)
-        self.assertEqual(result.get("Information"), "No zones (K8s topology and Ceph) configured")
+        self.assertEqual(
+            result.get("Information"), "No zones (K8s topology and Ceph) configured"
+        )
 
     def test_node_status(self):
         """Test case to verify correct node status mapping in the response."""
@@ -79,7 +86,9 @@ class TestZoneMapping(unittest.TestCase):
 
         self.assertIn("Kubernetes Topology Zone", zone)
         self.assertIn("Management Master Nodes", zone["Kubernetes Topology Zone"])
-        self.assertIn("ncn-m001", zone["Kubernetes Topology Zone"]["Management Master Nodes"])
+        self.assertIn(
+            "ncn-m001", zone["Kubernetes Topology Zone"]["Management Master Nodes"]
+        )
 
         self.assertIn("CEPH Zone", zone)
         self.assertIn("Management Storage Nodes", zone["CEPH Zone"])

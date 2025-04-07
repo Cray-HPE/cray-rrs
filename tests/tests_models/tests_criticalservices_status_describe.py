@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -29,9 +29,13 @@ These tests validate the function's behavior when retrieving details of critical
 """
 
 import unittest
+from src.server import app
 from src.server.models.criticalservice_status_describe import get_service_details
-from tests.tests_models.mock_data import MOCK_ERROR_CRT_SVC, MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
-from src.server import app  # Import your Flask app
+from tests.tests_models.mock_data import (
+    MOCK_ERROR_CRT_SVC,
+    MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
+)
+
 
 class TestCriticalServicesDescribe(unittest.TestCase):
     """
@@ -50,7 +54,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
     def test_describe_critical_service_success(self):
         """
         Test that 'get_service_details' returns correct details for an existing service.
-        
+
         The test checks if the service details contain the expected 'Name' and 'Type'.
         """
         result = get_service_details(MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "coredns")
@@ -70,7 +74,9 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating that the service doesn't exist.
         """
-        result = get_service_details(MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service")
+        result = get_service_details(
+            MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service"
+        )
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 
@@ -83,6 +89,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         result = get_service_details(MOCK_ERROR_CRT_SVC, "coredns")
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
+
 
 if __name__ == "__main__":
     unittest.main()
