@@ -34,7 +34,6 @@ from src.server.app import app
 from src.server.models.zone_describe import ZoneDescriber
 from tests.tests_models.mock_data import (
     MOCK_K8S_RESPONSE,
-    MOCK_ERROR_RESPONSE,
     MOCK_CEPH_RESPONSE,
 )
 

@@ -94,6 +94,3 @@ MOCK_CEPH_RESPONSE = {
         }
     ]
 }
-
-# Mock error response
-MOCK_ERROR_RESPONSE = {"error": "Failed to fetch data"}
