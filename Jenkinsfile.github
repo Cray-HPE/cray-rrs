@@ -36,7 +36,7 @@ pipeline {
     }
 
     environment {
-        NAME = "cray-rrs"
+        NAME = "cray-rrs-api"
         DESCRIPTION = "Implements Rack Resiliency Service."
         IS_STABLE = getBuildIsStable()
         VERSION = getDockerBuildVersion(isStable: env.IS_STABLE)
@@ -53,14 +53,14 @@ pipeline {
                     }
                 }
 
-                stage('Chart') {
-                    environment {
-                        IMAGE = "artifactory.algol60.net/csm-docker/${env.IS_STABLE ? "stable" : "unstable"}/${env.NAME}"
-                    }
-                    steps {
-                        sh "make chart"
-                    }
-                }
+                // stage('Chart') {
+                //     environment {
+                //         IMAGE = "artifactory.algol60.net/csm-docker/${env.IS_STABLE ? "stable" : "unstable"}/${env.NAME}"
+                //     }
+                //     steps {
+                //         sh "make chart"
+                //     }
+                // }
             }
         }
 
@@ -68,7 +68,7 @@ pipeline {
             steps {
                 script {
                     publishCsmDockerImage(image: env.NAME, tag: env.VERSION, isStable: env.IS_STABLE)
-                    publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
+                    // publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
                 }
             }
         }
