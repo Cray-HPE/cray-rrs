@@ -29,6 +29,8 @@ These tests validate the update behavior of critical services in a ConfigMap.
 """
 
 import unittest
+from typing import cast
+
 from src.server.models.criticalservice_update import CriticalServiceUpdater
 from src.server.app import app
 from tests.tests_models.mock_data import (
@@ -44,16 +46,16 @@ class TestCriticalServicesUpdate(unittest.TestCase):
     Test class for updating critical services in a ConfigMap.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up an application context before each test."""
         self.app_context = app.app_context()
         self.app_context.push()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down the application context after each test."""
         self.app_context.pop()
 
-    def test_update_critical_service_success(self):
+    def test_update_critical_service_success(self) -> None:
         """
         Test case for successfully updating the ConfigMap with new critical services.
 
@@ -68,7 +70,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         self.assertEqual(result["Successfully Added Services"], ["xyz"])
         self.assertEqual(result["Already Existing Services"], ["kube-proxy"])
 
-    def test_update_critical_service_success_already_exist(self):
+    def test_update_critical_service_success_already_exist(self) -> None:
         """
         Test case for handling an update where all services already exist.
 
@@ -82,14 +84,17 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         self.assertEqual(result["Update"], "Services Already Exist")
         self.assertEqual(result["Already Existing Services"], ["kube-proxy"])
 
-    def test_update_critical_service_failure(self):
+    def test_update_critical_service_failure(self) -> None:
         """
         Test case for handling a failure when updating the ConfigMap.
 
         Ensures that an error key is present in the response.
         """
+        # Convert the dict to a string as expected by the update_configmap method
+        error_data = cast(str, MOCK_ERROR_CRT_SVC)
+
         result = CriticalServiceUpdater.update_configmap(
-            MOCK_ERROR_CRT_SVC, MOCK_CRITICAL_SERVICES_RESPONSE, True
+            error_data, MOCK_CRITICAL_SERVICES_RESPONSE, True
         )
         self.assertIn("error", result)
 

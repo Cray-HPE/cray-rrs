@@ -29,6 +29,8 @@ These tests validate the function's behavior when retrieving details of critical
 """
 
 import unittest
+from typing import Any, Dict, cast
+
 from src.server.app import app
 from src.server.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,
@@ -44,16 +46,16 @@ class TestCriticalServicesDescribe(unittest.TestCase):
     Test class for describing critical services using 'CriticalServiceStatusDescriber.get_service_details'.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up an application context before each test."""
         self.app_context = app.app_context()
         self.app_context.push()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down the application context after each test."""
         self.app_context.pop()
 
-    def test_describe_critical_service_success(self):
+    def test_describe_critical_service_success(self) -> None:
         """
         Test that 'CriticalServiceStatusDescriber.get_service_details' returns correct details for an existing service.
 
@@ -73,7 +75,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         self.assertEqual(result["Critical Service"]["Balanced"], "True")
         self.assertEqual(result["Critical Service"]["Namespace"], "kube-system")
 
-    def test_describe_critical_service_not_found(self):
+    def test_describe_critical_service_not_found(self) -> None:
         """
         Test case for when the requested service is not found.
 
@@ -85,14 +87,17 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 
-    def test_describe_critical_service_failure(self):
+    def test_describe_critical_service_failure(self) -> None:
         """
         Test case for when an error occurs while fetching service details.
 
         The function should return an error message indicating the failure.
         """
+        # Cast the mock error response to the expected type
+        error_response = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
+
         result = CriticalServiceStatusDescriber.get_service_details(
-            MOCK_ERROR_CRT_SVC, "coredns"
+            error_response, "coredns"
         )
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")

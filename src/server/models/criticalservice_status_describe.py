@@ -25,6 +25,7 @@
 Model to describe the status of critical services.
 """
 
+from typing import Dict, List, Any, Optional
 from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
@@ -36,17 +37,20 @@ class CriticalServiceStatusDescriber:
     """Class to describe the status of critical services."""
 
     @staticmethod
-    def get_service_details(services, service_name, test=False):
+    def get_service_details(
+        services: Dict[str, Dict[str, Any]], service_name: str, test: bool = False
+    ) -> Dict[str, Any]:
         """
         Retrieve details of a specific critical service.
 
         Args:
-            services (dict): Dictionary of services from the ConfigMap.
-            service_name (str): Name of the service to retrieve.
+            services: Dictionary of services from the ConfigMap.
+            service_name: Name of the service to retrieve.
+            test: Flag to indicate if this is a test run.
 
         Returns:
-            dict: Service details including name, namespace, type, configured instances,
-                  running instances, and pod details.
+            Service details including name, namespace, type, configured instances,
+            running instances, and pod details.
         """
         log_id = get_log_id()  # Generate a unique log ID
         try:
@@ -63,9 +67,9 @@ class CriticalServiceStatusDescriber:
                 service_info["balanced"],
                 service_info["status"],
             )
-            filtered_pods = []
-            running_pods = 0
-            configured_instances = None
+            filtered_pods: List[Dict[str, Any]] = []
+            running_pods: int = 0
+            configured_instances: Optional[int] = None
             if not test:
                 filtered_pods, running_pods = CriticalServiceHelper.get_namespaced_pods(
                     service_info, service_name
@@ -128,15 +132,15 @@ class CriticalServiceStatusDescriber:
             return {"error": str((exc))}
 
     @staticmethod
-    def describe_service_status(service_name):
+    def describe_service_status(service_name: str) -> Dict[str, Any]:
         """
         Retrieve service details and return as a JSON response.
 
         Args:
-            service_name (str): Name of the critical service.
+            service_name: Name of the critical service.
 
         Returns:
-            JSON: JSON response with service details or error message.
+            JSON response with service details or error message.
         """
         log_id = get_log_id()  # Generate a unique log ID
         try:

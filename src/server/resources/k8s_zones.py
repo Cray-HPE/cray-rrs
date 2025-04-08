@@ -22,6 +22,7 @@
 #
 """Resource to fetch the K8s zone data"""
 
+from typing import Any, Dict, Optional, Union, cast
 import yaml
 from flask import current_app as app
 from kubernetes import client, config  # type: ignore
@@ -32,7 +33,7 @@ class K8sZoneService:
     """Service class to fetch and parse Kubernetes zone data."""
 
     @staticmethod
-    def load_k8s_config():
+    def load_k8s_config() -> None:
         """Load Kubernetes configuration for API access."""
         try:
             config.load_incluster_config()
@@ -41,8 +42,8 @@ class K8sZoneService:
 
     @staticmethod
     def get_configmap_data(
-        namespace="rack-resiliency", configmap_name="rrs-mon-dynamic"
-    ):
+        namespace: str = "rack-resiliency", configmap_name: str = "rrs-mon-dynamic"
+    ) -> Union[str, Dict[str, str], None]:
         """Fetch the specified ConfigMap data."""
         log_id = get_log_id()
         try:
@@ -54,7 +55,7 @@ class K8sZoneService:
             configmap = v1.read_namespaced_config_map(
                 name=configmap_name, namespace=namespace
             )
-            return configmap.data.get("dynamic-data.yaml", None)
+            return cast(Optional[str], configmap.data.get("dynamic-data.yaml", None))
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
             return {"error": f"API error: {str(e)}"}
@@ -65,27 +66,26 @@ class K8sZoneService:
             return {"error": f"Unexpected error: {str(e)}"}
 
     @staticmethod
-    def parse_k8s_zones():
+    def parse_k8s_zones() -> Union[Dict[str, Any], str]:
         """Extract Kubernetes zone details from the ConfigMap."""
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching Kubernetes zone details from ConfigMap")
         configmap_yaml = K8sZoneService.get_configmap_data()
 
         if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
-            app.logger.error(
-                f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
-            )
             return configmap_yaml
 
         if not configmap_yaml:
-            app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
             return {"error": "ConfigMap data is empty or missing."}
+
+        if not isinstance(configmap_yaml, str):
+            return {"error": "ConfigMap data is not a valid YAML string."}
 
         try:
             parsed_data = yaml.safe_load(configmap_yaml)
             k8s_zones = parsed_data.get("zone", {}).get("k8s_zones_with_nodes", {})
 
-            zone_mapping = {}
+            zone_mapping: Dict[str, Dict[str, Any]] = {}
 
             for zone_name, nodes in k8s_zones.items():
                 zone_mapping[zone_name] = {"masters": [], "workers": []}
@@ -110,6 +110,7 @@ class K8sZoneService:
                     f"[{log_id}] Successfully parsed Kubernetes zone details"
                 )
                 return zone_mapping
+
             app.logger.warning(f"[{log_id}] No Kubernetes zones present")
             return "No Kubernetes zones present"
 

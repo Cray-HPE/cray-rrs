@@ -41,23 +41,23 @@ from tests.tests_models.mock_data import (
 class TestZoneMapping(unittest.TestCase):
     """Test class for validating zone mapping functionality using 'ZoneMapper.map_zones'."""
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up an application context before each test."""
         self.app_context = app.app_context()
         self.app_context.push()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down the application context after each test."""
         self.app_context.pop()
 
-    def test_zone_mapping_success(self):
+    def test_zone_mapping_success(self) -> None:
         """Test case to verify successful zone mapping."""
         result = ZoneMapper.map_zones(MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)
         self.assertIn("Zones", result)
         self.assertGreater(len(result["Zones"]), 0)
         self.assertTrue(any(zone["Zone Name"] == "x3002" for zone in result["Zones"]))
 
-    def test_no_zones_configured(self):
+    def test_no_zones_configured(self) -> None:
         """Test case for when no Kubernetes or Ceph zones are configured."""
         result = ZoneMapper.map_zones(
             "No K8s topology zone present", "No Ceph zones present"
@@ -68,7 +68,7 @@ class TestZoneMapping(unittest.TestCase):
             result.get("Information"), "No zones (K8s topology and Ceph) configured"
         )
 
-    def test_node_status(self):
+    def test_node_status(self) -> None:
         """Test case to verify correct node status mapping in the response."""
         result = ZoneMapper.map_zones(MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)
         zone = next(zone for zone in result["Zones"] if zone["Zone Name"] == "x3002")

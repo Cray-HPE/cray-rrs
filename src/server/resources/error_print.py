@@ -3,7 +3,7 @@
 import textwrap
 
 
-def pretty_print_error(error_message):
+def pretty_print_error(error_message: str) -> str:
     """
     Formats and wraps an error message for readability.
 

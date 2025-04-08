@@ -25,6 +25,8 @@
 Model to describe the critical service.
 """
 
+from typing import Dict, Any, Union, Tuple
+
 from flask import current_app as app
 from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.resources.error_print import pretty_print_error
@@ -39,15 +41,17 @@ class CriticalServiceDescriber:
     """Class to handle critical service description and retrieval of details."""
 
     @staticmethod
-    def describe_service(service_name):
+    def describe_service(
+        service_name: str,
+    ) -> Union[Dict[str, Any], Tuple[Dict[str, str], int]]:
         """
         Retrieve service details and return as a JSON response.
 
         Args:
-            service_name (str): Name of the critical service.
+            service_name: Name of the critical service.
 
         Returns:
-            JSON: JSON response with service details or error message.
+            JSON response with service details or error message with status code.
         """
         log_id = get_log_id()  # Generate a unique log ID
         try:
@@ -74,7 +78,9 @@ class CriticalServiceDescriber:
             return result
 
         except Exception as exc:
+            error_message = str(exc)
             app.logger.error(
-                f"[{log_id}] Error occurred while describing service {service_name}: {pretty_print_error(exc)}"
+                f"[{log_id}] Error occurred while describing service {service_name}: "
+                f"{pretty_print_error(error_message)}"
             )
-            return {"error": str(pretty_print_error(exc))}, 500
+            return {"error": str(pretty_print_error(error_message))}, 500

@@ -24,18 +24,40 @@
 
 """Model to describe the requested zone"""
 
+from typing import Dict, List, Any, Optional, Union, TypedDict, cast
+
 from flask import current_app as app
 from src.server.resources.k8s_zones import K8sZoneService
 from src.server.resources.ceph_zones import CephService
 from src.server.models.zone_list import ZoneMapper
 from src.server.resources.rrs_logging import get_log_id
 
+# Import the NodeInfo type from ceph_zones to ensure type compatibility
+from src.server.resources.ceph_zones import NodeInfo as CephNodeInfo
+
+
+class NodeInfo(TypedDict, total=False):
+    """Information about a Ceph storage node including its OSDs."""
+
+    name: str
+    status: str
+    osds: List[Dict[str, str]]
+
+
+# Define a ZoneInfoDict type for clarity
+ZoneInfoDict = Dict[str, Any]
+
 
 class ZoneDescriber:
     """Class to describe Kubernetes and Ceph zones."""
 
     @staticmethod
-    def get_zone_info(zone_name, k8s_zones, ceph_zones, log_id=None):
+    def get_zone_info(
+        zone_name: str,
+        k8s_zones: Union[Dict[str, Dict[str, List[NodeInfo]]], str],
+        ceph_zones: Union[Dict[str, List[Union[NodeInfo, CephNodeInfo]]], str],
+        log_id: Optional[str] = None,
+    ) -> ZoneInfoDict:
         """Internal method to get detailed information of a specific zone."""
         if log_id is None:
             log_id = get_log_id()
@@ -46,7 +68,8 @@ class ZoneDescriber:
             app.logger.error(
                 f"[{log_id}] Invalid zone data: K8s Zones: {k8s_zones}, Ceph Zones: {ceph_zones}"
             )
-            return ZoneMapper.zone_exist(k8s_zones, ceph_zones)
+            # Ensure this returns a Dict[str, Any] as promised
+            return cast(ZoneInfoDict, ZoneMapper.zone_exist(k8s_zones, ceph_zones))
 
         masters = k8s_zones.get(zone_name, {}).get("masters", [])
         workers = k8s_zones.get(zone_name, {}).get("workers", [])
@@ -56,7 +79,7 @@ class ZoneDescriber:
             app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
             return {"error": "Zone not found"}
 
-        zone_data = {
+        zone_data: ZoneInfoDict = {
             "Zone Name": zone_name,
             "Management Masters": len(masters),
             "Management Workers": len(workers),
@@ -88,7 +111,7 @@ class ZoneDescriber:
         if storage:
             zone_data["Management Storage"] = {"Type": "CEPH Zone", "Nodes": []}
             for node in storage:
-                osd_status_map = {}
+                osd_status_map: Dict[str, List[str]] = {}
                 for osd in node.get("osds", []):
                     osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
@@ -109,7 +132,7 @@ class ZoneDescriber:
         return zone_data
 
     @staticmethod
-    def describe_zone(zone_name):
+    def describe_zone(zone_name: str) -> ZoneInfoDict:
         """Public method to describe a specific zone."""
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Request received to describe zone: {zone_name}")
@@ -117,7 +140,15 @@ class ZoneDescriber:
         k8s_zones = K8sZoneService.parse_k8s_zones()
         ceph_zones = CephService.parse_ceph_zones()
 
-        result = ZoneDescriber.get_zone_info(zone_name, k8s_zones, ceph_zones, log_id)
+        # Ensure type compatibility by using the correct type or casting
+        result = ZoneDescriber.get_zone_info(
+            zone_name,
+            k8s_zones,
+            cast(
+                Union[Dict[str, List[Union[NodeInfo, CephNodeInfo]]], str], ceph_zones
+            ),
+            log_id,
+        )
         app.logger.info(
             f"[{log_id}] Zone description response generated for zone: {zone_name}"
         )

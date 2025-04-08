@@ -25,6 +25,7 @@
 Kubernetes Health and Liveness functions
 """
 
+from typing import Dict, Tuple, Any
 from flask import current_app as app
 from flask_restful import Resource
 from src.server.resources.rrs_logging import get_log_id
@@ -33,7 +34,7 @@ from src.server.resources.rrs_logging import get_log_id
 class Ready(Resource):
     """Return k8s readiness check"""
 
-    def get(self):
+    def get(self) -> Tuple[Dict[str, Any], int]:
         """Return k8s readiness check"""
         log_id = get_log_id()
         app.logger.debug("%s ++ healthz/ready.GET", log_id)
@@ -43,7 +44,7 @@ class Ready(Resource):
 class Live(Resource):
     """Return k8s liveness check"""
 
-    def get(self):
+    def get(self) -> Tuple[Dict[str, Any], int]:
         """Return k8s liveness check"""
         log_id = get_log_id()
         app.logger.debug("%s ++ healthz/live.GET", log_id)

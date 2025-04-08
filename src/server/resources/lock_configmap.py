@@ -7,6 +7,7 @@ in Kubernetes to manage a lock mechanism for resources.
 import logging
 import time
 import os
+from typing import Dict, Optional, Union
 from src.server.resources.k8s_zones import K8sZoneService
 from kubernetes import client  # type: ignore
 
@@ -20,7 +21,7 @@ logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=loggi
 logger = logging.getLogger(__name__)
 
 
-def create_configmap(namespace, configmap_lock_name):
+def create_configmap(namespace: str, configmap_lock_name: str) -> None:
     """Create a ConfigMap with the provided name in the given namespace."""
     try:
         config_map = client.V1ConfigMap(
@@ -31,7 +32,7 @@ def create_configmap(namespace, configmap_lock_name):
         logger.error("Error creating ConfigMap %s: %s", configmap_lock_name, e)
 
 
-def acquire_lock(namespace, configmap_name):
+def acquire_lock(namespace: str, configmap_name: str) -> bool:
     """Acquire the lock by creating the ConfigMap {configmap_lock_name}."""
     print("In acquire_lock")
     configmap_lock_name = configmap_name + "-lock"
@@ -60,7 +61,7 @@ def acquire_lock(namespace, configmap_name):
     return False  # Return False if lock could not be acquired
 
 
-def release_lock(namespace, configmap_name):
+def release_lock(namespace: str, configmap_name: str) -> None:
     """Release the lock by deleting the ConfigMap {configmap_lock_name}."""
     configmap_lock_name = configmap_name + "-lock"
     try:
@@ -76,8 +77,13 @@ def release_lock(namespace, configmap_name):
 
 # pylint: disable=R0917
 def update_configmap_data(
-    namespace, configmap_name, configmap_data, key, new_data, mount_path=""
-):
+    namespace: str,
+    configmap_name: str,
+    configmap_data: Dict[str, str],
+    key: str,
+    new_data: str,
+    mount_path: str = "",
+) -> None:
     """Update a ConfigMap in Kubernetes and the mounted file in the pod."""
     print(f"In update_configmap_data, key is {key} and data is {new_data}")
     configmap_data[key] = new_data
@@ -111,24 +117,26 @@ def update_configmap_data(
             release_lock(namespace, configmap_name)
 
 
-def get_configmap(namespace, configmap_name):
+def get_configmap(namespace: str, configmap_name: str) -> Dict[str, str]:
     """Fetch data from a Kubernetes ConfigMap."""
     print("In get_configmap")
     try:
         config_map = v1.read_namespaced_config_map(
             name=configmap_name, namespace=namespace
         )
-        return config_map.data
+        return config_map.data or {}  # Return empty dict if data is None
     except client.exceptions.ApiException as e:
         logger.error("Error fetching ConfigMap %s: %s", configmap_name, e)
         return {}  # Consistent return type (empty dict instead of None)
 
 
-def read_configmap_data_from_mount(mount_path, key=""):
+def read_configmap_data_from_mount(
+    mount_path: str, key: str = ""
+) -> Optional[Union[Dict[str, str], str]]:
     """Reads all files in the mounted directory and returns the content of each file.
     If key parameter is empty, it will read the entire contents from the mount location.
     """
-    configmap_data = {}
+    configmap_data: Dict[str, str] = {}
     try:
         if not key:
             for file_name in os.listdir(mount_path):

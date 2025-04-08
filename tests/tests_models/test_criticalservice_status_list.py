@@ -43,16 +43,16 @@ class TestCriticalServicesList(unittest.TestCase):
     Test class for listing critical services using 'get_critical_services'.
     """
 
-    def setUp(self):
+    def setUp(self) -> None:
         """Set up an application context before each test."""
         self.app_context = app.app_context()
         self.app_context.push()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         """Tear down the application context after each test."""
         self.app_context.pop()
 
-    def test_list_critical_services_success(self):
+    def test_list_critical_services_success(self) -> None:
         """
         Test case to verify that 'get_critical_services' correctly retrieves critical services.
         """
@@ -74,7 +74,7 @@ class TestCriticalServicesList(unittest.TestCase):
             )
         )
 
-    def test_list_critical_services_failure(self):
+    def test_list_critical_services_failure(self) -> None:
         """
         Test case for handling errors when fetching critical services.
         """
@@ -84,7 +84,7 @@ class TestCriticalServicesList(unittest.TestCase):
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers, not 'str'")
 
-    def test_list_no_services(self):
+    def test_list_no_services(self) -> None:
         """
         Test case for when no critical services are available.
         """

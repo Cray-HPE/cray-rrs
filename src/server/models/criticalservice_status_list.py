@@ -24,6 +24,7 @@
 Model to fetch and format critical services from a Kubernetes ConfigMap.
 """
 
+from typing import Dict, List, Any, Tuple, Union
 from flask import current_app as app
 from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.resources.rrs_logging import get_log_id
@@ -37,14 +38,31 @@ class CriticalServiceStatusLister:
     """Class to fetch and format critical services from the ConfigMap."""
 
     @staticmethod
-    def get_critical_services_status(services):
-        """Fetch and format critical services grouped by namespace in the required structure."""
+    def get_critical_services_status(
+        services: Union[Dict[str, Any], str],
+    ) -> Dict[str, Any]:
+        """Fetch and format critical services grouped by namespace in the required structure.
+
+        Args:
+            services: Dictionary of services or error string
+
+        Returns:
+            Formatted dictionary of services by namespace or error dictionary
+        """
         log_id = get_log_id()  # Generate a unique log ID
         if isinstance(services, str) and "error" in services:
             app.logger.warning(f"[{log_id}] Could not fetch critical services.")
-            return {("No Services Found",)}  # Fixed the unhashable set error
+            return {
+                "namespace": {}
+            }  # Return empty namespace dictionary instead of unhashable set
         try:
-            result = {"namespace": {}}
+            if not isinstance(services, dict):  # Check if services is a dict
+                app.logger.error(
+                    f"[{log_id}] Invalid format for services: {type(services)}"
+                )
+                return {"error": "Invalid format for services, expected a dictionary"}
+
+            result: Dict[str, Dict[str, List[Dict[str, Any]]]] = {"namespace": {}}
             for name, details in services.items():
                 namespace = details["namespace"]
                 if namespace not in result["namespace"]:
@@ -68,12 +86,12 @@ class CriticalServiceStatusLister:
             return {"error": str((e))}
 
     @staticmethod
-    def get_criticalservice_status_list():
+    def get_criticalservice_status_list() -> Tuple[Dict[str, Any], int]:
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
 
         Returns:
-            Flask Response: JSON response containing critical services or an error message.
+            Tuple containing JSON response dict with critical services and HTTP status code
         """
         log_id = get_log_id()  # Generate a unique log ID
         try:
@@ -103,7 +121,7 @@ class CriticalServiceStatusLister:
                 "critical-services": CriticalServiceStatusLister.get_critical_services_status(
                     services
                 )
-            }
+            }, 200
 
         except (KeyError, TypeError, ValueError) as exc:
             app.logger.error(

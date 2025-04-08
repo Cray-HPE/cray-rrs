@@ -37,6 +37,7 @@ Dependencies:
     - Flask (for logging via current_app)
 """
 
+from typing import Dict, Any, Tuple, List
 from flask import json, current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.k8s_zones import K8sZoneService
@@ -47,7 +48,9 @@ class CriticalServiceHelper:
     """Helper class for fetching critical services and pod data"""
 
     @staticmethod
-    def get_namespaced_pods(service_info, service_name):
+    def get_namespaced_pods(
+        service_info: Dict[str, str], service_name: str
+    ) -> Tuple[List[Dict[str, Any]], int]:
         """Fetch the pods in a namespace and number of instances using Kube-config"""
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching namespaced pods")
@@ -67,24 +70,31 @@ class CriticalServiceHelper:
             app.logger.error(
                 f"[{log_id}] Error fetching nodes data: {nodes_data['error']}"
             )
-            return {"error": nodes_data["error"]}, 0
+            return [{"error": nodes_data["error"]}], 0  # Ensure returning a list
 
-        node_zone_map = {
-            node["name"]: zone
-            for zone, node_types in nodes_data.items()
-            for node_type in ["masters", "workers"]
-            for node in node_types[node_type]
-        }
+        # Ensure nodes_data is a dictionary before using .items()
+        if isinstance(nodes_data, dict):
+            node_zone_map = {
+                node["name"]: zone
+                for zone, node_types in nodes_data.items()
+                for node_type in ["masters", "workers"]
+                for node in node_types[node_type]
+            }
+        else:
+            app.logger.error(f"Expected dictionary, got {type(nodes_data)}")
+            return [{"error": "Invalid data format"}], 0
 
         try:
             pod_list = v1.list_namespaced_pod(namespace)
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
-            return {"error": f"Failed to fetch pods: {str(e)}"}, 0
+            return [
+                {"error": f"Failed to fetch pods: {str(e)}"}
+            ], 0  # Ensure returning a list
 
         running_pods = 0
-        result = []
-        zone_pod_count = {}
+        result: List[Dict[str, Any]] = []  # List of dictionaries containing pod info
+        zone_pod_count: Dict[str, int] = {}  # Zone pod count map
 
         for pod in pod_list.items:
             if pod.metadata.owner_references and any(
@@ -111,10 +121,10 @@ class CriticalServiceHelper:
                 )
 
         app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
-        return result, running_pods
+        return result, running_pods  # Ensure this is a list of dicts
 
     @staticmethod
-    def get_configmap(cm_name, cm_namespace, cm_key):
+    def get_configmap(cm_name: str, cm_namespace: str, cm_key: str) -> dict[str, Any]:
         """Fetch the current ConfigMap data from the Kubernetes cluster"""
         log_id = get_log_id()
         try:
@@ -129,19 +139,31 @@ class CriticalServiceHelper:
             )
             cm = v1.read_namespaced_config_map(cm_name, cm_namespace)
             if cm_key in cm.data:
-                return json.loads(cm.data[cm_key])
+                # Add explicit type check to ensure we're returning a dictionary
+                loaded_data = json.loads(cm.data[cm_key])
+                if isinstance(loaded_data, dict):
+                    return loaded_data
+                # If the JSON data isn't a dict, wrap it in a dict to satisfy the return type
+                app.logger.warning(
+                    f"[{log_id}] ConfigMap data is not a dictionary, wrapping it"
+                )
+                return {"data": loaded_data}
             app.logger.error(f"[{log_id}] ConfigMap key '{cm_key}' not found.")
-            return {"critical-services": {}}
+            return {
+                "critical-services": {}
+            }  # Make sure to return a dict, not None or str
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
-            return {"error": f"Failed to fetch ConfigMap: {str(e)}"}
+            return {
+                "error": f"Failed to fetch ConfigMap: {str(e)}"
+            }  # Return a dict even in error cases
         except Exception as e:
             app.logger.exception(
                 f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
             )
-            return {"error": f"Unexpected error: {str(e)}"}
+            return {"error": f"Unexpected error: {str(e)}"}  # Ensure a dict is returned
 
     @staticmethod
-    def _resolve_owner_kind(resource_type):
+    def _resolve_owner_kind(resource_type: str) -> str:
         """Check and return correct Kubernetes owner kind"""
         return "ReplicaSet" if resource_type == "Deployment" else resource_type

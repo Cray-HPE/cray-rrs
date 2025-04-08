@@ -26,6 +26,7 @@
 Model to fetch and format critical services from a Kubernetes ConfigMap.
 """
 
+from typing import Dict, List, Tuple, Any
 from flask import current_app as app
 from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.resources.error_print import pretty_print_error
@@ -40,7 +41,7 @@ class CriticalServicesLister:
     """Class to fetch and format critical services grouped by namespace."""
 
     @staticmethod
-    def get_critical_services(services: dict) -> dict:
+    def get_critical_services(services: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
         """
         Fetch and format critical services grouped by namespace.
 
@@ -51,7 +52,10 @@ class CriticalServicesLister:
             dict: A structured dictionary grouped by namespaces.
         """
         log_id = get_log_id()  # Generate a unique log ID
-        result: dict[str, dict] = {"namespace": {}}
+
+        # Specify the type more accurately
+        result: Dict[str, Dict[str, List[Dict[str, str]]]] = {"namespace": {}}
+
         if "error" in services:
             app.logger.warning(f"[{log_id}] Could not fetch critical services.")
             return services
@@ -78,14 +82,14 @@ class CriticalServicesLister:
 
         except (KeyError, TypeError, ValueError) as exc:
             app.logger.error(
-                f"[{log_id}] Error occurred while processing services: {pretty_print_error(exc)}"
+                f"[{log_id}] Error occurred while processing services: {pretty_print_error(str(exc))}"
             )
-            return {"error": str(pretty_print_error(exc))}
+            return {"error": str(pretty_print_error(str(exc)))}
 
         return result
 
     @staticmethod
-    def get_critical_service_list():
+    def get_critical_service_list() -> Tuple[Dict[str, Any], int]:
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
 
@@ -105,10 +109,10 @@ class CriticalServicesLister:
                 "critical-services": CriticalServicesLister.get_critical_services(
                     services
                 )
-            }
+            }, 200
 
         except (KeyError, TypeError, ValueError) as exc:
             app.logger.error(
-                f"[{log_id}] Error while fetching critical services from ConfigMap: {pretty_print_error(exc)}"
+                f"[{log_id}] Error while fetching critical services from ConfigMap: {pretty_print_error(str(exc))}"
             )
-            return {"error": str(pretty_print_error(exc))}, 500
+            return {"error": str(pretty_print_error(str(exc)))}, 500

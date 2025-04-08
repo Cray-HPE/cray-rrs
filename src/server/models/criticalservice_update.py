@@ -26,6 +26,8 @@ Model handles updates to critical services in the ConfigMap.
 """
 
 import json
+from typing import Dict, Any, Tuple, Union
+
 from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
@@ -37,14 +39,26 @@ class CriticalServiceUpdater:
     """Class to handle updates to critical services in the ConfigMap."""
 
     @staticmethod
-    def update_configmap(new_data, existing_data, test=False):
-        """Update the ConfigMap with new critical services."""
+    def update_configmap(
+        new_data: str, existing_data: Dict[str, Any], test: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Update the ConfigMap with new critical services.
+
+        Args:
+            new_data: JSON string containing new critical services
+            existing_data: Dictionary containing existing critical services
+            test: Whether this is a test run (don't update ConfigMap if True)
+
+        Returns:
+            Dict containing update status and details
+        """
         log_id = get_log_id()  # Generate a unique log ID
         try:
             v1 = client.CoreV1Api()
             if "error" in new_data:
                 app.logger.error(f"[{log_id}] Error in new data: {new_data}")
-                return new_data
+                return new_data  # type: ignore
             if "error" in existing_data:
                 app.logger.error(f"[{log_id}] Error in existing data: {existing_data}")
                 return existing_data
@@ -101,8 +115,18 @@ class CriticalServiceUpdater:
             return {"error": f"Unexpected error: {(e)}"}
 
     @staticmethod
-    def update_critical_services(new_data):
-        """Function to update critical services in the ConfigMap."""
+    def update_critical_services(
+        new_data: Dict[str, str],
+    ) -> Union[Dict[str, Any], Tuple[Dict[str, str], int]]:
+        """
+        Function to update critical services in the ConfigMap.
+
+        Args:
+            new_data: Dictionary containing the new services data with 'from_file' key
+
+        Returns:
+            Either a dictionary with update results or a tuple with error dict and status code
+        """
         log_id = get_log_id()  # Generate a unique log ID
         try:
             if not new_data or "from_file" not in new_data:

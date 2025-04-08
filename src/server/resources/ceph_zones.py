@@ -1,4 +1,3 @@
-#
 # MIT License
 #
 #  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
@@ -22,56 +21,113 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """Resource to fetch the Zone details for Ceph"""
+
+from typing import Dict, List, Union, TypedDict, cast
 import yaml
 from flask import current_app as app
 from src.server.resources.k8s_zones import K8sZoneService
 from src.server.resources.rrs_logging import get_log_id
 
 
+# Define TypedDict for node info structure
+class OsdInfo(TypedDict):
+    """Information about a Ceph Object Storage Daemon (OSD)."""
+
+    name: str
+    status: str
+
+
+class NodeInfo(TypedDict):
+    """Information about a Ceph storage node including its OSDs."""
+
+    name: str
+    status: str
+    osds: List[OsdInfo]
+
+
+# Define a result type that covers all possible return values
+ZoneMapping = Dict[str, List[NodeInfo]]
+ErrorDict = Dict[str, str]
+ResultType = Union[ZoneMapping, ErrorDict]
+
+
 class CephService:
     """Service class to parse Ceph zones from ConfigMap"""
 
     @staticmethod
-    def parse_ceph_zones():
+    def parse_ceph_zones() -> ResultType:
         """Extract Ceph zone details from the ConfigMap."""
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching Ceph zone details from ConfigMap.")
 
         configmap_yaml = K8sZoneService.get_configmap_data()
 
+        # Handle error case from configmap data
         if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
             app.logger.error(
                 f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
             )
-            return configmap_yaml
+            return cast(ErrorDict, configmap_yaml)  # Cast to satisfy type checker
 
         if not configmap_yaml:
             app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
             return {"error": "ConfigMap data is empty or missing."}
 
         try:
-            parsed_data = yaml.safe_load(configmap_yaml)
-            ceph_zones = parsed_data.get("zone", {}).get("ceph_zones_with_nodes", {})
+            # Parse YAML data if it's a string
+            if isinstance(configmap_yaml, str):
+                parsed_data = yaml.safe_load(configmap_yaml)
+            else:
+                parsed_data = configmap_yaml
 
-            zone_mapping = {}
+            # Ensure parsed_data is a dictionary
+            if not isinstance(parsed_data, dict):
+                app.logger.error(f"[{log_id}] Invalid format: Expected a dictionary.")
+                return {"error": "Invalid format: Expected a dictionary."}
 
-            for zone_name, nodes in ceph_zones.items():
+            # Access zone data safely
+            zone_data = parsed_data.get("zone", {})
+            if not isinstance(zone_data, dict):
+                zone_data = {}
+
+            ceph_zones_with_nodes = zone_data.get("ceph_zones_with_nodes", {})
+            if not isinstance(ceph_zones_with_nodes, dict):
+                ceph_zones_with_nodes = {}
+
+            zone_mapping: ZoneMapping = {}
+
+            for zone_name, nodes in ceph_zones_with_nodes.items():
+                if not isinstance(nodes, list):
+                    continue
+
                 zone_mapping[zone_name] = []
 
                 for node in nodes:
-                    node_name = node.get("name")
+                    if not isinstance(node, dict):
+                        continue
+
+                    node_name = node.get("name", "")
                     node_status = node.get("status", "Unknown")
                     osds = node.get("osds", [])
 
-                    osd_list = [
-                        {"name": osd["name"], "status": osd["status"]} for osd in osds
-                    ]
+                    if not isinstance(osds, list):
+                        osds = []
 
-                    node_info = {
-                        "name": node_name,
-                        "status": node_status,
-                        "osds": osd_list,
-                    }
+                    osd_list: List[OsdInfo] = []
+                    for osd in osds:
+                        if isinstance(osd, dict):
+                            osd_list.append(
+                                OsdInfo(
+                                    name=osd.get("name", ""),
+                                    status=osd.get("status", "Unknown"),
+                                )
+                            )
+
+                    node_info = NodeInfo(
+                        name=node_name,
+                        status=node_status,
+                        osds=osd_list,
+                    )
 
                     zone_mapping[zone_name].append(node_info)
 
@@ -79,8 +135,10 @@ class CephService:
                 app.logger.info(f"[{log_id}] Successfully parsed Ceph zones.")
             else:
                 app.logger.warning(f"[{log_id}] No Ceph zones found.")
+                # Return an error dictionary if no zones are found
+                return {"error": "No Ceph zones present"}
 
-            return zone_mapping if zone_mapping else "No Ceph zones present"
+            return zone_mapping
 
         except yaml.YAMLError as e:
             app.logger.error(f"[{log_id}] YAML parsing error: {str(e)}")

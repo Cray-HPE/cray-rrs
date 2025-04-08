@@ -29,7 +29,7 @@ def type_check(session):
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.log("Running mypy...")
-    session.run("mypy")
+    session.run("mypy", "--strict")
 
 
 @nox.session(python=PYTHON)

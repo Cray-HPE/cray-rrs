@@ -25,15 +25,16 @@
 Rack Resiliency Service Version API
 """
 
+from typing import Tuple, Dict, Any
 from flask import current_app as app
 from flask_restful import Resource
 from src.server.resources.rrs_logging import get_log_id
 
 
-class Version(Resource):
+class Version(Resource):  # type: ignore[misc]
     """Return RRS version information"""
 
-    def get(self):
+    def get(self) -> Tuple[Dict[str, Any], int]:
         """Return RRS version information"""
 
         log_id = get_log_id()
