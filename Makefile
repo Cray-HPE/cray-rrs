@@ -21,36 +21,86 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-# If you wish to perform a local build, you will need to clone or copy the contents of the
-# cms-meta-tools repo to ./cms_meta_tools
-
 NAME ?= cray-rrs
-DOCKER_NAME ?= cray-rrs-service
-CHART_PATH ?= kubernetes
-DOCKER_VERSION ?= $(shell head -1 .docker_version)
-CHART_VERSION ?= $(shell head -1 .chart_version)
+VERSION ?= $(shell cat .version)
 
-HELM_UNITTEST_IMAGE ?= quintush/helm-unittest:3.3.0-0.2.5
+CHART_VERSION ?= $(VERSION)
+IMAGE ?= artifactory.algol60.net/csm-docker/stable/${NAME}
 
-all : runbuildprep lint unittests image chart
-chart: chart_setup chart_package
+CHARTDIR ?= kubernetes
 
-runbuildprep:
-		./cms_meta_tools/scripts/runBuildPrep.sh
+CHART_METADATA_IMAGE ?= artifactory.algol60.net/csm-docker/stable/chart-metadata
+YQ_IMAGE ?= artifactory.algol60.net/docker.io/mikefarah/yq:4
+HELM_IMAGE ?= artifactory.algol60.net/docker.io/alpine/helm:3.11.2
+HELM_UNITTEST_IMAGE ?= artifactory.algol60.net/docker.io/quintush/helm-unittest:3.11.2-0.3.0
+HELM_DOCS_IMAGE ?= artifactory.algol60.net/docker.io/jnorwood/helm-docs:v1.5.0
+ifeq ($(shell uname -s),Darwin)
+	HELM_CONFIG_HOME ?= $(HOME)/Library/Preferences/helm
+else
+	HELM_CONFIG_HOME ?= $(HOME)/.config/helm
+endif
+COMMA := ,
+
+all : image chart
 
 image:
-		docker build --pull ${DOCKER_ARGS} --tag '${DOCKER_NAME}:${DOCKER_VERSION}' .
+	docker build --no-cache --pull ${DOCKER_ARGS} --tag '${NAME}:${VERSION}' .
 
-unittests:
-		( DOCKER_NAME=${DOCKER_NAME} VERSION=${DOCKER_VERSION} ./runUnitTests.sh )
+chart: chart-metadata chart-package chart-test
 
-chart_setup:
-		mkdir -p ${CHART_PATH}/.packaged
+chart-metadata:
+	docker run --rm \
+		--user $(shell id -u):$(shell id -g) \
+		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
+		${CHART_METADATA_IMAGE} \
+		--version "${CHART_VERSION}" --app-version "${VERSION}" \
+		-i ${NAME} ${IMAGE}:${VERSION} \
+		--cray-service-globals
+	docker run --rm \
+		--user $(shell id -u):$(shell id -g) \
+		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
+		-w /chart \
+		${YQ_IMAGE} \
+		eval -Pi '.cray-service.containers.${NAME}.image.repository = "${IMAGE}"' values.yaml
 
-chart_package:
-		helm dep up ${CHART_PATH}/${NAME}
-		helm package ${CHART_PATH}/${NAME} -d ${CHART_PATH}/.packaged --app-version ${DOCKER_VERSION} --version ${CHART_VERSION}
+helm:
+	docker run --rm \
+	    --user $(shell id -u):$(shell id -g) \
+	    --mount type=bind,src="$(shell pwd)",dst=/src \
+	    $(if $(wildcard $(HELM_CONFIG_HOME)/.),--mount type=bind$(COMMA)src=$(HELM_CONFIG_HOME)$(COMMA)dst=/tmp/.helm/config) \
+	    -w /src \
+	    -e HELM_CACHE_HOME=/src/.helm/cache \
+	    -e HELM_CONFIG_HOME=/tmp/.helm/config \
+	    -e HELM_DATA_HOME=/src/.helm/data \
+	    $(HELM_IMAGE) \
+	    $(CMD)
 
-chart_test:
-		helm lint "${CHART_PATH}/${NAME}"
-		docker run --rm -v ${PWD}/${CHART_PATH}:/apps ${HELM_UNITTEST_IMAGE} -3 ${NAME}
+chart-package: packages/${NAME}-${CHART_VERSION}.tgz
+
+packages/${NAME}-${CHART_VERSION}.tgz:
+	CMD="dep up ${CHARTDIR}/${NAME}" $(MAKE) helm
+	CMD="package ${CHARTDIR}/${NAME} -d packages" $(MAKE) helm
+
+chart-test:
+	CMD="lint ${CHARTDIR}/${NAME}" $(MAKE) helm
+	docker run --rm -v ${PWD}/${CHARTDIR}:/apps ${HELM_UNITTEST_IMAGE} ${NAME}
+
+chart-images: packages/${NAME}-${CHART_VERSION}.tgz
+	{ CMD="template release $< --dry-run --replace --dependency-update" $(MAKE) -s helm; \
+	  echo '---' ; \
+	  CMD="show chart $<" $(MAKE) -s helm | docker run --rm -i $(YQ_IMAGE) e -N '.annotations."artifacthub.io/images"' - ; \
+	} | docker run --rm -i $(YQ_IMAGE) e -N '.. | .image? | select(.)' - | sort -u
+
+snyk:
+	$(MAKE) -s chart-images | xargs --verbose -n 1 snyk container test
+
+chart-gen-docs:
+	docker run --rm \
+	    --user $(shell id -u):$(shell id -g) \
+	    --mount type=bind,src="$(shell pwd)",dst=/src \
+	    -w /src \
+	    $(HELM_DOCS_IMAGE) \
+	    helm-docs --chart-search-root=$(CHARTDIR)
+
+clean:
+	$(RM) -r .helm packages
