@@ -24,11 +24,9 @@
 # Cray Rack Resiliency Service Dockerfile
 
 # Base stage for shared dependencies
-FROM alpine:3.21.3 AS base
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 AS base
 
 WORKDIR /app
-RUN mkdir -p /app /results
-VOLUME ["/results"]
 
 # Install dependencies
 RUN apk add --upgrade --no-cache apk-tools && \
@@ -49,24 +47,6 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 # Copy application source code
 COPY src/ /app/src/
 
-# -------- Stage for testing --------
-FROM base AS testing
-
-ADD docker_test_entry.sh /app/
-ADD requirements-test.txt /app/
-RUN pip3 install -r /app/requirements-test.txt
-COPY tests /app/tests
-ARG FORCE_TESTS=null
-CMD ["./docker_test_entry.sh"]
-
-# -------- Stage for code style checking --------
-FROM testing AS codestyle
-
-ADD .pylintrc .pycodestyle /app/
-ADD runCodeStyleCheck.sh /app/
-ARG FORCE_STYLE_CHECKS=null
-CMD ["./runCodeStyleCheck.sh"]
-
 # -------- Final image to run the Flask app --------
 FROM base AS application
 
@@ -78,4 +58,3 @@ EXPOSE 80
 
 # Final application entrypoint
 CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
-
