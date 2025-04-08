@@ -26,10 +26,11 @@ Model to describe the status of critical services.
 """
 
 from flask import current_app as app
-from kubernetes import client # type: ignore
+from kubernetes import client  # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.server.resources.rrs_logging import get_log_id
+
 
 class CriticalServiceStatusDescriber:
     """Class to describe the status of critical services."""
@@ -139,11 +140,15 @@ class CriticalServiceStatusDescriber:
         """
         log_id = get_log_id()  # Generate a unique log ID
         try:
-            app.logger.info(f"[{log_id}] Fetching details for service '{service_name}'.")
-            services = CriticalServiceHelper.get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY).get(
-                "critical-services", {}
+            app.logger.info(
+                f"[{log_id}] Fetching details for service '{service_name}'."
             )
-            return CriticalServiceStatusDescriber.get_service_details(services, service_name)
+            services = CriticalServiceHelper.get_configmap(
+                CM_NAME, CM_NAMESPACE, CM_KEY
+            ).get("critical-services", {})
+            return CriticalServiceStatusDescriber.get_service_details(
+                services, service_name
+            )
 
         except Exception as exc:
             app.logger.error(

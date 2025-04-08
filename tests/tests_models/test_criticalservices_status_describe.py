@@ -30,11 +30,14 @@ These tests validate the function's behavior when retrieving details of critical
 
 import unittest
 from src.server.app import app
-from src.server.models.criticalservice_status_describe import CriticalServiceStatusDescriber
+from src.server.models.criticalservice_status_describe import (
+    CriticalServiceStatusDescriber,
+)
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
 )
+
 
 class TestCriticalServicesDescribe(unittest.TestCase):
     """
@@ -56,7 +59,11 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The test checks if the service details contain the expected 'Name' and 'Type'.
         """
-        result = CriticalServiceStatusDescriber.get_service_details(MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "coredns", test=True)
+        result = CriticalServiceStatusDescriber.get_service_details(
+            MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
+            "coredns",
+            test=True,
+        )
         self.assertIn("Critical Service", result)
         self.assertIn("Name", result["Critical Service"])
         self.assertEqual(result["Critical Service"]["Name"], "coredns")
@@ -84,7 +91,9 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating the failure.
         """
-        result = CriticalServiceStatusDescriber.get_service_details(MOCK_ERROR_CRT_SVC, "coredns")
+        result = CriticalServiceStatusDescriber.get_service_details(
+            MOCK_ERROR_CRT_SVC, "coredns"
+        )
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 

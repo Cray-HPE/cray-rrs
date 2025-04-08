@@ -37,6 +37,7 @@ from tests.tests_models.mock_data import (
     MOCK_CEPH_RESPONSE,
 )
 
+
 class TestZoneMapping(unittest.TestCase):
     """Test class for validating zone mapping functionality using 'ZoneMapper.map_zones'."""
 
@@ -58,7 +59,9 @@ class TestZoneMapping(unittest.TestCase):
 
     def test_no_zones_configured(self):
         """Test case for when no Kubernetes or Ceph zones are configured."""
-        result = ZoneMapper.map_zones("No K8s topology zone present", "No Ceph zones present")
+        result = ZoneMapper.map_zones(
+            "No K8s topology zone present", "No Ceph zones present"
+        )
         self.assertIn("Zones", result)
         self.assertEqual(len(result["Zones"]), 0)
         self.assertEqual(

@@ -23,9 +23,9 @@
 #
 
 """
-Unit tests for the 'CriticalServiceStatusDescriber.get_service_details' function in the 'criticalservice_describe' module.
+Unit tests for 'CriticalServiceStatusDescriber.get_service_details' from 'criticalservice_describe'.
 
-These tests validate the function's behavior when retrieving details of critical services.
+Validates retrieval of critical service details.
 """
 
 import unittest
@@ -85,7 +85,9 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating the failure.
         """
-        result = CriticalServiceStatusDescriber.get_service_details(MOCK_ERROR_CRT_SVC, "coredns", True)
+        result = CriticalServiceStatusDescriber.get_service_details(
+            MOCK_ERROR_CRT_SVC, "coredns", True
+        )
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 

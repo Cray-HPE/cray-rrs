@@ -40,7 +40,7 @@ class CriticalServicesLister:
     """Class to fetch and format critical services grouped by namespace."""
 
     @staticmethod
-    def _get_critical_services(services: dict) -> dict:
+    def get_critical_services(services: dict) -> dict:
         """
         Fetch and format critical services grouped by namespace.
 
@@ -57,7 +57,9 @@ class CriticalServicesLister:
             return services
 
         try:
-            app.logger.info(f"[{log_id}] Starting to fetch and format critical services.")
+            app.logger.info(
+                f"[{log_id}] Starting to fetch and format critical services."
+            )
 
             for name, details in services.items():
                 namespace = details.get("namespace", "unknown")
@@ -66,7 +68,9 @@ class CriticalServicesLister:
                 if namespace not in result["namespace"]:
                     result["namespace"][namespace] = []
 
-                result["namespace"][namespace].append({"name": name, "type": service_type})
+                result["namespace"][namespace].append(
+                    {"name": name, "type": service_type}
+                )
 
             app.logger.info(
                 f"[{log_id}] Successfully fetched and formatted critical services."
@@ -92,10 +96,16 @@ class CriticalServicesLister:
         try:
             app.logger.info(f"[{log_id}] Fetching critical services from ConfigMap.")
 
-            config_data = CriticalServiceHelper.get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY)
+            config_data = CriticalServiceHelper.get_configmap(
+                CM_NAME, CM_NAMESPACE, CM_KEY
+            )
             services = config_data.get("critical-services", {})
 
-            return {"critical-services": CriticalServicesLister._get_critical_services(services)}
+            return {
+                "critical-services": CriticalServicesLister.get_critical_services(
+                    services
+                )
+            }
 
         except (KeyError, TypeError, ValueError) as exc:
             app.logger.error(

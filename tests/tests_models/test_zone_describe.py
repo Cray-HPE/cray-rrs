@@ -40,7 +40,7 @@ from tests.tests_models.mock_data import (
 
 class TestZoneDescribe(unittest.TestCase):
     """
-    Test class for describing zones using the 'ZoneDescriber._get_zone_info' function.
+    Test class for describing zones using the 'ZoneDescriber.get_zone_info' function.
     """
 
     def setUp(self):
@@ -54,11 +54,13 @@ class TestZoneDescribe(unittest.TestCase):
 
     def test_describe_zone_success(self):
         """
-        Test case to verify that 'ZoneDescriber._get_zone_info' correctly retrieves zone details.
+        Test case to verify that 'ZoneDescriber.get_zone_info' correctly retrieves zone details.
 
         Ensures that the zone name is correctly returned.
         """
-        result = ZoneDescriber._get_zone_info("x3002", MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)
+        result = ZoneDescriber.get_zone_info(
+            "x3002", MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE
+        )
         self.assertIn("Zone Name", result)
         self.assertEqual(result["Zone Name"], "x3002")
 
@@ -68,7 +70,9 @@ class TestZoneDescribe(unittest.TestCase):
 
         Ensures that the function returns an appropriate error message.
         """
-        result = ZoneDescriber._get_zone_info("zoneX", MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)
+        result = ZoneDescriber.get_zone_info(
+            "zoneX", MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE
+        )
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Zone not found")
 

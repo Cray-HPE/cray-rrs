@@ -20,10 +20,28 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
+"""
+critical_services.py
+
+This module provides helper functions for interacting with Kubernetes resources
+related to critical services. It includes utilities to fetch pod information,
+resolve ownership relationships, and retrieve configuration from ConfigMaps.
+These functions are essential for zone-aware monitoring and management of
+critical workloads in the Kubernetes cluster.
+
+Classes:
+    - CriticalServiceHelper: Static methods to retrieve pods and ConfigMap data.
+
+Dependencies:
+    - Kubernetes Python client
+    - Flask (for logging via current_app)
+"""
+
 from flask import json, current_app as app
-from kubernetes import client # type: ignore
+from kubernetes import client  # type: ignore
 from src.server.resources.k8s_zones import K8sZoneService
 from src.server.resources.rrs_logging import get_log_id
+
 
 class CriticalServiceHelper:
     """Helper class for fetching critical services and pod data"""
@@ -46,7 +64,9 @@ class CriticalServiceHelper:
         # Load K8s zone data
         nodes_data = K8sZoneService.parse_k8s_zones()
         if isinstance(nodes_data, dict) and "error" in nodes_data:
-            app.logger.error(f"[{log_id}] Error fetching nodes data: {nodes_data['error']}")
+            app.logger.error(
+                f"[{log_id}] Error fetching nodes data: {nodes_data['error']}"
+            )
             return {"error": nodes_data["error"]}, 0
 
         node_zone_map = {
@@ -116,7 +136,9 @@ class CriticalServiceHelper:
             app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
             return {"error": f"Failed to fetch ConfigMap: {str(e)}"}
         except Exception as e:
-            app.logger.exception(f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}")
+            app.logger.exception(
+                f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
+            )
             return {"error": f"Unexpected error: {str(e)}"}
 
     @staticmethod

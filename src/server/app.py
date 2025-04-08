@@ -36,7 +36,9 @@ from src.server.models.criticalservice_list import CriticalServicesLister
 from src.server.models.criticalservice_describe import CriticalServiceDescriber
 from src.server.models.criticalservice_update import CriticalServiceUpdater
 from src.server.models.criticalservice_status_list import CriticalServiceStatusLister
-from src.server.models.criticalservice_status_describe import CriticalServiceStatusDescriber
+from src.server.models.criticalservice_status_describe import (
+    CriticalServiceStatusDescriber,
+)
 
 app = Flask(__name__)
 api = Api(app)
@@ -53,14 +55,16 @@ file_handler.setFormatter(formatter)
 # Add handler to the app's logger
 app.logger.addHandler(file_handler)
 
+
 # Endpoint to get the list of zones
 class ZoneListResource(Resource):
     """
     Resource for retrieving the list of all zones.
-    
+
     This resource handles the GET request to fetch all available zones.
     It returns a list of zones in JSON format.
     """
+
     def get(self):
         """
         Get the list of all zones.
@@ -81,10 +85,11 @@ class ZoneListResource(Resource):
 class ZoneDescribeResource(Resource):
     """
     Resource for describing a specific zone.
-    
+
     This resource handles the GET request to fetch the description of a
     particular zone, identified by its name.
     """
+
     def get(self, zone_name):
         """
         Get the description of a specific zone by its name.
@@ -111,10 +116,11 @@ class ZoneDescribeResource(Resource):
 class CriticalServiceListResource(Resource):
     """
     Resource for retrieving the list of all critical services.
-    
+
     This resource handles the GET request to fetch all available critical services.
     It returns a list of critical services in JSON format.
     """
+
     def get(self):
         """
         Get the list of all critical services.
@@ -135,10 +141,11 @@ class CriticalServiceListResource(Resource):
 class CriticalServiceDescribeResource(Resource):
     """
     Resource for describing a specific critical service.
-    
+
     This resource handles the GET request to fetch the description of a
     particular critical service, identified by its name.
     """
+
     def get(self, service_name):
         """
         Get the description of a specific critical service by its name.
@@ -157,7 +164,9 @@ class CriticalServiceDescribeResource(Resource):
                 return ({"error": "Critical service not found"}), 404
             return (service), 200
         except Exception as e:
-            log_event(f"Error describing service {service_name}: {str(e)}", level="ERROR")
+            log_event(
+                f"Error describing service {service_name}: {str(e)}", level="ERROR"
+            )
             return ({"error": str(e)}), 500
 
 
@@ -165,9 +174,10 @@ class CriticalServiceDescribeResource(Resource):
 class CriticalServiceUpdateResource(Resource):
     """
     Resource for updating the list of critical services.
-    
+
     This resource handles the PATCH request to update the critical services list.
     """
+
     def patch(self):
         """
         Update the list of critical services.
@@ -192,10 +202,11 @@ class CriticalServiceUpdateResource(Resource):
 class CriticalServiceStatusListResource(Resource):
     """
     Resource for retrieving the status of all critical services.
-    
+
     This resource handles the GET request to fetch the status of all critical services.
     It returns a list of critical service statuses in JSON format.
     """
+
     def get(self):
         """
         Get the status of all critical services.
@@ -208,7 +219,9 @@ class CriticalServiceStatusListResource(Resource):
             status = CriticalServiceStatusLister.get_criticalservice_status_list()
             return (status), 200
         except Exception as e:
-            log_event(f"Error fetching critical service status: {str(e)}", level="ERROR")
+            log_event(
+                f"Error fetching critical service status: {str(e)}", level="ERROR"
+            )
             return ({"error": str(e)}), 500
 
 
@@ -216,10 +229,11 @@ class CriticalServiceStatusListResource(Resource):
 class CriticalServiceStatusDescribeResource(Resource):
     """
     Resource for describing a specific critical service status.
-    
+
     This resource handles the GET request to fetch the status description of a
     particular critical service, identified by its name.
     """
+
     def get(self, service_name):
         """
         Get the description of a specific critical service status by its name.
@@ -232,7 +246,9 @@ class CriticalServiceStatusDescribeResource(Resource):
         """
         try:
             log_event(f"Describing critical service status: {service_name}")
-            service = CriticalServiceStatusDescriber.describe_service_status(service_name)
+            service = CriticalServiceStatusDescriber.describe_service_status(
+                service_name
+            )
             if not service:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return ({"error": "Critical service not found"}), 404
@@ -246,16 +262,18 @@ class CriticalServiceStatusDescribeResource(Resource):
 
 
 # Add resources to API
-api.add_resource(Ready, '/healthz/ready')
-api.add_resource(Live, '/healthz/live')
-api.add_resource(ZoneListResource, '/zones')
-api.add_resource(ZoneDescribeResource, '/zones/<zone_name>')
-api.add_resource(CriticalServiceListResource, '/criticalservices')
-api.add_resource(CriticalServiceDescribeResource, '/criticalservices/<service_name>')
-api.add_resource(CriticalServiceUpdateResource, '/criticalservices')
-api.add_resource(CriticalServiceStatusListResource, '/criticalservices/status')
-api.add_resource(CriticalServiceStatusDescribeResource, '/criticalservices/status/<service_name>')
+api.add_resource(Ready, "/healthz/ready")
+api.add_resource(Live, "/healthz/live")
+api.add_resource(ZoneListResource, "/zones")
+api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")
+api.add_resource(CriticalServiceListResource, "/criticalservices")
+api.add_resource(CriticalServiceDescribeResource, "/criticalservices/<service_name>")
+api.add_resource(CriticalServiceUpdateResource, "/criticalservices")
+api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")
+api.add_resource(
+    CriticalServiceStatusDescribeResource, "/criticalservices/status/<service_name>"
+)
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=80, debug=True)

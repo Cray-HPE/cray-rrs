@@ -30,11 +30,12 @@ from src.server.resources.ceph_zones import CephService
 from src.server.models.zone_list import ZoneMapper
 from src.server.resources.rrs_logging import get_log_id
 
+
 class ZoneDescriber:
     """Class to describe Kubernetes and Ceph zones."""
 
     @staticmethod
-    def _get_zone_info(zone_name, k8s_zones, ceph_zones, log_id=None):
+    def get_zone_info(zone_name, k8s_zones, ceph_zones, log_id=None):
         """Internal method to get detailed information of a specific zone."""
         if log_id is None:
             log_id = get_log_id()
@@ -65,16 +66,24 @@ class ZoneDescriber:
         if masters:
             zone_data["Management Master"] = {
                 "Type": "Kubernetes Topology Zone",
-                "Nodes": [{"Name": node["name"], "Status": node["status"]} for node in masters],
+                "Nodes": [
+                    {"Name": node["name"], "Status": node["status"]} for node in masters
+                ],
             }
-            app.logger.info(f"[{log_id}] Added {len(masters)} management master nodes for zone: {zone_name}")
+            app.logger.info(
+                f"[{log_id}] Added {len(masters)} management master nodes for zone: {zone_name}"
+            )
 
         if workers:
             zone_data["Management Worker"] = {
                 "Type": "Kubernetes Topology Zone",
-                "Nodes": [{"Name": node["name"], "Status": node["status"]} for node in workers],
+                "Nodes": [
+                    {"Name": node["name"], "Status": node["status"]} for node in workers
+                ],
             }
-            app.logger.info(f"[{log_id}] Added {len(workers)} management worker nodes for zone: {zone_name}")
+            app.logger.info(
+                f"[{log_id}] Added {len(workers)} management worker nodes for zone: {zone_name}"
+            )
 
         if storage:
             zone_data["Management Storage"] = {"Type": "CEPH Zone", "Nodes": []}
@@ -90,9 +99,13 @@ class ZoneDescriber:
                 }
                 zone_data["Management Storage"]["Nodes"].append(storage_node)
 
-            app.logger.info(f"[{log_id}] Added {len(storage)} management storage nodes for zone: {zone_name}")
+            app.logger.info(
+                f"[{log_id}] Added {len(storage)} management storage nodes for zone: {zone_name}"
+            )
 
-        app.logger.info(f"[{log_id}] Zone information fetched successfully for zone: {zone_name}")
+        app.logger.info(
+            f"[{log_id}] Zone information fetched successfully for zone: {zone_name}"
+        )
         return zone_data
 
     @staticmethod
@@ -104,6 +117,8 @@ class ZoneDescriber:
         k8s_zones = K8sZoneService.parse_k8s_zones()
         ceph_zones = CephService.parse_ceph_zones()
 
-        result = ZoneDescriber._get_zone_info(zone_name, k8s_zones, ceph_zones, log_id)
-        app.logger.info(f"[{log_id}] Zone description response generated for zone: {zone_name}")
+        result = ZoneDescriber.get_zone_info(zone_name, k8s_zones, ceph_zones, log_id)
+        app.logger.info(
+            f"[{log_id}] Zone description response generated for zone: {zone_name}"
+        )
         return result

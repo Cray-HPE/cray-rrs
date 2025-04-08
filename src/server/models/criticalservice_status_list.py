@@ -32,6 +32,7 @@ CM_NAME = "rrs-mon-dynamic"
 CM_NAMESPACE = "rack-resiliency"
 CM_KEY = "critical-service-config.json"
 
+
 class CriticalServiceStatusLister:
     """Class to fetch and format critical services from the ConfigMap."""
 
@@ -79,7 +80,9 @@ class CriticalServiceStatusLister:
             app.logger.info(
                 f"[{log_id}] Fetching ConfigMap: {CM_NAME} from namespace: {CM_NAMESPACE}"
             )
-            config_data = CriticalServiceHelper.get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY)
+            config_data = CriticalServiceHelper.get_configmap(
+                CM_NAME, CM_NAMESPACE, CM_KEY
+            )
 
             if not config_data:
                 app.logger.warning(
@@ -92,9 +95,15 @@ class CriticalServiceStatusLister:
                 app.logger.warning(
                     f"[{log_id}] No 'critical-services' found in the ConfigMap"
                 )
-                return ({"error": "'critical-services' not found in the ConfigMap"}), 404
+                return (
+                    {"error": "'critical-services' not found in the ConfigMap"}
+                ), 404
 
-            return {"critical-services": CriticalServiceStatusLister.get_critical_services_status(services)}
+            return {
+                "critical-services": CriticalServiceStatusLister.get_critical_services_status(
+                    services
+                )
+            }
 
         except (KeyError, TypeError, ValueError) as exc:
             app.logger.error(

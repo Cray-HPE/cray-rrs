@@ -70,7 +70,7 @@ class CephService:
                     node_info = {
                         "name": node_name,
                         "status": node_status,
-                        "osds": osd_list
+                        "osds": osd_list,
                     }
 
                     zone_mapping[zone_name].append(node_info)

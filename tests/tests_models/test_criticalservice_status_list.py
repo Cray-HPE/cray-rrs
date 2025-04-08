@@ -78,7 +78,9 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         Test case for handling errors when fetching critical services.
         """
-        result = CriticalServiceStatusLister.get_critical_services_status(MOCK_ERROR_CRT_SVC)
+        result = CriticalServiceStatusLister.get_critical_services_status(
+            MOCK_ERROR_CRT_SVC
+        )
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers, not 'str'")
 
@@ -86,7 +88,11 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         Test case for when no critical services are available.
         """
-        result = {"critical-services": CriticalServiceStatusLister.get_critical_services_status({})}
+        result = {
+            "critical-services": CriticalServiceStatusLister.get_critical_services_status(
+                {}
+            )
+        }
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertEqual(len(result["critical-services"]["namespace"]), 0)

@@ -38,7 +38,7 @@ from tests.tests_models.mock_data import (
 
 class TestCriticalServicesList(unittest.TestCase):
     """
-    Test class for listing critical services using 'CriticalServicesLister._get_critical_services'.
+    Test class for listing critical services using 'CriticalServicesLister.get_critical_services'.
     """
 
     def setUp(self):
@@ -52,13 +52,15 @@ class TestCriticalServicesList(unittest.TestCase):
 
     def test_list_critical_services_success(self):
         """
-        Test case to verify that 'CriticalServicesLister._get_critical_services' correctly retrieves critical services.
+        Test case to verify that 'CriticalServicesLister.get_critical_services' correctly retrieves critical services.
 
         The test ensures that the expected 'namespace' and 'kube-system' entries are present
         and that at least one critical service is listed.
         """
         result = {
-            "critical-services": CriticalServicesLister._get_critical_services(MOCK_CRITICAL_SERVICES_RESPONSE)
+            "critical-services": CriticalServicesLister.get_critical_services(
+                MOCK_CRITICAL_SERVICES_RESPONSE
+            )
         }
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
@@ -79,7 +81,7 @@ class TestCriticalServicesList(unittest.TestCase):
 
         If an error occurs, the function should return an appropriate error message.
         """
-        result = CriticalServicesLister._get_critical_services(MOCK_ERROR_CRT_SVC)
+        result = CriticalServicesLister.get_critical_services(MOCK_ERROR_CRT_SVC)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers")
 
@@ -89,7 +91,7 @@ class TestCriticalServicesList(unittest.TestCase):
 
         The function should return an empty namespace dictionary.
         """
-        result = {"critical-services": CriticalServicesLister._get_critical_services({})}
+        result = {"critical-services": CriticalServicesLister.get_critical_services({})}
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertEqual(len(result["critical-services"]["namespace"]), 0)

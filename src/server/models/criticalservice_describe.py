@@ -30,7 +30,10 @@ from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.resources.error_print import pretty_print_error
 from src.server.resources.rrs_logging import get_log_id
 from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
-from src.server.models.criticalservice_status_describe import CriticalServiceStatusDescriber
+from src.server.models.criticalservice_status_describe import (
+    CriticalServiceStatusDescriber,
+)
+
 
 class CriticalServiceDescriber:
     """Class to handle critical service description and retrieval of details."""
@@ -52,11 +55,13 @@ class CriticalServiceDescriber:
                 f"[{log_id}] Attempting to retrieve details for service: {service_name}"
             )
 
-            services = CriticalServiceHelper.get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY).get(
-                "critical-services", {}
-            )
+            services = CriticalServiceHelper.get_configmap(
+                CM_NAME, CM_NAMESPACE, CM_KEY
+            ).get("critical-services", {})
 
-            result = CriticalServiceStatusDescriber.get_service_details(services, service_name)
+            result = CriticalServiceStatusDescriber.get_service_details(
+                services, service_name
+            )
 
             # Remove unnecessary fields
             del result["Critical Service"]["Pods"]

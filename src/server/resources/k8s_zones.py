@@ -40,7 +40,9 @@ class K8sZoneService:
             config.load_kube_config()
 
     @staticmethod
-    def get_configmap_data(namespace="rack-resiliency", configmap_name="rrs-mon-dynamic"):
+    def get_configmap_data(
+        namespace="rack-resiliency", configmap_name="rrs-mon-dynamic"
+    ):
         """Fetch the specified ConfigMap data."""
         log_id = get_log_id()
         try:
@@ -99,10 +101,14 @@ class K8sZoneService:
                     elif node_name.startswith("ncn-w"):
                         zone_mapping[zone_name]["workers"].append(node_info)
                     else:
-                        zone_mapping[zone_name].setdefault("unknown", []).append(node_info)
+                        zone_mapping[zone_name].setdefault("unknown", []).append(
+                            node_info
+                        )
 
             if zone_mapping:
-                app.logger.info(f"[{log_id}] Successfully parsed Kubernetes zone details")
+                app.logger.info(
+                    f"[{log_id}] Successfully parsed Kubernetes zone details"
+                )
                 return zone_mapping
             app.logger.warning(f"[{log_id}] No Kubernetes zones present")
             return "No Kubernetes zones present"

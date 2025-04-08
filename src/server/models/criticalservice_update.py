@@ -27,10 +27,11 @@ Model handles updates to critical services in the ConfigMap.
 
 import json
 from flask import current_app as app
-from kubernetes import client # type: ignore
+from kubernetes import client  # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.models.criticalservice_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.server.resources.rrs_logging import get_log_id
+
 
 class CriticalServiceUpdater:
     """Class to handle updates to critical services in the ConfigMap."""
@@ -84,14 +85,10 @@ class CriticalServiceUpdater:
             }
 
         except json.JSONDecodeError as json_err:
-            app.logger.error(
-                f"[{log_id}] Invalid JSON format: {(json_err)}"
-            )
+            app.logger.error(f"[{log_id}] Invalid JSON format: {(json_err)}")
             return {"error": f"Invalid JSON format: {(json_err)}"}
         except client.exceptions.ApiException as api_exc:
-            app.logger.error(
-                f"[{log_id}] Failed to update ConfigMap: {(api_exc)}"
-            )
+            app.logger.error(f"[{log_id}] Failed to update ConfigMap: {(api_exc)}")
             return {"error": f"Failed to update ConfigMap: {(api_exc)}"}
         except KeyError as key_exc:
             app.logger.error(f"[{log_id}] Missing key: {(key_exc)}")
@@ -117,19 +114,25 @@ class CriticalServiceUpdater:
             try:
                 new_services = json.loads(new_data["from_file"])
             except json.JSONDecodeError as json_err:
-                app.logger.error(f"[{log_id}] Invalid JSON format in request: {json_err}")
+                app.logger.error(
+                    f"[{log_id}] Invalid JSON format in request: {json_err}"
+                )
                 return ({"error": "Invalid JSON format in services"}), 400
 
             if "critical-services" not in new_services:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
                 return ({"error": "Missing 'critical-services' in payload"}), 400
 
-            existing_data = CriticalServiceHelper.get_configmap(CM_NAME, CM_NAMESPACE, CM_KEY)
+            existing_data = CriticalServiceHelper.get_configmap(
+                CM_NAME, CM_NAMESPACE, CM_KEY
+            )
             result = CriticalServiceUpdater.update_configmap(
                 json.dumps(new_services), existing_data
             )
             return result
 
         except Exception as e:
-            app.logger.error(f"[{log_id}] Unhandled error in update_critical_services: {e}")
+            app.logger.error(
+                f"[{log_id}] Unhandled error in update_critical_services: {e}"
+            )
             return ({"error": f"Unexpected error: {(e)}"}), 500

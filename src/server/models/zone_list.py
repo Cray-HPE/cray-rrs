@@ -41,7 +41,9 @@ class ZoneMapper:
         app.logger.info(f"[{log_id}] Checking if zones (K8s Topology or Ceph) exist")
 
         if isinstance(k8s_zones, str) and isinstance(ceph_zones, str):
-            app.logger.warning(f"[{log_id}] No zones (K8s topology and Ceph) configured")
+            app.logger.warning(
+                f"[{log_id}] No zones (K8s topology and Ceph) configured"
+            )
             return {
                 "Zones": [],
                 "Information": "No zones (K8s topology and Ceph) configured",
@@ -89,8 +91,12 @@ class ZoneMapper:
         for zone_name in all_zone_names:
             app.logger.info(f"[{log_id}] Processing zone: {zone_name}")
 
-            masters = ZoneMapper.get_node_names(k8s_zones.get(zone_name, {}).get("masters", []))
-            workers = ZoneMapper.get_node_names(k8s_zones.get(zone_name, {}).get("workers", []))
+            masters = ZoneMapper.get_node_names(
+                k8s_zones.get(zone_name, {}).get("masters", [])
+            )
+            workers = ZoneMapper.get_node_names(
+                k8s_zones.get(zone_name, {}).get("workers", [])
+            )
             storage = ZoneMapper.get_node_names(ceph_zones.get(zone_name, []))
 
             zone_data = {"Zone Name": zone_name}
@@ -98,9 +104,13 @@ class ZoneMapper:
             if masters or workers:
                 zone_data["Kubernetes Topology Zone"] = {}
                 if masters:
-                    zone_data["Kubernetes Topology Zone"]["Management Master Nodes"] = masters
+                    zone_data["Kubernetes Topology Zone"][
+                        "Management Master Nodes"
+                    ] = masters
                 if workers:
-                    zone_data["Kubernetes Topology Zone"]["Management Worker Nodes"] = workers
+                    zone_data["Kubernetes Topology Zone"][
+                        "Management Worker Nodes"
+                    ] = workers
 
             if storage:
                 zone_data["CEPH Zone"] = {"Management Storage Nodes": storage}
