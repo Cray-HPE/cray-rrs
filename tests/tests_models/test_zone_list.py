@@ -86,12 +86,12 @@ class TestZoneMapping(unittest.TestCase):
         self.assertIn("Kubernetes Topology Zone", zone)
         self.assertIn("Management Master Nodes", zone["Kubernetes Topology Zone"])
         self.assertIn(
-            "ncn-m001", zone["Kubernetes Topology Zone"]["Management Master Nodes"]
+            "ncn-m003", zone["Kubernetes Topology Zone"]["Management Master Nodes"]
         )
 
         self.assertIn("CEPH Zone", zone)
         self.assertIn("Management Storage Nodes", zone["CEPH Zone"])
-        self.assertIn("ncn-s001", zone["CEPH Zone"]["Management Storage Nodes"])
+        self.assertIn("ncn-s005", zone["CEPH Zone"]["Management Storage Nodes"])
 
 
 if __name__ == "__main__":
