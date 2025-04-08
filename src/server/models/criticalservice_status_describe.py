@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -26,7 +26,7 @@ Model to describe the status of critical services.
 """
 
 from flask import current_app as app
-from kubernetes import client
+from kubernetes import client  # type: ignore
 
 from src.server.resources.critical_services import get_configmap, get_namespaced_pods
 from src.server.resources.error_print import pretty_print_error

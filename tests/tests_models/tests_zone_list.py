@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -30,7 +30,7 @@ These tests validate the function's behavior when retrieving and mapping zone de
 
 import unittest
 
-from src.server import app
+from src.server.app import app
 from src.server.models.zone_list import map_zones
 from tests.tests_models.mock_data import (
     MOCK_K8S_RESPONSE,

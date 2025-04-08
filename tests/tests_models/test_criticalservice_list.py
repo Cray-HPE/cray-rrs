@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -29,11 +29,11 @@ These tests validate the function's behavior when retrieving critical services.
 
 import unittest
 from src.server.models.criticalservice_list import get_critical_services
+from src.server.app import app
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE,
     MOCK_ERROR_CRT_SVC,
 )
-from src.server.app import app
 
 
 class TestCriticalServicesList(unittest.TestCase):

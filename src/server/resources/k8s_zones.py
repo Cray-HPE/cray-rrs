@@ -1,6 +1,6 @@
 # MIT License
 #
-# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -25,7 +25,7 @@
 # Corrected import order
 import yaml
 from flask import current_app as app
-from kubernetes import client, config
+from kubernetes import client, config  # type: ignore
 from src.server.resources.rrs_logging import get_log_id
 
 

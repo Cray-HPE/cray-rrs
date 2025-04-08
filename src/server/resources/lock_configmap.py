@@ -8,7 +8,7 @@ import logging
 import time
 import os
 from src.server.resources.k8s_zones import load_k8s_config
-from kubernetes import client
+from kubernetes import client  # type: ignore
 
 # Load Kubernetes config
 load_k8s_config()

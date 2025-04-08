@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -48,7 +48,7 @@ def get_critical_services(services: dict) -> dict:
         dict: A structured dictionary grouped by namespaces.
     """
     log_id = get_log_id()  # Generate a unique log ID
-    result = {"namespace": {}}
+    result: dict[str, dict] = {"namespace": {}}
     if "error" in services:
         app.logger.warning(f"[{log_id}] Could not critical services.")
         return services
