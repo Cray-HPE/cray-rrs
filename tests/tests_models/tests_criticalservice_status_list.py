@@ -31,7 +31,7 @@ These tests validate the function's behavior when retrieving critical services.
 import unittest
 
 from src.server.app import app
-from src.server.models.criticalservice_status_list import get_critical_services_status
+from src.server.models.criticalservice_status_list import CriticalServiceStatusLister
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
     MOCK_ERROR_CRT_SVC,
@@ -57,7 +57,7 @@ class TestCriticalServicesList(unittest.TestCase):
         Test case to verify that 'get_critical_services' correctly retrieves critical services.
         """
         result = {
-            "critical-services": get_critical_services_status(
+            "critical-services": CriticalServiceStatusLister.get_critical_services_status(
                 MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
             )
         }
@@ -78,7 +78,7 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         Test case for handling errors when fetching critical services.
         """
-        result = get_critical_services_status(MOCK_ERROR_CRT_SVC)
+        result = CriticalServiceStatusLister.get_critical_services_status(MOCK_ERROR_CRT_SVC)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers")
 
@@ -86,7 +86,7 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         Test case for when no critical services are available.
         """
-        result = {"critical-services": get_critical_services_status({})}
+        result = {"critical-services": CriticalServiceStatusLister.get_critical_services_status({})}
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertEqual(len(result["critical-services"]["namespace"]), 0)

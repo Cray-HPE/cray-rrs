@@ -23,13 +23,13 @@
 #
 
 """
-Unit tests for the 'update_configmap' function in 'criticalservice_update' module.
+Unit tests for the 'CriticalServiceUpdater' function in 'criticalservice_update' module.
 
 These tests validate the update behavior of critical services in a ConfigMap.
 """
 
 import unittest
-from src.server.models.criticalservice_update import update_configmap
+from src.server.models.criticalservice_update import CriticalServiceUpdater
 from src.server.app import app
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
@@ -60,7 +60,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         Ensures that the response indicates a successful update and lists added services.
         """
         resp = {"critical-services": MOCK_CRITICAL_SERVICES_RESPONSE}
-        result = update_configmap(MOCK_CRITICAL_SERVICES_UPDATE_FILE, resp, True)
+        result = CriticalServiceUpdater.update_configmap(MOCK_CRITICAL_SERVICES_UPDATE_FILE, resp, True)
 
         self.assertEqual(result["Update"], "Successful")
         self.assertEqual(result["Successfully Added Services"], ["xyz"])
@@ -73,7 +73,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         Ensures that the response correctly indicates no new additions.
         """
         resp = {"critical-services": MOCK_CRITICAL_SERVICES_RESPONSE}
-        result = update_configmap(MOCK_ALREADY_EXISTING_FILE, resp, True)
+        result = CriticalServiceUpdater.update_configmap(MOCK_ALREADY_EXISTING_FILE, resp, True)
 
         self.assertEqual(result["Update"], "Services Already Exist")
         self.assertEqual(result["Already Existing Services"], ["kube-proxy"])
@@ -84,7 +84,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         Ensures that an error key is present in the response.
         """
-        result = update_configmap(
+        result = CriticalServiceUpdater.update_configmap(
             MOCK_ERROR_CRT_SVC, MOCK_CRITICAL_SERVICES_RESPONSE, True
         )
         self.assertIn("error", result)

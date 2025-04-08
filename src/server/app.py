@@ -25,6 +25,7 @@
 This Flask application exposes endpoints to interact with zone and critical service data.
 It allows retrieving, describing, updating, and checking the status of zones and critical services.
 """
+import logging
 from flask import Flask, request
 from flask_restful import Api, Resource
 from src.server.resources.rrs_logging import log_event
@@ -40,6 +41,17 @@ from src.server.models.criticalservice_status_describe import CriticalServiceSta
 app = Flask(__name__)
 api = Api(app)
 
+# Set up logging configuration using Flask's built-in logging system
+app.logger.setLevel(logging.INFO)
+
+# Add a handler to log into a file
+file_handler = logging.FileHandler("app.log")  # Log to a file named 'app.log'
+file_handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+
+# Add handler to the app's logger
+app.logger.addHandler(file_handler)
 
 # Endpoint to get the list of zones
 class ZoneListResource(Resource):
