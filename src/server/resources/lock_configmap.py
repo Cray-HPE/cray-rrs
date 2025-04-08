@@ -73,6 +73,7 @@ def release_lock(namespace, configmap_name):
     except client.exceptions.ApiException as e:
         logger.error("Error deleting ConfigMap %s: %s", configmap_lock_name, e)
 
+
 # pylint: disable=R0917
 def update_configmap_data(
     namespace, configmap_name, configmap_data, key, new_data, mount_path=""
@@ -143,14 +144,10 @@ def read_configmap_data_from_mount(mount_path, key=""):
         # Removed unnecessary else block here
         file_path = os.path.join(mount_path, key)
         if os.path.isfile(file_path):
-            with open(
-                file_path, "r", encoding="utf-8"
-            ) as file:  # Specified encoding
+            with open(file_path, "r", encoding="utf-8") as file:  # Specified encoding
                 return file.read()
 
-        logger.error(
-            "File for key %s not found in the mount path %s", key, mount_path
-        )
+        logger.error("File for key %s not found in the mount path %s", key, mount_path)
         return None
 
     except Exception as e:

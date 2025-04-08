@@ -34,7 +34,7 @@ from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
 )
-from src.server.app import app  
+from src.server.app import app
 
 
 class TestCriticalServicesDescribe(unittest.TestCase):

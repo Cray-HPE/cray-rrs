@@ -1,0 +1,47 @@
+name: Code Quality Checks
+
+on:
+  push:
+    branches:
+      - main
+      - CASM-5537
+  pull_request:
+    branches:
+      - main
+      - CASM-5537
+
+jobs:
+  lint-and-type-check:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -U pip
+          pip install -r requirements-test.txt
+
+      - name: Run pycodestyle
+        run: |
+          source venv/bin/activate
+          pycodestyle src tests
+
+      - name: Run pylint
+        run: |
+          source venv/bin/activate
+          pylint --rcfile=.pylintrc src tests
+
+      - name: Run mypy
+        run: |
+          source venv/bin/activate
+          mypy src tests
