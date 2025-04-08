@@ -43,6 +43,12 @@ api = Api(app)
 
 # Endpoint to get the list of zones
 class ZoneListResource(Resource):
+    """
+    Resource for retrieving the list of all zones.
+    
+    This resource handles the GET request to fetch all available zones.
+    It returns a list of zones in JSON format.
+    """
     def get(self):
         """
         Get the list of all zones.
@@ -61,6 +67,12 @@ class ZoneListResource(Resource):
 
 # Endpoint to describe the zone entered
 class ZoneDescribeResource(Resource):
+    """
+    Resource for describing a specific zone.
+    
+    This resource handles the GET request to fetch the description of a
+    particular zone, identified by its name.
+    """
     def get(self, zone_name):
         """
         Get the description of a specific zone by its name.
@@ -85,6 +97,12 @@ class ZoneDescribeResource(Resource):
 
 # Endpoint to get the list of critical services
 class CriticalServiceListResource(Resource):
+    """
+    Resource for retrieving the list of all critical services.
+    
+    This resource handles the GET request to fetch all available critical services.
+    It returns a list of critical services in JSON format.
+    """
     def get(self):
         """
         Get the list of all critical services.
@@ -103,6 +121,12 @@ class CriticalServiceListResource(Resource):
 
 # Endpoint to describe the critical service entered
 class CriticalServiceDescribeResource(Resource):
+    """
+    Resource for describing a specific critical service.
+    
+    This resource handles the GET request to fetch the description of a
+    particular critical service, identified by its name.
+    """
     def get(self, service_name):
         """
         Get the description of a specific critical service by its name.
@@ -127,6 +151,11 @@ class CriticalServiceDescribeResource(Resource):
 
 # Endpoint to update the critical services list
 class CriticalServiceUpdateResource(Resource):
+    """
+    Resource for updating the list of critical services.
+    
+    This resource handles the PATCH request to update the critical services list.
+    """
     def patch(self):
         """
         Update the list of critical services.
@@ -149,6 +178,12 @@ class CriticalServiceUpdateResource(Resource):
 
 # Endpoint to get the list of critical services status
 class CriticalServiceStatusListResource(Resource):
+    """
+    Resource for retrieving the status of all critical services.
+    
+    This resource handles the GET request to fetch the status of all critical services.
+    It returns a list of critical service statuses in JSON format.
+    """
     def get(self):
         """
         Get the status of all critical services.
@@ -167,9 +202,15 @@ class CriticalServiceStatusListResource(Resource):
 
 # Endpoint to describe the critical service entered
 class CriticalServiceStatusDescribeResource(Resource):
+    """
+    Resource for describing a specific critical service status.
+    
+    This resource handles the GET request to fetch the status description of a
+    particular critical service, identified by its name.
+    """
     def get(self, service_name):
         """
-        Get the description of a specific critical service by its name.
+        Get the description of a specific critical service status by its name.
 
         Args:
             service_name (str): The name of the critical service to describe.

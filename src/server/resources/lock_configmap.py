@@ -7,11 +7,11 @@ in Kubernetes to manage a lock mechanism for resources.
 import logging
 import time
 import os
-from src.server.resources.k8s_zones import load_k8s_config
+from src.server.resources.k8s_zones import K8sZoneService
 from kubernetes import client  # type: ignore
 
 # Load Kubernetes config
-load_k8s_config()
+K8sZoneService.load_k8s_config()
 
 v1 = client.CoreV1Api()
 apps_v1 = client.AppsV1Api()

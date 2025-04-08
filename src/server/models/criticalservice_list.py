@@ -51,7 +51,7 @@ class CriticalServicesLister:
             dict: A structured dictionary grouped by namespaces.
         """
         log_id = get_log_id()  # Generate a unique log ID
-        result = {"namespace": {}}
+        result: dict[str, dict] = {"namespace": {}}
         if "error" in services:
             app.logger.warning(f"[{log_id}] Could not fetch critical services.")
             return services
