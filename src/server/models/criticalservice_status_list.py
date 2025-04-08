@@ -1,6 +1,6 @@
 # MIT License
 #
-# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -26,7 +26,6 @@ Model to fetch and format critical services from a Kubernetes ConfigMap.
 
 from flask import current_app as app
 from src.server.resources.critical_services import CriticalServiceHelper
-from src.server.resources.error_print import pretty_print_error
 from src.server.resources.rrs_logging import get_log_id
 
 CM_NAME = "rrs-mon-dynamic"
@@ -63,9 +62,9 @@ class CriticalServiceStatusLister:
 
         except Exception as e:
             app.logger.error(
-                f"[{log_id}] Error while formatting critical services: {pretty_print_error(e)}"
+                f"[{log_id}] Error while formatting critical services: {(e)}"
             )
-            return {"error": str(pretty_print_error(e))}
+            return {"error": str((e))}
 
     @staticmethod
     def get_criticalservice_status_list():
@@ -99,12 +98,12 @@ class CriticalServiceStatusLister:
 
         except (KeyError, TypeError, ValueError) as exc:
             app.logger.error(
-                f"[{log_id}] Error while processing the ConfigMap: {pretty_print_error(exc)}"
+                f"[{log_id}] Error while processing the ConfigMap: {(exc)}"
             )
-            return ({"error": str(pretty_print_error(exc))}), 500
+            return ({"error": str((exc))}), 500
 
         except Exception as e:
             app.logger.error(
-                f"[{log_id}] Unexpected error while fetching critical services: {pretty_print_error(e)}"
+                f"[{log_id}] Unexpected error while fetching critical services: {(e)}"
             )
-            return ({"error": str(pretty_print_error(e))}), 500
+            return ({"error": str((e))}), 500

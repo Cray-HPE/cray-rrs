@@ -29,7 +29,6 @@ import json
 from flask import current_app as app
 from kubernetes import client # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
-from src.server.resources.error_print import pretty_print_error
 from src.server.models.criticalservice_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.server.resources.rrs_logging import get_log_id
 
@@ -86,23 +85,23 @@ class CriticalServiceUpdater:
 
         except json.JSONDecodeError as json_err:
             app.logger.error(
-                f"[{log_id}] Invalid JSON format: {pretty_print_error(json_err)}"
+                f"[{log_id}] Invalid JSON format: {(json_err)}"
             )
-            return {"error": f"Invalid JSON format: {pretty_print_error(json_err)}"}
+            return {"error": f"Invalid JSON format: {(json_err)}"}
         except client.exceptions.ApiException as api_exc:
             app.logger.error(
-                f"[{log_id}] Failed to update ConfigMap: {pretty_print_error(api_exc)}"
+                f"[{log_id}] Failed to update ConfigMap: {(api_exc)}"
             )
-            return {"error": f"Failed to update ConfigMap: {pretty_print_error(api_exc)}"}
+            return {"error": f"Failed to update ConfigMap: {(api_exc)}"}
         except KeyError as key_exc:
-            app.logger.error(f"[{log_id}] Missing key: {pretty_print_error(key_exc)}")
-            return {"error": f"Missing key: {pretty_print_error(key_exc)}"}
+            app.logger.error(f"[{log_id}] Missing key: {(key_exc)}")
+            return {"error": f"Missing key: {(key_exc)}"}
         except (TypeError, ValueError, AttributeError) as parse_exc:
-            app.logger.error(f"[{log_id}] Parsing error: {pretty_print_error(parse_exc)}")
-            return {"error": f"Parsing error: {pretty_print_error(parse_exc)}"}
+            app.logger.error(f"[{log_id}] Parsing error: {(parse_exc)}")
+            return {"error": f"Parsing error: {(parse_exc)}"}
         except Exception as e:
-            app.logger.error(f"[{log_id}] Unexpected error: {pretty_print_error(e)}")
-            return {"error": f"Unexpected error: {pretty_print_error(e)}"}
+            app.logger.error(f"[{log_id}] Unexpected error: {(e)}")
+            return {"error": f"Unexpected error: {(e)}"}
 
     @staticmethod
     def update_critical_services(new_data):
@@ -133,4 +132,4 @@ class CriticalServiceUpdater:
 
         except Exception as e:
             app.logger.error(f"[{log_id}] Unhandled error in update_critical_services: {e}")
-            return ({"error": f"Unexpected error: {pretty_print_error(e)}"}), 500
+            return ({"error": f"Unexpected error: {(e)}"}), 500

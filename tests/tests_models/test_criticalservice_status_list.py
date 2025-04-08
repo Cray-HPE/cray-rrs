@@ -80,7 +80,7 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         result = CriticalServiceStatusLister.get_critical_services_status(MOCK_ERROR_CRT_SVC)
         self.assertIn("error", result)
-        self.assertEqual(result["error"], "string indices must be integers")
+        self.assertEqual(result["error"], "string indices must be integers, not 'str'")
 
     def test_list_no_services(self):
         """

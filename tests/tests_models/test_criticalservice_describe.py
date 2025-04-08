@@ -23,13 +23,13 @@
 #
 
 """
-Unit tests for the 'CriticalServiceDescriber.get_service_details' function in the 'criticalservice_describe' module.
+Unit tests for the 'CriticalServiceStatusDescriber.get_service_details' function in the 'criticalservice_describe' module.
 
 These tests validate the function's behavior when retrieving details of critical services.
 """
 
 import unittest
-from src.server.models.criticalservice_describe import CriticalServiceDescriber
+from src.server.models.criticalservice_describe import CriticalServiceStatusDescriber
 from src.server.app import app
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
@@ -39,7 +39,7 @@ from tests.tests_models.mock_data import (
 
 class TestCriticalServicesDescribe(unittest.TestCase):
     """
-    Test class for describing critical services using 'CriticalServiceDescriber.get_service_details'.
+    Test class for describing critical services using 'CriticalServiceStatusDescriber.get_service_details'.
     """
 
     def setUp(self):
@@ -53,11 +53,11 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
     def test_describe_critical_service_success(self):
         """
-        Test that 'CriticalServiceDescriber.get_service_details' returns correct details for an existing service.
+        Test that 'CriticalServiceStatusDescriber.get_service_details' returns correct details for an existing service.
 
         The test checks if the service details contain the expected 'Name' and 'Type'.
         """
-        result = CriticalServiceDescriber.get_service_details(
+        result = CriticalServiceStatusDescriber.get_service_details(
             MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "coredns", True
         )
         print(result)
@@ -73,7 +73,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating that the service doesn't exist.
         """
-        result = CriticalServiceDescriber.get_service_details(
+        result = CriticalServiceStatusDescriber.get_service_details(
             MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service", True
         )
         self.assertIn("error", result)
@@ -85,7 +85,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating the failure.
         """
-        result = CriticalServiceDescriber.get_service_details(MOCK_ERROR_CRT_SVC, "coredns", True)
+        result = CriticalServiceStatusDescriber.get_service_details(MOCK_ERROR_CRT_SVC, "coredns", True)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 

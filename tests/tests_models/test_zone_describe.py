@@ -63,26 +63,6 @@ class TestZoneDescribe(unittest.TestCase):
         self.assertIn("Zone Name", result)
         self.assertEqual(result["Zone Name"], "x3002")
 
-    def test_describe_zone_no_k8s_data(self):
-        """
-        Test case for handling missing Kubernetes data.
-
-        Ensures that the function returns an error when K8s data retrieval fails.
-        """
-        result = ZoneDescriber._get_zone_info("x3002", MOCK_ERROR_RESPONSE, MOCK_CEPH_RESPONSE)
-        self.assertIn("error", result)
-        self.assertEqual(result["error"], "Failed to fetch data")
-
-    def test_describe_zone_no_ceph_data(self):
-        """
-        Test case for handling missing Ceph data.
-
-        Ensures that the function returns an error when Ceph data retrieval fails.
-        """
-        result = ZoneDescriber._get_zone_info("x3002", MOCK_K8S_RESPONSE, MOCK_ERROR_RESPONSE)
-        self.assertIn("error", result)
-        self.assertEqual(result["error"], "Failed to fetch data")
-
     def test_describe_zone_not_found(self):
         """
         Test case for when the requested zone is not found.

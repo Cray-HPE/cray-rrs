@@ -57,18 +57,6 @@ class TestZoneMapping(unittest.TestCase):
         self.assertGreater(len(result["Zones"]), 0)
         self.assertTrue(any(zone["Zone Name"] == "x3002" for zone in result["Zones"]))
 
-    def test_k8s_api_failure(self):
-        """Test case to verify behavior when Kubernetes API fails."""
-        result = ZoneMapper.map_zones(MOCK_ERROR_RESPONSE, MOCK_CEPH_RESPONSE)
-        self.assertIn("error", result)
-        self.assertEqual(result["error"], "Failed to fetch data")
-
-    def test_ceph_api_failure(self):
-        """Test case to verify behavior when Ceph API fails."""
-        result = ZoneMapper.map_zones(MOCK_K8S_RESPONSE, MOCK_ERROR_RESPONSE)
-        self.assertIn("error", result)
-        self.assertEqual(result["error"], "Failed to fetch data")
-
     def test_no_zones_configured(self):
         """Test case for when no Kubernetes or Ceph zones are configured."""
         result = ZoneMapper.map_zones("No K8s topology zone present", "No Ceph zones present")

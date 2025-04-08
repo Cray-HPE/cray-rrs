@@ -28,7 +28,6 @@ Model to describe the status of critical services.
 from flask import current_app as app
 from kubernetes import client # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
-from src.server.resources.error_print import pretty_print_error
 from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.server.resources.rrs_logging import get_log_id
 
@@ -107,10 +106,10 @@ class CriticalServiceStatusDescriber:
         except client.exceptions.ApiException as api_exc:
             app.logger.error(
                 f"[{log_id}] API exception occurred while retrieving service '{service_name}': "
-                f"{pretty_print_error(api_exc)}"
+                f"{(api_exc)}"
             )
 
-            return {"error": str(pretty_print_error(api_exc))}
+            return {"error": str((api_exc))}
         except KeyError as key_exc:
             app.logger.error(
                 f"[{log_id}] Missing key while processing service '{service_name}': {key_exc}"
@@ -123,9 +122,9 @@ class CriticalServiceStatusDescriber:
             return {"error": f"Parsing error: {parse_exc}"}
         except Exception as exc:  # Catch-all, but logs properly
             app.logger.error(
-                f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {pretty_print_error(exc)}"
+                f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {(exc)}"
             )
-            return {"error": str(pretty_print_error(exc))}
+            return {"error": str((exc))}
 
     @staticmethod
     def describe_service_status(service_name):
@@ -148,6 +147,6 @@ class CriticalServiceStatusDescriber:
 
         except Exception as exc:
             app.logger.error(
-                f"[{log_id}] Error while fetching details for service '{service_name}': {pretty_print_error(exc)}"
+                f"[{log_id}] Error while fetching details for service '{service_name}': {(exc)}"
             )
-            return {"error": str(pretty_print_error(exc))}
+            return {"error": str((exc))}
