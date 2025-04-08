@@ -21,62 +21,70 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-"""Resource to fetch the Zone details for ceph"""
+"""Resource to fetch the Zone details for Ceph"""
 import yaml
 from flask import current_app as app
-from src.server.resources.k8s_zones import get_configmap_data
+from src.server.resources.k8s_zones import K8sZoneService
 from src.server.resources.rrs_logging import get_log_id
 
 
-def parse_ceph_zones():
-    """Extract Ceph zone details from the ConfigMap."""
-    log_id = get_log_id()
-    app.logger.info(f"[{log_id}] Fetching Ceph zone details from ConfigMap.")
+class CephService:
+    """Service class to parse Ceph zones from ConfigMap"""
 
-    configmap_yaml = get_configmap_data()
+    @staticmethod
+    def parse_ceph_zones():
+        """Extract Ceph zone details from the ConfigMap."""
+        log_id = get_log_id()
+        app.logger.info(f"[{log_id}] Fetching Ceph zone details from ConfigMap.")
 
-    if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
-        app.logger.error(
-            f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
-        )
-        return configmap_yaml
+        configmap_yaml = K8sZoneService.get_configmap_data()
 
-    if not configmap_yaml:
-        app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
-        return {"error": "ConfigMap data is empty or missing."}
+        if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
+            app.logger.error(
+                f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
+            )
+            return configmap_yaml
 
-    try:
-        parsed_data = yaml.safe_load(configmap_yaml)
-        ceph_zones = parsed_data.get("zone", {}).get("ceph_zones_with_nodes", {})
+        if not configmap_yaml:
+            app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
+            return {"error": "ConfigMap data is empty or missing."}
 
-        zone_mapping = {}
+        try:
+            parsed_data = yaml.safe_load(configmap_yaml)
+            ceph_zones = parsed_data.get("zone", {}).get("ceph_zones_with_nodes", {})
 
-        for zone_name, nodes in ceph_zones.items():
-            zone_mapping[zone_name] = []
+            zone_mapping = {}
 
-            for node in nodes:
-                node_name = node.get("name")
-                node_status = node.get("status", "Unknown")
-                osds = node.get("osds", [])
+            for zone_name, nodes in ceph_zones.items():
+                zone_mapping[zone_name] = []
 
-                osd_list = [
-                    {"name": osd["name"], "status": osd["status"]} for osd in osds
-                ]
+                for node in nodes:
+                    node_name = node.get("name")
+                    node_status = node.get("status", "Unknown")
+                    osds = node.get("osds", [])
 
-                node_info = {"name": node_name, "status": node_status, "osds": osd_list}
+                    osd_list = [
+                        {"name": osd["name"], "status": osd["status"]} for osd in osds
+                    ]
 
-                zone_mapping[zone_name].append(node_info)
+                    node_info = {
+                        "name": node_name,
+                        "status": node_status,
+                        "osds": osd_list
+                    }
 
-        if zone_mapping:
-            app.logger.info(f"[{log_id}] Successfully parsed Ceph zones.")
-        else:
-            app.logger.warning(f"[{log_id}] No Ceph zones found.")
+                    zone_mapping[zone_name].append(node_info)
 
-        return zone_mapping if zone_mapping else "No Ceph zones present"
+            if zone_mapping:
+                app.logger.info(f"[{log_id}] Successfully parsed Ceph zones.")
+            else:
+                app.logger.warning(f"[{log_id}] No Ceph zones found.")
 
-    except yaml.YAMLError as e:
-        app.logger.error(f"[{log_id}] YAML parsing error: {str(e)}")
-        return {"error": f"YAML parsing error: {str(e)}"}
-    except Exception as e:
-        app.logger.exception(f"[{log_id}] Unexpected error: {str(e)}")
-        return {"error": f"Unexpected error: {str(e)}"}
+            return zone_mapping if zone_mapping else "No Ceph zones present"
+
+        except yaml.YAMLError as e:
+            app.logger.error(f"[{log_id}] YAML parsing error: {str(e)}")
+            return {"error": f"YAML parsing error: {str(e)}"}
+        except Exception as e:
+            app.logger.exception(f"[{log_id}] Unexpected error: {str(e)}")
+            return {"error": f"Unexpected error: {str(e)}"}

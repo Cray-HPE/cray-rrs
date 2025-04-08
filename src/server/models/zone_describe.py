@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+# (C) Copyright [2024-2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -25,107 +25,85 @@
 """Model to describe the requested zone"""
 
 from flask import current_app as app
-
-from src.server.resources.k8s_zones import parse_k8s_zones
-from src.server.resources.ceph_zones import parse_ceph_zones
-from src.server.models.zone_list import zone_exist
+from src.server.resources.k8s_zones import K8sZoneService
+from src.server.resources.ceph_zones import CephService
+from src.server.models.zone_list import ZoneMapper
 from src.server.resources.rrs_logging import get_log_id
 
+class ZoneDescriber:
+    """Class to describe Kubernetes and Ceph zones."""
 
-def get_zone_info(zone_name, k8s_zones, ceph_zones):
-    """Function to get detailed information of a specific zone."""
+    @staticmethod
+    def _get_zone_info(zone_name, k8s_zones, ceph_zones, log_id=None):
+        """Internal method to get detailed information of a specific zone."""
+        if log_id is None:
+            log_id = get_log_id()
 
-    log_id = get_log_id()
-    app.logger.info(f"[{log_id}] Fetching information for zone: {zone_name}")
+        app.logger.info(f"[{log_id}] Fetching information for zone: {zone_name}")
 
-    # Handle cases where zone data is missing
-    if isinstance(k8s_zones, str) or isinstance(ceph_zones, str):
-        app.logger.error(
-            f"[{log_id}] Invalid zone data: K8s Zones: {k8s_zones}, Ceph Zones: {ceph_zones}"
-        )
-        return zone_exist(k8s_zones, ceph_zones)
+        if isinstance(k8s_zones, str) or isinstance(ceph_zones, str):
+            app.logger.error(
+                f"[{log_id}] Invalid zone data: K8s Zones: {k8s_zones}, Ceph Zones: {ceph_zones}"
+            )
+            return ZoneMapper.zone_exist(k8s_zones, ceph_zones)
 
-    # Fetch nodes for the given zone
-    masters = k8s_zones.get(zone_name, {}).get("masters", [])
-    workers = k8s_zones.get(zone_name, {}).get("workers", [])
-    storage = ceph_zones.get(zone_name, [])
+        masters = k8s_zones.get(zone_name, {}).get("masters", [])
+        workers = k8s_zones.get(zone_name, {}).get("workers", [])
+        storage = ceph_zones.get(zone_name, [])
 
-    # Return an error if no valid nodes are found for the zone
-    if not (masters or workers or storage):
-        app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
-        return {"error": "Zone not found"}
+        if not (masters or workers or storage):
+            app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
+            return {"error": "Zone not found"}
 
-    # Prepare the zone data to be returned
-    zone_data = {
-        "Zone Name": zone_name,
-        "Management Masters": len(masters),
-        "Management Workers": len(workers),
-        "Management Storages": len(storage),
-    }
-
-    # Include details about management master nodes if available
-    if masters:
-        zone_data["Management Master"] = {
-            "Type": "Kubernetes Topology Zone",
-            "Nodes": [
-                {"Name": node["name"], "Status": node["status"]} for node in masters
-            ],
+        zone_data = {
+            "Zone Name": zone_name,
+            "Management Masters": len(masters),
+            "Management Workers": len(workers),
+            "Management Storages": len(storage),
         }
-        app.logger.info(
-            f"[{log_id}] Added {len(masters)} management master nodes for zone: {zone_name}"
-        )
 
-    # Include details about management worker nodes if available
-    if workers:
-        zone_data["Management Worker"] = {
-            "Type": "Kubernetes Topology Zone",
-            "Nodes": [
-                {"Name": node["name"], "Status": node["status"]} for node in workers
-            ],
-        }
-        app.logger.info(
-            f"[{log_id}] Added {len(workers)} management worker nodes for zone: {zone_name}"
-        )
-
-    # Include details about management storage nodes if available
-    if storage:
-        zone_data["Management Storage"] = {"Type": "CEPH Zone", "Nodes": []}
-        for node in storage:
-            # Map OSD statuses for each storage node
-            osd_status_map = {}
-            for osd in node.get("osds", []):
-                osd_status_map.setdefault(osd["status"], []).append(osd["name"])
-
-            storage_node = {
-                "Name": node["name"],
-                "Status": node["status"],
-                "OSDs": osd_status_map,
+        if masters:
+            zone_data["Management Master"] = {
+                "Type": "Kubernetes Topology Zone",
+                "Nodes": [{"Name": node["name"], "Status": node["status"]} for node in masters],
             }
-            zone_data["Management Storage"]["Nodes"].append(storage_node)
+            app.logger.info(f"[{log_id}] Added {len(masters)} management master nodes for zone: {zone_name}")
 
-        app.logger.info(
-            f"[{log_id}] Added {len(storage)} management storage nodes for zone: {zone_name}"
-        )
+        if workers:
+            zone_data["Management Worker"] = {
+                "Type": "Kubernetes Topology Zone",
+                "Nodes": [{"Name": node["name"], "Status": node["status"]} for node in workers],
+            }
+            app.logger.info(f"[{log_id}] Added {len(workers)} management worker nodes for zone: {zone_name}")
 
-    app.logger.info(
-        f"[{log_id}] Zone information fetched successfully for zone: {zone_name}"
-    )
-    return zone_data
+        if storage:
+            zone_data["Management Storage"] = {"Type": "CEPH Zone", "Nodes": []}
+            for node in storage:
+                osd_status_map = {}
+                for osd in node.get("osds", []):
+                    osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
+                storage_node = {
+                    "Name": node["name"],
+                    "Status": node["status"],
+                    "OSDs": osd_status_map,
+                }
+                zone_data["Management Storage"]["Nodes"].append(storage_node)
 
-def describe_zone(zone_name):
-    """Endpoint to describe a specific zone."""
+            app.logger.info(f"[{log_id}] Added {len(storage)} management storage nodes for zone: {zone_name}")
 
-    log_id = get_log_id()
-    app.logger.info(f"[{log_id}] Request received to describe zone: {zone_name}")
+        app.logger.info(f"[{log_id}] Zone information fetched successfully for zone: {zone_name}")
+        return zone_data
 
-    # Get K8s and Ceph zones data
-    k8s_zones = parse_k8s_zones()
-    ceph_zones = parse_ceph_zones()
+    @staticmethod
+    def describe_zone(zone_name):
+        """Public method to describe a specific zone."""
+        log_id = get_log_id()
+        app.logger.info(f"[{log_id}] Request received to describe zone: {zone_name}")
 
-    # Return the zone information as a JSON response
-    result = get_zone_info(zone_name, k8s_zones, ceph_zones)
-    app.logger.info(
-        f"[{log_id}] Zone description response generated for zone: {zone_name}"
-    )
-    return result
+        k8s_zones = K8sZoneService.parse_k8s_zones()
+        ceph_zones = CephService.parse_ceph_zones()
+
+        result = ZoneDescriber._get_zone_info(zone_name, k8s_zones, ceph_zones, log_id)
+        app.logger.info(f"[{log_id}] Zone description response generated for zone: {zone_name}")
+        return result

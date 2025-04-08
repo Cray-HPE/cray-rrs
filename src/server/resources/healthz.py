@@ -27,7 +27,6 @@ Kubernetes Health and Liveness functions
 
 from flask import current_app as app
 from flask_restful import Resource
-
 from src.server.resources.rrs_logging import get_log_id
 
 
