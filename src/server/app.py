@@ -26,7 +26,8 @@ This Flask application exposes endpoints to interact with zone and critical serv
 It allows retrieving, describing, updating, and checking the status of zones and critical services.
 """
 import logging
-from typing import Dict, Any, Tuple
+from typing import Dict, List, Tuple, Any, Union, cast
+
 from flask import Flask, request
 from flask_restful import Api, Resource
 from src.server.resources.rrs_logging import log_event
@@ -57,15 +58,6 @@ file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
 
-# Helper function to convert any response to Dict[str, Any]
-def to_dict_response(response_data: Any) -> Dict[str, Any]:
-    """Convert any response data to a Dict[str, Any] format."""
-    if isinstance(response_data, dict):
-        return response_data
-    # If it's not a dict, wrap it in a dict
-    return {"data": response_data}
-
-
 # Endpoint to get the list of zones
 class ZoneListResource(Resource):
     """
@@ -75,18 +67,18 @@ class ZoneListResource(Resource):
     It returns a list of zones in JSON format.
     """
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
         """
         Get the list of all zones.
 
         Returns:
-            Tuple containing JSON response with the list of zones and HTTP status code.
+            JSON response with the list of zones.
         """
         try:
             log_event("Fetching the list of zones")
             zones = ZoneMapper.get_zones()
-            # Convert zones to Dict[str, Any]
-            return to_dict_response(zones), 200
+            # Use cast to ensure the correct type is returned
+            return cast(List[Dict[str, Any]], zones), 200
         except Exception as e:
             log_event(f"Error fetching zones: {str(e)}", level="ERROR")
             return {"error": str(e)}, 500
@@ -109,8 +101,7 @@ class ZoneDescribeResource(Resource):
             zone_name (str): The name of the zone to describe.
 
         Returns:
-            Tuple containing JSON response with the zone description or an error message,
-            and HTTP status code.
+            JSON response with the zone description or an error message.
         """
         try:
             log_event(f"Describing zone: {zone_name}")
@@ -118,8 +109,8 @@ class ZoneDescribeResource(Resource):
             if not zone:
                 log_event(f"Zone {zone_name} not found", level="ERROR")
                 return {"error": "Zone not found"}, 404
-            # Convert zone to Dict[str, Any]
-            return to_dict_response(zone), 200
+            # Removed redundant cast
+            return zone, 200
         except Exception as e:
             log_event(f"Error describing zone {zone_name}: {str(e)}", level="ERROR")
             return {"error": str(e)}, 500
@@ -134,18 +125,18 @@ class CriticalServiceListResource(Resource):
     It returns a list of critical services in JSON format.
     """
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
         """
         Get the list of all critical services.
 
         Returns:
-            Tuple containing JSON response with the list of critical services and HTTP status code.
+            JSON response with the list of critical services.
         """
         try:
             log_event("Fetching the list of critical services")
             critical_services = CriticalServicesLister.get_critical_service_list()
-            # Convert critical_services to Dict[str, Any]
-            return to_dict_response(critical_services), 200
+            # Cast to ensure the correct type is returned
+            return cast(List[Dict[str, Any]], critical_services), 200
         except Exception as e:
             log_event(f"Error fetching critical services: {str(e)}", level="ERROR")
             return {"error": str(e)}, 500
@@ -162,23 +153,26 @@ class CriticalServiceDescribeResource(Resource):
 
     def get(self, service_name: str) -> Tuple[Dict[str, Any], int]:
         """
-        Get the description of a specific critical service by its name.
+        Get the description of a specific critical service status by its name.
 
         Args:
             service_name (str): The name of the critical service to describe.
 
         Returns:
-            Tuple containing JSON response with the service description or an error message,
-            and HTTP status code.
+            JSON response with the service description or an error message.
         """
         try:
-            log_event(f"Describing critical service: {service_name}")
-            service = CriticalServiceDescriber.describe_service(service_name)
-            if not service:
+            log_event(f"Describing critical service status: {service_name}")
+            result = CriticalServiceDescriber.describe_service(service_name)
+
+            if isinstance(result, tuple) and len(result) == 2:
+                return result
+
+            if not result:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return {"error": "Critical service not found"}, 404
-            # Convert service to Dict[str, Any]
-            return to_dict_response(service), 200
+
+            return result, 200
         except Exception as e:
             log_event(
                 f"Error describing service {service_name}: {str(e)}", level="ERROR"
@@ -194,13 +188,12 @@ class CriticalServiceUpdateResource(Resource):
     This resource handles the PATCH request to update the critical services list.
     """
 
-    def patch(self) -> Tuple[Dict[str, Any], int]:
+    def patch(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
         """
         Update the list of critical services.
 
         Returns:
-            Tuple containing JSON response with the updated list of critical services
-            and HTTP status code.
+            JSON response with the updated list of critical services.
         """
         try:
             log_event("Updating critical services list")
@@ -209,8 +202,7 @@ class CriticalServiceUpdateResource(Resource):
                 log_event("No data provided for update", level="ERROR")
                 return {"error": "No data provided"}, 400
             updated_services = CriticalServiceUpdater.update_critical_services(new_data)
-            # Convert updated_services to Dict[str, Any]
-            return to_dict_response(updated_services), 200
+            return cast(List[Dict[str, Any]], updated_services), 200
         except Exception as e:
             log_event(f"Error updating critical services: {str(e)}", level="ERROR")
             return {"error": str(e)}, 500
@@ -225,19 +217,17 @@ class CriticalServiceStatusListResource(Resource):
     It returns a list of critical service statuses in JSON format.
     """
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
         """
         Get the status of all critical services.
 
         Returns:
-            Tuple containing JSON response with the status of critical services
-            and HTTP status code.
+            JSON response with the status of critical services.
         """
         try:
             log_event("Fetching critical service statuses")
             status = CriticalServiceStatusLister.get_criticalservice_status_list()
-            # Convert status to Dict[str, Any]
-            return to_dict_response(status), 200
+            return cast(List[Dict[str, Any]], status), 200
         except Exception as e:
             log_event(
                 f"Error fetching critical service status: {str(e)}", level="ERROR"
@@ -262,8 +252,7 @@ class CriticalServiceStatusDescribeResource(Resource):
             service_name (str): The name of the critical service to describe.
 
         Returns:
-            Tuple containing JSON response with the service description or an error message,
-            and HTTP status code.
+            JSON response with the service description or an error message.
         """
         try:
             log_event(f"Describing critical service status: {service_name}")
@@ -273,8 +262,8 @@ class CriticalServiceStatusDescribeResource(Resource):
             if not service:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return {"error": "Critical service not found"}, 404
-            # Convert service to Dict[str, Any]
-            return to_dict_response(service), 200
+            # Removed redundant cast
+            return service, 200
         except Exception as e:
             log_event(
                 f"Error describing critical service status {service_name}: {str(e)}",
