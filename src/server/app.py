@@ -1,30 +1,8 @@
-#
-# MIT License
-#
-#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
-#
-# Permission is hereby granted, free of charge, to any person obtaining a
-# copy of this software and associated documentation files (the "Software"),
-# to deal in the Software without restriction, including without limitation
-# the rights to use, copy, modify, merge, publish, distribute, sublicense,
-# and/or sell copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included
-# in all copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
-#
 """
 This Flask application exposes endpoints to interact with zone and critical service data.
 It allows retrieving, describing, updating, and checking the status of zones and critical services.
 """
+
 import logging
 from typing import Dict, List, Tuple, Any, Union, cast
 
@@ -125,7 +103,7 @@ class CriticalServiceListResource(Resource):
     It returns a list of critical services in JSON format.
     """
 
-    def get(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
+    def get(self) -> Tuple[Dict[str, Any], int]:
         """
         Get the list of all critical services.
 
@@ -135,8 +113,7 @@ class CriticalServiceListResource(Resource):
         try:
             log_event("Fetching the list of critical services")
             critical_services = CriticalServicesLister.get_critical_service_list()
-            # Cast to ensure the correct type is returned
-            return cast(List[Dict[str, Any]], critical_services), 200
+            return critical_services
         except Exception as e:
             log_event(f"Error fetching critical services: {str(e)}", level="ERROR")
             return {"error": str(e)}, 500
@@ -217,7 +194,7 @@ class CriticalServiceStatusListResource(Resource):
     It returns a list of critical service statuses in JSON format.
     """
 
-    def get(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
+    def get(self) -> Tuple[Dict[str, Any], int]:
         """
         Get the status of all critical services.
 
@@ -227,7 +204,7 @@ class CriticalServiceStatusListResource(Resource):
         try:
             log_event("Fetching critical service statuses")
             status = CriticalServiceStatusLister.get_criticalservice_status_list()
-            return cast(List[Dict[str, Any]], status), 200
+            return status
         except Exception as e:
             log_event(
                 f"Error fetching critical service status: {str(e)}", level="ERROR"
@@ -262,7 +239,6 @@ class CriticalServiceStatusDescribeResource(Resource):
             if not service:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return {"error": "Critical service not found"}, 404
-            # Removed redundant cast
             return service, 200
         except Exception as e:
             log_event(
