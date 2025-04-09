@@ -46,6 +46,15 @@ all : image chart
 image:
 	docker build --no-cache --pull ${DOCKER_ARGS} --tag '${NAME}:${VERSION}' .
 
+dev-image:
+	docker build --no-cache --pull ${DOCKER_ARGS} --target dev --tag '${NAME}-dev:${VERSION}' .
+
+lint: dev-image
+	docker run --rm '${NAME}-dev:${VERSION}' /app/run_lint.sh
+
+unittests: dev-image
+	docker run --rm '${NAME}-dev:${VERSION}' /app/run_tests.sh
+
 chart: chart-metadata chart-package chart-test
 
 chart-metadata:

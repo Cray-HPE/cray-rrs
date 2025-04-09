@@ -31,8 +31,7 @@ WORKDIR /app
 # Install dependencies
 RUN apk add --upgrade --no-cache apk-tools && \
     apk update && \
-    apk add --no-cache curl ca-certificates python3 py3-pip && \
-    apk -U upgrade --no-cache && \
+    apk add --no-cache curl ca-certificates python3 py3-pip python3-dev build-base && \
     update-ca-certificates
 
 # Set up virtualenv and install app requirements
@@ -44,8 +43,12 @@ RUN python3 -m venv $VIRTUAL_ENV && \
     pip3 install --no-cache-dir -U wheel -c constraints.txt && \
     pip3 install --no-cache-dir -r requirements.txt
 
-# Copy application source code
-COPY src/ /app/src/
+# Development and testing stage
+FROM base AS dev
+RUN pip3 install --no-cache-dir nox~=2025.2.9
+
+# Copy application source code and test files
+COPY . /app/
 
 # -------- Final image to run the Flask app --------
 FROM base AS application
@@ -56,6 +59,7 @@ ENV PYTHONPATH=/app/src
 
 EXPOSE 80
 COPY .version /app/
+COPY src/ /app/src/
 
 # Final application entrypoint
 CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
