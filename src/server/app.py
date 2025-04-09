@@ -19,6 +19,7 @@ from src.server.models.criticalservice_status_list import CriticalServiceStatusL
 from src.server.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,
 )
+from src.server.resources.version import Version
 
 app = Flask(__name__)
 api = Api(app)
@@ -35,6 +36,11 @@ file_handler.setFormatter(formatter)
 # Add handler to the app's logger
 app.logger.addHandler(file_handler)
 
+try:
+    with open("/app/.version") as version_file:
+        app.config["VERSION"] = version_file.read().splitlines()[0]
+except IOError:
+    app.config["VERSION"] = "Unknown"
 
 # Endpoint to get the list of zones
 class ZoneListResource(Resource):
@@ -251,6 +257,7 @@ class CriticalServiceStatusDescribeResource(Resource):
 # Add resources to API
 api.add_resource(Ready, "/healthz/ready")
 api.add_resource(Live, "/healthz/live")
+api.add_resource(Version, "/version")
 api.add_resource(ZoneListResource, "/zones")
 api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")
 api.add_resource(CriticalServiceListResource, "/criticalservices")

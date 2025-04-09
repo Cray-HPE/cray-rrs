@@ -55,6 +55,7 @@ ENV FLASK_APP=src/server/app.py
 ENV PYTHONPATH=/app/src
 
 EXPOSE 80
+COPY .version /app/
 
 # Final application entrypoint
 CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
