@@ -21,15 +21,21 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-from typing import Any, Dict, Optional, Union, cast
+"""
+Helper module for Kubernetes ConfigMap interactions and application utilities
+used by the Rack Resiliency Service (RRS) Flask server.
+"""
+from typing import Dict, Optional, Union, cast
 from flask import current_app as app
 from kubernetes import client, config  # type: ignore
 from src.server.utils.rrs_logging import get_log_id
+
 
 class Helper:
     """
     Helper class to provide utility functions for the application.
     """
+
     @staticmethod
     def load_k8s_config() -> None:
         """Load Kubernetes configuration for API access."""

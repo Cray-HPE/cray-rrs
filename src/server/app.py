@@ -37,10 +37,11 @@ file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
 try:
-    with open("/app/.version") as version_file:
+    with open("/app/.version", encoding="utf-8") as version_file:
         app.config["VERSION"] = version_file.read().splitlines()[0]
 except IOError:
     app.config["VERSION"] = "Unknown"
+
 
 # Endpoint to get the list of zones
 class ZoneListResource(Resource):
