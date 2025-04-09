@@ -32,7 +32,7 @@ from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.models.criticalservice_list import CM_KEY, CM_NAME, CM_NAMESPACE
-from src.server.resources.rrs_logging import get_log_id
+from src.server.utils.rrs_logging import get_log_id
 
 
 class CriticalServiceUpdater:

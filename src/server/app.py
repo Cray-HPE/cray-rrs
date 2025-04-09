@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple, Any, Union, cast
 
 from flask import Flask, request
 from flask_restful import Api, Resource
-from src.server.resources.rrs_logging import log_event
+from src.server.utils.rrs_logging import log_event
 from src.server.resources.healthz import Ready, Live
 from src.server.models.zone_list import ZoneMapper
 from src.server.models.zone_describe import ZoneDescriber

@@ -26,7 +26,7 @@ from typing import Any, Dict, Optional, Union, cast
 import yaml
 from flask import current_app as app
 from kubernetes import client, config  # type: ignore
-from src.server.resources.rrs_logging import get_log_id
+from src.server.utils.rrs_logging import get_log_id
 
 
 class K8sZoneService:

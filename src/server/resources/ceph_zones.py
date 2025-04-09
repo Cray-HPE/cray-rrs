@@ -26,7 +26,7 @@ from typing import Dict, List, Union, TypedDict, cast
 import yaml
 from flask import current_app as app
 from src.server.resources.k8s_zones import K8sZoneService
-from src.server.resources.rrs_logging import get_log_id
+from src.server.utils.rrs_logging import get_log_id
 
 
 # Define TypedDict for node info structure
