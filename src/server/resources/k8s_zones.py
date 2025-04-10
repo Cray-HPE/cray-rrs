@@ -26,7 +26,7 @@ from typing import Any, Dict, Union
 import yaml
 from flask import current_app as app
 from src.server.utils.rrs_logging import get_log_id
-
+from src.server.utils.helper import Helper
 
 class K8sZoneService:
     """Service class to fetch and parse Kubernetes zone data."""
@@ -36,7 +36,7 @@ class K8sZoneService:
         """Extract Kubernetes zone details from the ConfigMap."""
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching Kubernetes zone details from ConfigMap")
-        configmap_yaml = K8sZoneService.get_configmap_data()
+        configmap_yaml = Helper.get_configmap_data()
 
         if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
             return configmap_yaml

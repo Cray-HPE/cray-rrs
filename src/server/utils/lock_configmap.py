@@ -32,11 +32,11 @@ import logging
 import time
 import os
 from typing import Dict, Optional, Union
-from src.server.resources.k8s_zones import K8sZoneService
+from src.server.utils.helper import Helper
 from kubernetes import client  # type: ignore
 
 # Load Kubernetes config
-K8sZoneService.load_k8s_config()
+Helper.load_k8s_config()
 
 v1 = client.CoreV1Api()
 apps_v1 = client.AppsV1Api()
