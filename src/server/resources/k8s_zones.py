@@ -22,48 +22,14 @@
 #
 """Resource to fetch the K8s zone data"""
 
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Dict, Union
 import yaml
 from flask import current_app as app
-from kubernetes import client, config  # type: ignore
 from src.server.utils.rrs_logging import get_log_id
 
 
 class K8sZoneService:
     """Service class to fetch and parse Kubernetes zone data."""
-
-    @staticmethod
-    def load_k8s_config() -> None:
-        """Load Kubernetes configuration for API access."""
-        try:
-            config.load_incluster_config()
-        except Exception:
-            config.load_kube_config()
-
-    @staticmethod
-    def get_configmap_data(
-        namespace: str = "rack-resiliency", configmap_name: str = "rrs-mon-dynamic"
-    ) -> Union[str, Dict[str, str], None]:
-        """Fetch the specified ConfigMap data."""
-        log_id = get_log_id()
-        try:
-            app.logger.info(
-                f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
-            )
-            K8sZoneService.load_k8s_config()
-            v1 = client.CoreV1Api()
-            configmap = v1.read_namespaced_config_map(
-                name=configmap_name, namespace=namespace
-            )
-            return cast(Optional[str], configmap.data.get("dynamic-data.yaml", None))
-        except client.exceptions.ApiException as e:
-            app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
-            return {"error": f"API error: {str(e)}"}
-        except Exception as e:
-            app.logger.exception(
-                f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
-            )
-            return {"error": f"Unexpected error: {str(e)}"}
 
     @staticmethod
     def parse_k8s_zones() -> Union[Dict[str, Any], str]:

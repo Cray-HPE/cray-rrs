@@ -25,7 +25,7 @@
 from typing import Dict, List, Union, TypedDict, cast
 import yaml
 from flask import current_app as app
-from src.server.resources.k8s_zones import K8sZoneService
+from src.server.utils.helper import Helper
 from src.server.utils.rrs_logging import get_log_id
 
 
@@ -60,7 +60,7 @@ class CephService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching Ceph zone details from ConfigMap.")
 
-        configmap_yaml = K8sZoneService.get_configmap_data()
+        configmap_yaml = Helper.get_configmap_data()
 
         # Handle error case from configmap data
         if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:

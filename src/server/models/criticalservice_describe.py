@@ -26,7 +26,6 @@ Model to describe the critical service.
 """
 
 from typing import Dict, Any, Union, Tuple
-
 from flask import current_app as app
 from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.utils.error_print import pretty_print_error

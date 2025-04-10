@@ -42,6 +42,7 @@ from flask import json, current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.k8s_zones import K8sZoneService
 from src.server.utils.rrs_logging import get_log_id
+from src.server.utils.helper import Helper
 
 
 class CriticalServiceHelper:
@@ -56,7 +57,7 @@ class CriticalServiceHelper:
         app.logger.info(f"[{log_id}] Fetching namespaced pods")
 
         # Load Kubernetes config (this can be done just once per method call)
-        K8sZoneService.load_k8s_config()
+        Helper.load_k8s_config()
 
         # Initialize Kubernetes client
         v1 = client.CoreV1Api()
@@ -129,7 +130,7 @@ class CriticalServiceHelper:
         log_id = get_log_id()
         try:
             # Load Kubernetes config
-            K8sZoneService.load_k8s_config()
+            Helper.load_k8s_config()
 
             # Initialize Kubernetes client
             v1 = client.CoreV1Api()

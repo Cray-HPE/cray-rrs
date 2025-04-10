@@ -27,7 +27,6 @@ Model handles updates to critical services in the ConfigMap.
 
 import json
 from typing import Dict, Any, Tuple, Union
-
 from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
