@@ -25,21 +25,19 @@
 from typing import Dict, List, Union, TypedDict, cast
 import yaml
 from flask import current_app as app
-from src.server.utils.helper import Helper
+from src.server.utils.lib_configmap import ConfigMapHelper
 from src.server.utils.rrs_logging import get_log_id
 
 
 # Define TypedDict for node info structure
 class OsdInfo(TypedDict):
     """Information about a Ceph Object Storage Daemon (OSD)."""
-
     name: str
     status: str
 
 
 class NodeInfo(TypedDict):
     """Information about a Ceph storage node including its OSDs."""
-
     name: str
     status: str
     osds: List[OsdInfo]
@@ -60,32 +58,33 @@ class CephService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching Ceph zone details from ConfigMap.")
 
-        configmap_yaml = Helper.get_configmap_data()
-
-        # Handle error case from configmap data
-        if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
-            app.logger.error(
-                f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
-            )
-            return cast(ErrorDict, configmap_yaml)  # Cast to satisfy type checker
-
-        if not configmap_yaml:
-            app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
-            return {"error": "ConfigMap data is empty or missing."}
-
         try:
-            # Parse YAML data if it's a string
-            if isinstance(configmap_yaml, str):
-                parsed_data = yaml.safe_load(configmap_yaml)
-            else:
-                parsed_data = configmap_yaml
+            configmap_yaml = ConfigMapHelper.get_configmap("rack-resiliency", "rrs-mon-dynamic")
 
-            # Ensure parsed_data is a dictionary
+            if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
+                app.logger.error(
+                    f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
+                )
+                return cast(ErrorDict, configmap_yaml)
+
+            if not configmap_yaml:
+                app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
+                return {"error": "ConfigMap data is empty or missing."}
+
+            if not isinstance(configmap_yaml, dict):
+                app.logger.error(f"[{log_id}] Invalid ConfigMap format (not a dict)")
+                return {"error": "ConfigMap data is not a valid dictionary."}
+
+            try:
+                parsed_data = yaml.safe_load(configmap_yaml["dynamic-data.yaml"])
+            except yaml.YAMLError as e:
+                app.logger.exception(f"[{log_id}] YAML parsing failed.")
+                return {"error": f"Failed to parse ConfigMap YAML: {str(e)}"}
+
             if not isinstance(parsed_data, dict):
                 app.logger.error(f"[{log_id}] Invalid format: Expected a dictionary.")
                 return {"error": "Invalid format: Expected a dictionary."}
 
-            # Access zone data safely
             zone_data = parsed_data.get("zone", {})
             if not isinstance(zone_data, dict):
                 zone_data = {}
@@ -109,7 +108,6 @@ class CephService:
                     node_name = node.get("name", "")
                     node_status = node.get("status", "Unknown")
                     osds = node.get("osds", [])
-
                     if not isinstance(osds, list):
                         osds = []
 
@@ -133,16 +131,11 @@ class CephService:
 
             if zone_mapping:
                 app.logger.info(f"[{log_id}] Successfully parsed Ceph zones.")
-            else:
-                app.logger.warning(f"[{log_id}] No Ceph zones found.")
-                # Return an error dictionary if no zones are found
-                return {"error": "No Ceph zones present"}
+                return zone_mapping
 
-            return zone_mapping
+            app.logger.warning(f"[{log_id}] No Ceph zones found.")
+            return {"error": "No Ceph zones present"}
 
-        except yaml.YAMLError as e:
-            app.logger.error(f"[{log_id}] YAML parsing error: {str(e)}")
-            return {"error": f"YAML parsing error: {str(e)}"}
         except Exception as e:
-            app.logger.exception(f"[{log_id}] Unexpected error: {str(e)}")
-            return {"error": f"Unexpected error: {str(e)}"}
+            app.logger.exception(f"[{log_id}] Unexpected error while parsing Ceph zones.")
+            return {"error": f"Unexpected error occurred: {str(e)}"}

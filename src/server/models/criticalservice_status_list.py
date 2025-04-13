@@ -24,10 +24,11 @@
 Model to fetch and format critical services from a Kubernetes ConfigMap.
 """
 
+import json
 from typing import Dict, List, Any, Tuple, Union
 from flask import current_app as app
-from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.utils.rrs_logging import get_log_id
+from src.server.utils.lib_configmap import ConfigMapHelper
 
 CM_NAME = "rrs-mon-dynamic"
 CM_NAMESPACE = "rack-resiliency"
@@ -98,17 +99,13 @@ class CriticalServiceStatusLister:
             app.logger.info(
                 f"[{log_id}] Fetching ConfigMap: {CM_NAME} from namespace: {CM_NAMESPACE}"
             )
-            config_data = CriticalServiceHelper.get_configmap(
-                CM_NAME, CM_NAMESPACE, CM_KEY
-            )
-
-            if not config_data:
-                app.logger.warning(
-                    f"[{log_id}] ConfigMap {CM_NAME} is empty or missing in {CM_NAMESPACE}"
-                )
-                return ({"error": "ConfigMap not found or empty"}), 404
-
-            services = config_data.get("critical-services", {})
+            cm_data = ConfigMapHelper.get_configmap(                                                  
+                CM_NAMESPACE, CM_NAME                                                                 
+            )                                                                                         
+            config_data={}                                                                            
+            if CM_KEY in cm_data:                                                                     
+                config_data=json.loads(cm_data[CM_KEY])                                               
+            services = config_data.get("critical-services", {})                                       
             if not services:
                 app.logger.warning(
                     f"[{log_id}] No 'critical-services' found in the ConfigMap"

@@ -25,9 +25,10 @@
 Model to describe the critical service.
 """
 
+import json
 from typing import Dict, Any, Union, Tuple
 from flask import current_app as app
-from src.server.resources.critical_services import CriticalServiceHelper
+from src.server.utils.lib_configmap import ConfigMapHelper
 from src.server.utils.error_print import pretty_print_error
 from src.server.utils.rrs_logging import get_log_id
 from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
@@ -58,9 +59,13 @@ class CriticalServiceDescriber:
                 f"[{log_id}] Attempting to retrieve details for service: {service_name}"
             )
 
-            services = CriticalServiceHelper.get_configmap(
-                CM_NAME, CM_NAMESPACE, CM_KEY
-            ).get("critical-services", {})
+            cm_data = ConfigMapHelper.get_configmap(                                                  
+                CM_NAMESPACE, CM_NAME                                                                 
+            )
+            config_data={}                                                                            
+            if CM_KEY in cm_data:                                                                     
+                config_data=json.loads(cm_data[CM_KEY])                                               
+            services = config_data.get("critical-services", {}) 
 
             result = CriticalServiceStatusDescriber.get_service_details(
                 services, service_name

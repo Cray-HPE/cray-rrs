@@ -25,10 +25,12 @@
 Model to describe the status of critical services.
 """
 
+import json
 from typing import Dict, List, Any, Optional
 from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.critical_services import CriticalServiceHelper
+from src.server.utils.lib_configmap import ConfigMapHelper
 from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.server.utils.rrs_logging import get_log_id
 
@@ -147,9 +149,13 @@ class CriticalServiceStatusDescriber:
             app.logger.info(
                 f"[{log_id}] Fetching details for service '{service_name}'."
             )
-            services = CriticalServiceHelper.get_configmap(
-                CM_NAME, CM_NAMESPACE, CM_KEY
-            ).get("critical-services", {})
+            cm_data = ConfigMapHelper.get_configmap(                                                  
+                CM_NAMESPACE, CM_NAME                                                                 
+            )
+            config_data={}                                                                            
+            if CM_KEY in cm_data:                                                                     
+                config_data=json.loads(cm_data[CM_KEY])                                               
+            services = config_data.get("critical-services", {}) 
             return CriticalServiceStatusDescriber.get_service_details(
                 services, service_name
             )

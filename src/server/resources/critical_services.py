@@ -125,46 +125,6 @@ class CriticalServiceHelper:
         return result, running_pods  # Ensure this is a list of dicts
 
     @staticmethod
-    def get_configmap(cm_name: str, cm_namespace: str, cm_key: str) -> dict[str, Any]:
-        """Fetch the current ConfigMap data from the Kubernetes cluster"""
-        log_id = get_log_id()
-        try:
-            # Load Kubernetes config
-            Helper.load_k8s_config()
-
-            # Initialize Kubernetes client
-            v1 = client.CoreV1Api()
-
-            app.logger.info(
-                f"[{log_id}] Fetching ConfigMap {cm_name} from namespace {cm_namespace}"
-            )
-            cm = v1.read_namespaced_config_map(cm_name, cm_namespace)
-            if cm_key in cm.data:
-                # Add explicit type check to ensure we're returning a dictionary
-                loaded_data = json.loads(cm.data[cm_key])
-                if isinstance(loaded_data, dict):
-                    return loaded_data
-                # If the JSON data isn't a dict, wrap it in a dict to satisfy the return type
-                app.logger.warning(
-                    f"[{log_id}] ConfigMap data is not a dictionary, wrapping it"
-                )
-                return {"data": loaded_data}
-            app.logger.error(f"[{log_id}] ConfigMap key '{cm_key}' not found.")
-            return {
-                "critical-services": {}
-            }  # Make sure to return a dict, not None or str
-        except client.exceptions.ApiException as e:
-            app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
-            return {
-                "error": f"Failed to fetch ConfigMap: {str(e)}"
-            }  # Return a dict even in error cases
-        except Exception as e:
-            app.logger.exception(
-                f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
-            )
-            return {"error": f"Unexpected error: {str(e)}"}  # Ensure a dict is returned
-
-    @staticmethod
     def _resolve_owner_kind(resource_type: str) -> str:
         """Check and return correct Kubernetes owner kind"""
         return "ReplicaSet" if resource_type == "Deployment" else resource_type
