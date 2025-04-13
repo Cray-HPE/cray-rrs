@@ -518,7 +518,6 @@ def check_and_create_hmnfd_subscription(node_ip=""):
 
     # URL for in mesh pod-to-pod communication
     # get_url = f"http://cray-hmnfd.services.svc.cluster.local/hmi/v2/subscriptions"
-    
     get_url = "https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions"
     post_url = f"https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
 
