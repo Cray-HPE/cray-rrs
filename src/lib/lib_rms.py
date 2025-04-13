@@ -111,11 +111,13 @@ def ceph_health_check():
             ceph_healthy = False
             failed_services.append(service["service_name"])
             logger.warning(
-                f"Service {service['service_name']} running on {service['hostname']} is in {service['status_desc']} state"
+                f"Service {service['service_name']} running on "
+                f"{service['hostname']} is in {service['status_desc']} state"
             )
         else:
             logger.debug(
-                f"Service {service['service_name']} running on {service['hostname']} is in {service['status_desc']} state"
+                f"Service {service['service_name']} running on "
+                f"{service['hostname']} is in {service['status_desc']} state"
             )
     if failed_services:
         logger.warning(

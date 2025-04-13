@@ -266,13 +266,13 @@ def monitor_ceph(polling_interval, total_time, pre_delay):
     start = time.time()
     while time.time() - start < total_time:
         # Retrieve and update k8s/CEPH status and CEPH health
-        fceph_healthy_status = update_zone_status()
+        ceph_health_status = update_zone_status()
         time.sleep(polling_interval)
 
     update_state_timestamp(
         "ceph_monitoring", "Completed", "end_timestamp_ceph_monitoring"
     )
-    if ceph_healthy_status == False:
+    if ceph_health_status is False:
         logger.error(f"CEPH is still unhealthy after {total_time} seconds")
 
 
@@ -518,8 +518,7 @@ def check_and_create_hmnfd_subscription(node_ip=""):
 
     # URL for in mesh pod-to-pod communication
     # get_url = f"http://cray-hmnfd.services.svc.cluster.local/hmi/v2/subscriptions"
-    # post_url = f"http://cray-hmnfd.services.svc.cluster.local/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
-
+    
     get_url = "https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions"
     post_url = f"https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
 

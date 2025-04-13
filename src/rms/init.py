@@ -101,7 +101,8 @@ def init():
         if init_timestamp:
             logger.debug("Init time already present in configmap")
             logger.info(
-                f"Reinitializing the Rack Resiliency Service. This could happen if previous RRS pod has terminated unexpectedly"
+                f"Reinitializing the Rack Resiliency Service. "
+                f"This could happen if previous RRS pod has terminated unexpectedly"
             )
         if not rms_state:
             state["rms_state"] = "Init"
