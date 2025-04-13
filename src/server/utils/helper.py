@@ -29,6 +29,7 @@ from typing import Dict, Optional, Union, cast
 from flask import current_app as app
 from kubernetes import client, config  # type: ignore
 from src.server.utils.rrs_logging import get_log_id
+from kubernetes.client.rest import ApiException
 
 
 class Helper:
@@ -68,3 +69,25 @@ class Helper:
                 f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
             )
             return {"error": f"Unexpected error: {str(e)}"}
+
+    @staticmethod
+    def update_configmap_with_timestamp(configmap_name: str, namespace: str, timestamp: str, key: str) -> None:
+        try:
+            # Load in-cluster config
+            Helper.load_k8s_config()
+            v1 = client.CoreV1Api()
+            # Update the key in the data dict
+            body = {
+                    "data": {
+                        key: timestamp
+                    }
+                }
+            
+            # Push the update back to the cluster
+            v1.patch_namespaced_config_map(name=configmap_name, namespace=namespace, body=body)
+
+            app.logger.info(f"Updated ConfigMap '{configmap_name}' with start_timestamp_api = {timestamp}")
+        except ApiException as e:
+            app.logger.error(f"Failed to update ConfigMap: {e.reason}")
+        except Exception as e:
+            app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
