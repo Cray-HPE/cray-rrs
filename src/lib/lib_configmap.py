@@ -28,10 +28,10 @@ This module includes functions to create, acquire, release, and update configmap
 in Kubernetes to manage a lock mechanism for resources.
 """
 
-from flask import current_app as app
 import time
 import os
 from typing import Dict, Optional, Union
+from flask import current_app as app
 from kubernetes import client, config  # type: ignore
 from src.lib.rrs_logging import get_log_id
 
@@ -72,7 +72,7 @@ class ConfigMapHelper:
         # Check if the ConfigMap already exists
         while True:
             try:
-                config_map = v1.read_namespaced_config_map(
+                v1.read_namespaced_config_map(
                     namespace=namespace, name=configmap_lock_name
                 )
                 # print(config_map)

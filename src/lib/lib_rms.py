@@ -1,15 +1,38 @@
-from kubernetes import client, config
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+
 import os
-from datetime import datetime
-from kubernetes.client.rest import ApiException
-from kubernetes.client.models import V1Node
-import json, yaml
+import json
 import re
 import subprocess
 import base64
 import requests
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional
 from flask import current_app as _app
+from kubernetes import client
+from kubernetes.client.rest import ApiException
+from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 
 # logger = logging.getLogger(__name__)
@@ -24,7 +47,9 @@ class Helper:
 
     @staticmethod
     def run_command(command: str):
-        """Helper function to run a command and return the result."""
+        """Helper function to run a command and return the result.
+        Returns:
+            str: result of the command run."""        
         _app.logger.debug(f"Running command: {command}")
         try:
             result = subprocess.run(
@@ -36,11 +61,14 @@ class Helper:
                 check=True,
             )
         except subprocess.CalledProcessError as e:
-            raise ValueError(f"Command {command} errored out with : {e.stderr}")
+            raise ValueError(f"Command {command} errored out with : {e.stderr}") from e
         return result.stdout
 
     @staticmethod
     def get_current_node() -> str:
+        """Get the kubernetes node where the current RMS pod is running
+        Returns:
+            str: node name where pod is running."""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         pod_name = os.getenv("HOSTNAME")
@@ -50,7 +78,9 @@ class Helper:
 
     @staticmethod
     def getNodeMonitorGracePeriod() -> int | None:
-        # Get the kube-controller-manager pod which would be having nodeMonitorGracePeriod if configured
+        """Get the nodeMonitorGracePeriod value from kube-controller-manager pod.
+        Returns:
+            int|None: getNodeMonitorGracePeriod value if present, otherwise None."""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         pods = v1.list_namespaced_pod(
@@ -72,9 +102,11 @@ class Helper:
     def update_configmap_with_timestamp(
         configmap_name: str, namespace: str, timestamp: str, key: str
     ) -> None:
+        """Patch configmap with the latest timestamp.
+        Returns: None"""
         try:
             # Load in-cluster config
-            Helper.load_k8s_config()
+            ConfigMapHelper.load_k8s_config()
             v1 = client.CoreV1Api()
             # Update the key in the data dict
             body = {"data": {key: timestamp}}
@@ -94,6 +126,9 @@ class Helper:
 
     @staticmethod
     def token_fetch() -> str | None:
+        """Fetch an access token from Keycloak using client credentials.
+        Returns:
+            str | None: The access token if the request is successful, otherwise None."""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
@@ -109,7 +144,7 @@ class Helper:
                 "client_id": "admin-client",
                 "client_secret": f"{client_secret}",
             }
-            response = requests.post(keycloak_url, data=data)
+            response = requests.post(keycloak_url, data=data, timeout=10)
             token = response.json()
             token = token.get("access_token")
             return token
@@ -121,15 +156,20 @@ class Helper:
             _app.logger.error(f"Failed to parse JSON: {e}")
             # exit(1)
         except Exception as err:
-            _app.logger.error("Error collecting secret from Kubernetes: {}".format(err))
+            _app.logger.error(f"Error collecting secret from Kubernetes: {err}")
             # exit(1)
 
 
 class cephHelper:
+    """
+    Helper class to provide CEPH related utility functions for the application.
+    """
 
     @staticmethod
     def ceph_health_check():
-
+        """Retrieves health status of CEPH and its services.
+        Returns:
+            bool: Boolean flag indicating whether the CEPH cluster is healthy."""
         # ceph_status_cmd = f"ssh {HOST} 'ceph -s -f json'"
         # ceph_services_cmd = f"ssh {HOST} 'ceph orch ps -f json'"
 
@@ -156,11 +196,9 @@ class cephHelper:
             )
 
             if "Degraded" in pg_degraded_message:
-                if (
-                    "recovering_objects_per_sec"
-                    or "recovering_bytes_per_sec" in ceph_status.get("pgmap", {})
-                ):
-                    _app.logger.info(f"CEPH recovery is in progress...")
+                pgmap = ceph_status.get('pgmap', {})
+                if ('recovering_objects_per_sec' in pgmap or 'recovering_bytes_per_sec' in pgmap):
+                    _app.logger.info("CEPH recovery is in progress...")
                 else:
                     _app.logger.warning(
                         "CEPH PGs are in degraded state, but recovery is not happening"
@@ -287,10 +325,17 @@ class cephHelper:
 
 
 class k8sHelper:
+    """
+    Helper class to provide kubernetes related utility functions for the application.
+    """
 
     @staticmethod
     def get_k8s_nodes() -> Union[List[V1Node], Dict[str, str]]:
-        """Retrieve all Kubernetes nodes"""
+        """Retrieve all Kubernetes nodes
+        Returns:
+            Union[List[V1Node], Dict[str, str]]: 
+                - A list of V1Node objects representing Kubernetes nodes if successful.
+                - A dictionary with an "error" key and error message string if an exception occurs."""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
@@ -399,6 +444,9 @@ class k8sHelper:
 
 
 class criticalServicesHelper:
+    """
+    Helper class to provide utility functions related to critical services for the application.
+    """
 
     @staticmethod
     def check_skew(service_name: str, pods: List[Dict[str, str]]) -> dict[str, Any]:
@@ -452,7 +500,7 @@ class criticalServicesHelper:
                     app.status.ready_replicas,
                     app.spec.selector.match_labels,
                 )
-            elif service_type == "StatefulSet":
+            if service_type == "StatefulSet":
                 app = apps_v1.read_namespaced_stateful_set(
                     service_name, service_namespace
                 )
@@ -461,7 +509,7 @@ class criticalServicesHelper:
                     app.status.ready_replicas,
                     app.spec.selector.match_labels,
                 )
-            elif service_type == "DaemonSet":
+            if service_type == "DaemonSet":
                 app = apps_v1.read_namespaced_daemon_set(
                     service_name, service_namespace
                 )
@@ -470,13 +518,11 @@ class criticalServicesHelper:
                     app.status.number_ready,
                     app.spec.selector.match_labels,
                 )
-            else:
-                _app.logger.warning(f"Unsupported service type: {service_type}")
-                return None, None, None
+            _app.logger.warning(f"Unsupported service type: {service_type}")
+            return None, None, None
         except client.exceptions.ApiException as e:
             match = re.search(r"Reason: (.*?)\n", str(e))
-            if match:
-                error_message = match.group(1)
+            error_message = match.group(1) if match else str(e)
             _app.logger.error(
                 f"Error fetching {service_type} {service_name}: {error_message}"
             )
@@ -524,9 +570,6 @@ class criticalServicesHelper:
                         f"Desired replicas and ready replicas are matching for '{service_name}'"
                     )
 
-                label_selector = ",".join(
-                    [f"{key}={value}" for key, value in labels.items()]
-                )
                 filtered_pods = [
                     pod
                     for pod in all_pods
