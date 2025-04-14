@@ -35,10 +35,12 @@ from typing import Dict, Optional, Union
 from kubernetes import client, config  # type: ignore
 from src.lib.rrs_logging import get_log_id
 
+
 class ConfigMapHelper:
     """
     Helper class for managing ConfigMaps in Kubernetes.
     """
+
     # Load Kubernetes config
     @staticmethod
     def load_k8s_config() -> None:
@@ -98,7 +100,9 @@ class ConfigMapHelper:
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
-            v1.delete_namespaced_config_map(name=configmap_lock_name, namespace=namespace)
+            v1.delete_namespaced_config_map(
+                name=configmap_lock_name, namespace=namespace
+            )
             app.logger.debug(
                 "ConfigMap %s deleted successfully from namespace %s",
                 configmap_lock_name,
@@ -106,7 +110,6 @@ class ConfigMapHelper:
             )
         except client.exceptions.ApiException as e:
             app.logger.error("Error deleting ConfigMap %s: %s", configmap_lock_name, e)
-
 
     # pylint: disable=R0917
     @staticmethod
@@ -145,7 +148,9 @@ class ConfigMapHelper:
                 if mount_path:
                     # Update mounted configmap volume from environment value
                     file_path = os.path.join(mount_path, key)
-                    with open(file_path, "w", encoding="utf-8") as f:  # Specified encoding
+                    with open(
+                        file_path, "w", encoding="utf-8"
+                    ) as f:  # Specified encoding
                         f.write(new_data)
                     app.logger.debug(
                         f"Mounted file {file_path} updated successfully inside the pod"
@@ -159,8 +164,8 @@ class ConfigMapHelper:
         """Fetch data from a Kubernetes ConfigMap."""
         log_id = get_log_id()
         app.logger.info(
-                f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
-            )
+            f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
+        )
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
 
@@ -169,7 +174,7 @@ class ConfigMapHelper:
                 name=configmap_name, namespace=namespace
             )
             return config_map.data or {}  # Return empty dict if data is None
-        
+
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
             return {"error": f"API error: {str(e)}"}
@@ -202,10 +207,14 @@ class ConfigMapHelper:
             # Removed unnecessary else block here
             file_path = os.path.join(mount_path, key)
             if os.path.isfile(file_path):
-                with open(file_path, "r", encoding="utf-8") as file:  # Specified encoding
+                with open(
+                    file_path, "r", encoding="utf-8"
+                ) as file:  # Specified encoding
                     return file.read()
 
-            app.logger.error("File for key %s not found in the mount path %s", key, mount_path)
+            app.logger.error(
+                "File for key %s not found in the mount path %s", key, mount_path
+            )
             return None
 
         except Exception as e:

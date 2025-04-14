@@ -3,24 +3,23 @@ from datetime import datetime
 from collections import defaultdict
 import logging
 import json
-import lib_configmap
-import re
-import lib_rms
+from typing import Dict, List, Tuple, Any
+from src.rms.rms_statemanager import RMSStateManager
+from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
+from src.lib.lib_configmap import ConfigMapHelper
 
 logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-namespace = "rack-resiliency"
-dynamic_cm = "dynamic-sravani-test"
-static_cm = "static-sravani-test"
+state_manager = RMSStateManager()
 
 
-def zone_discovery():
-    logger.info(f"Retrieving zone information and status of k8s and CEPH nodes")
+def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, Any]]:
+    """Retrieving zone information and status of k8s and CEPH nodes"""
     status = True
     updated_k8s_data = defaultdict(list)
     updated_ceph_data = dict()
-    nodes = lib_rms.get_k8s_nodes()
+    nodes = k8sHelper.get_k8s_nodes()
+    logger.info(f"Retrieving zone information and status of k8s and CEPH nodes")
 
     for node in nodes:
         node_name = node.metadata.name
@@ -32,18 +31,21 @@ def zone_discovery():
             updated_k8s_data = {}
         else:
             updated_k8s_data[zone].append(
-                {"Status": lib_rms.get_node_status(node_name), "name": node_name}
+                {"Status": k8sHelper.get_node_status(node_name), "name": node_name}
             )
 
     updated_k8s_data = dict(updated_k8s_data)
 
     if status:
-        updated_ceph_data, ceph_healthy_status = lib_rms.get_ceph_status()
+        updated_ceph_data, ceph_healthy_status = cephHelper.get_ceph_status()
     return status, updated_k8s_data, updated_ceph_data
 
 
-def check_critical_services_and_timers():
-    static_cm_data = lib_configmap.get_configmap(namespace, static_cm)
+def check_critical_services_and_timers() -> bool:
+    """Validate if critical services and timers are present in RRS static configmap"""
+    static_cm_data = ConfigMapHelper.get_configmap(
+        state_manager.namespace, state_manager.static_cm
+    )
     critical_svc = static_cm_data.get("critical-service-config.json", None)
     if critical_svc:
         services_data = json.loads(critical_svc)
@@ -80,9 +82,11 @@ def check_critical_services_and_timers():
     return True
 
 
-def init():
-    configmap_data = lib_configmap.get_configmap(namespace, dynamic_cm)
-
+def init() -> None:
+    """RRS initialization"""
+    configmap_data = ConfigMapHelper.get_configmap(
+        state_manager.namespace, state_manager.dynamic_cm
+    )
     try:
         yaml_content = configmap_data.get("dynamic-data.yaml", None)
         if yaml_content:
@@ -111,9 +115,9 @@ def init():
             logger.info(f"RMS is already in {rms_state} state. ")
         # check on condition here
         timestamps["init_timestamp"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        lib_configmap.update_configmap_data(
-            namespace,
-            dynamic_cm,
+        ConfigMapHelper.update_configmap_data(
+            state_manager.namespace,
+            state_manager.dynamic_cm,
             configmap_data,
             "dynamic-data.yaml",
             yaml.dump(dynamic_data, default_flow_style=False),
@@ -128,8 +132,8 @@ def init():
             zone_info["ceph_zones_with_nodes"] = updated_ceph_data
 
         # Retrieve current node and rack where the RMS pod is running
-        node_name = "ncn-w004"
-        # node_name = lib_rms.get_current_node()
+        # node_name = "ncn-w004"
+        node_name = k8sHelper.get_current_node()
         rack_name = next(
             (
                 rack
@@ -152,9 +156,9 @@ def init():
         logger.debug(
             f"Updating zone information, pod placement, state in rrs-dynamic configmap"
         )
-        lib_configmap.update_configmap_data(
-            namespace,
-            dynamic_cm,
+        ConfigMapHelper.update_configmap_data(
+            state_manager.namespace,
+            state_manager.dynamic_cm,
             configmap_data,
             "dynamic-data.yaml",
             yaml.dump(dynamic_data, default_flow_style=False),

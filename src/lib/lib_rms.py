@@ -2,31 +2,28 @@ from kubernetes import client, config
 import os
 from datetime import datetime
 from kubernetes.client.rest import ApiException
-import logging
+from kubernetes.client.models import V1Node
 import json, yaml
 import re
 import subprocess
 import base64
 import requests
+from typing import Dict, List, Tuple, Any, Union, Literal, Optional
 from flask import current_app as _app
-from src.rms.state_manager import RMSStateManager
 from src.lib.lib_configmap import ConfigMapHelper
-logger = logging.getLogger(__name__)
 
+# logger = logging.getLogger(__name__)
 
 HOST = "ncn-m001"
-namespace = "rack-resiliency"
-dynamic_cm = "dynamic-sravani-test"
-static_cm = "static-sravani-test"
+
 
 class Helper:
     """
     Helper class to provide utility functions for the application.
     """
-    state_manager = RMSStateManager()
 
     @staticmethod
-    def run_command(command):
+    def run_command(command: str):
         """Helper function to run a command and return the result."""
         _app.logger.debug(f"Running command: {command}")
         try:
@@ -43,7 +40,7 @@ class Helper:
         return result.stdout
 
     @staticmethod
-    def get_current_node():
+    def get_current_node() -> str:
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         pod_name = os.getenv("HOSTNAME")
@@ -52,7 +49,7 @@ class Helper:
         return node_name
 
     @staticmethod
-    def getNodeMonitorGracePeriod():
+    def getNodeMonitorGracePeriod() -> int | None:
         # Get the kube-controller-manager pod which would be having nodeMonitorGracePeriod if configured
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
@@ -72,34 +69,38 @@ class Helper:
         return None
 
     @staticmethod
-    def update_configmap_with_timestamp(configmap_name: str, namespace: str, timestamp: str, key: str) -> None:
+    def update_configmap_with_timestamp(
+        configmap_name: str, namespace: str, timestamp: str, key: str
+    ) -> None:
         try:
             # Load in-cluster config
             Helper.load_k8s_config()
             v1 = client.CoreV1Api()
             # Update the key in the data dict
-            body = {
-                    "data": {
-                        key: timestamp
-                    }
-                }
-            
-            # Push the update back to the cluster
-            v1.patch_namespaced_config_map(name=configmap_name, namespace=namespace, body=body)
+            body = {"data": {key: timestamp}}
 
-            _app.logger.info(f"Updated ConfigMap '{configmap_name}' with start_timestamp_api = {timestamp}")
+            # Push the update back to the cluster
+            v1.patch_namespaced_config_map(
+                name=configmap_name, namespace=namespace, body=body
+            )
+
+            _app.logger.info(
+                f"Updated ConfigMap '{configmap_name}' with start_timestamp_api = {timestamp}"
+            )
         except ApiException as e:
             _app.logger.error(f"Failed to update ConfigMap: {e.reason}")
         except Exception as e:
             _app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
 
     @staticmethod
-    def token_fetch():
+    def token_fetch() -> str | None:
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
             secret = v1.read_namespaced_secret("admin-client-auth", "default")
-            client_secret = base64.b64decode(secret.data["client-secret"]).decode("utf-8")
+            client_secret = base64.b64decode(secret.data["client-secret"]).decode(
+                "utf-8"
+            )
             # logger.debug(f"Client Secret: {client_secret}")
 
             keycloak_url = "https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token"
@@ -115,62 +116,17 @@ class Helper:
 
         except requests.exceptions.RequestException as e:
             _app.logger.error(f"Request failed: {e}")
-            Helper.state_manager.set_state("internal_failure")
             # exit(1)
         except ValueError as e:
             _app.logger.error(f"Failed to parse JSON: {e}")
-            Helper.state_manager.set_state("internal_failure")
             # exit(1)
         except Exception as err:
             _app.logger.error("Error collecting secret from Kubernetes: {}".format(err))
-            Helper.state_manager.set_state("internal_failure")
             # exit(1)
 
-    @staticmethod
-    def update_state_timestamp(
-    state_field="None", new_state="None", timestamp_field="None"
-):
-        try:
-            dynamic_cm_data = Helper.state_manager.get_dynamic_cm_data()
-            yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
-            if yaml_content:
-                dynamic_data = yaml.safe_load(yaml_content)
-            else:
-                logger.error(
-                    "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
-                )
-            if new_state:
-                logger.info(f"Updating state {state_field} to {new_state}")
-                state = dynamic_data.get("state", {})
-                state[state_field] = new_state
-            if timestamp_field:
-                logger.info(f"Updating timestamp {timestamp_field}")
-                timestamp = dynamic_data.get("timestamps", {})
-                timestamp[timestamp_field] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-            dynamic_cm_data["dynamic-data.yaml"] = yaml.dump(
-                dynamic_data, default_flow_style=False
-            )
-            Helper.state_manager.set_dynamic_cm_data(dynamic_cm_data)
-            ConfigMapHelper.update_configmap_data(
-                namespace,
-                dynamic_cm,
-                dynamic_cm_data,
-                "dynamic-data.yaml",
-                dynamic_cm_data["dynamic-data.yaml"],
-            )
-            # logger.info(f"Updated rms_state in rrs-dynamic configmap from {rms_state} to {new_state}")
-        except ValueError as e:
-            _app.logger.error(f"Error during configuration check and update: {e}")
-            Helper.state_manager.set_state("internal_failure")
-            # exit(1)
-        except Exception as e:
-            _app.logger.error(f"Unexpected error: {e}")
-            Helper.state_manager.set_state("internal_failure")
-            # exit(1)
 
 class cephHelper:
-    
+
     @staticmethod
     def ceph_health_check():
 
@@ -188,7 +144,9 @@ class cephHelper:
 
         if "HEALTH_OK" not in health_status:
             ceph_healthy = False
-            _app.logger.warning(f"CEPH is not healthy with health status as {health_status}")
+            _app.logger.warning(
+                f"CEPH is not healthy with health status as {health_status}"
+            )
             pg_degraded_message = (
                 ceph_status.get("health", {})
                 .get("checks", {})
@@ -198,8 +156,9 @@ class cephHelper:
             )
 
             if "Degraded" in pg_degraded_message:
-                if "recovering_objects_per_sec" or "recovering_bytes_per_sec" in data.get(
-                    "pgmap", {}
+                if (
+                    "recovering_objects_per_sec"
+                    or "recovering_bytes_per_sec" in ceph_status.get("pgmap", {})
                 ):
                     _app.logger.info(f"CEPH recovery is in progress...")
                 else:
@@ -236,7 +195,7 @@ class cephHelper:
         return ceph_healthy
 
     @staticmethod
-    def fetch_ceph_data():
+    def fetch_ceph_data() -> tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Fetch Ceph OSD and host details using SSH commands.
         This function retrieves the OSD tree and host status using ceph commands executed remotely.
@@ -255,7 +214,7 @@ class cephHelper:
         return ceph_tree, ceph_hosts
 
     @staticmethod
-    def get_ceph_status():
+    def get_ceph_status() -> tuple[Dict[str, Any], bool]:
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
@@ -290,11 +249,16 @@ class cephHelper:
                             if osd["id"] in osd_ids and osd["type"] == "osd"
                         ]
                         osd_status_list = [
-                            {"name": osd["name"], "status": osd.get("status", "unknown")}
+                            {
+                                "name": osd["name"],
+                                "status": osd.get("status", "unknown"),
+                            }
                             for osd in osds
                         ]
 
-                        node_status = host_status_map.get(host_node["name"], "No Status")
+                        node_status = host_status_map.get(
+                            host_node["name"], "No Status"
+                        )
                         if node_status in ["", "online"]:
                             node_status = "Ready"
                         else:
@@ -325,7 +289,7 @@ class cephHelper:
 class k8sHelper:
 
     @staticmethod
-    def get_k8s_nodes():
+    def get_k8s_nodes() -> Union[List[V1Node], Dict[str, str]]:
         """Retrieve all Kubernetes nodes"""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
@@ -337,7 +301,9 @@ class k8sHelper:
             return {"error": f"Unexpected error: {str(e)}"}
 
     @staticmethod
-    def get_node_status(node_name):
+    def get_node_status(
+        node_name: str,
+    ) -> Literal["Ready"] | Literal["NotReady"] | Literal["Unknown"]:
         """Extract and return the status of a node"""
 
         nodes = k8sHelper.get_k8s_nodes()
@@ -353,7 +319,9 @@ class k8sHelper:
         return "Unknown"
 
     @staticmethod
-    def get_k8s_nodes_data():
+    def get_k8s_nodes_data() -> (
+        Union[Dict[str, str], Dict[str, Dict[str, List[Dict[str, str]]]], str]
+    ):
         """Fetch Kubernetes nodes and organize them by topology zone"""
         nodes = k8sHelper.get_k8s_nodes()
         if isinstance(nodes, dict) and "error" in nodes:
@@ -364,7 +332,9 @@ class k8sHelper:
         for node in nodes:
             node_name = node.metadata.name
             status = (
-                node.status.conditions[-1].status if node.status.conditions else "Unknown"
+                node.status.conditions[-1].status
+                if node.status.conditions
+                else "Unknown"
             )
             node_status = "Ready" if status == "True" else "NotReady"
             node_zone = node.metadata.labels.get("topology.kubernetes.io/zone")
@@ -393,7 +363,7 @@ class k8sHelper:
             return "No K8s topology zone present"
 
     @staticmethod
-    def fetch_all_pods():
+    def fetch_all_pods() -> Union[Dict[str, str], List[Dict[str, Any]]]:
         """Fetch all pods in a single API call to reduce request time."""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
@@ -427,10 +397,11 @@ class k8sHelper:
 
         return pod_info
 
+
 class criticalServicesHelper:
 
     @staticmethod
-    def check_skew(service_name, pods):
+    def check_skew(service_name: str, pods: List[Dict[str, str]]) -> dict[str, Any]:
         """Check the replica skew across zones efficiently."""
         zone_pod_map = {}
 
@@ -465,27 +436,35 @@ class criticalServicesHelper:
         }
 
     @staticmethod
-    def get_service_status(service_name, service_namespace, service_type):
+    def get_service_status(
+        service_name: str, service_namespace: str, service_type: str
+    ) -> Tuple[Optional[int], Optional[int], Optional[Dict[str, str]]]:
         """Helper function to fetch service status based on service type."""
         ConfigMapHelper.load_k8s_config()
         apps_v1 = client.AppsV1Api()
         try:
             if service_type == "Deployment":
-                app = apps_v1.read_namespaced_deployment(service_name, service_namespace)
+                app = apps_v1.read_namespaced_deployment(
+                    service_name, service_namespace
+                )
                 return (
                     app.status.replicas,
                     app.status.ready_replicas,
                     app.spec.selector.match_labels,
                 )
             elif service_type == "StatefulSet":
-                app = apps_v1.read_namespaced_stateful_set(service_name, service_namespace)
+                app = apps_v1.read_namespaced_stateful_set(
+                    service_name, service_namespace
+                )
                 return (
                     app.status.replicas,
                     app.status.ready_replicas,
                     app.spec.selector.match_labels,
                 )
             elif service_type == "DaemonSet":
-                app = apps_v1.read_namespaced_daemon_set(service_name, service_namespace)
+                app = apps_v1.read_namespaced_daemon_set(
+                    service_name, service_namespace
+                )
                 return (
                     app.status.desired_number_scheduled,
                     app.status.number_ready,
@@ -498,11 +477,13 @@ class criticalServicesHelper:
             match = re.search(r"Reason: (.*?)\n", str(e))
             if match:
                 error_message = match.group(1)
-            _app.logger.error(f"Error fetching {service_type} {service_name}: {error_message}")
+            _app.logger.error(
+                f"Error fetching {service_type} {service_name}: {error_message}"
+            )
             return None, None, None
 
     @staticmethod
-    def get_critical_services_status(services_data):
+    def get_critical_services_status(services_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update critical service info with status and balanced values"""
 
         # _app.logger.info(f"In lib_rms get_critical_services_status, input data is - {services_data}")
@@ -518,8 +499,10 @@ class criticalServicesHelper:
 
             service_namespace = service_info["namespace"]
             service_type = service_info["type"]
-            desired_replicas, ready_replicas, labels = criticalServicesHelper.get_service_status(
-                service_name, service_namespace, service_type
+            desired_replicas, ready_replicas, labels = (
+                criticalServicesHelper.get_service_status(
+                    service_name, service_namespace, service_type
+                )
             )
 
             # If replicas data was returned
@@ -553,7 +536,9 @@ class criticalServicesHelper:
                     )
                 ]
 
-                balance_details = criticalServicesHelper.check_skew(service_name, filtered_pods)
+                balance_details = criticalServicesHelper.check_skew(
+                    service_name, filtered_pods
+                )
                 if balance_details["balanced"] == "False":
                     imbalanced_services.append(service_name)
                 service_info.update(
@@ -562,5 +547,7 @@ class criticalServicesHelper:
             else:
                 service_info.update({"status": "Unconfigured", "balanced": "NA"})
         if imbalanced_services:
-            _app.logger.warning(f"List of imbalanced services are - {imbalanced_services}")
+            _app.logger.warning(
+                f"List of imbalanced services are - {imbalanced_services}"
+            )
         return services_data
