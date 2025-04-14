@@ -28,7 +28,7 @@ from typing import Dict, List, Any, Union, Optional, TypedDict, Set
 from flask import current_app as app
 from src.server.resources.k8s_zones import K8sZoneService
 from src.server.resources.ceph_zones import CephService
-from src.server.utils.rrs_logging import get_log_id
+from src.lib.rrs_logging import get_log_id
 
 
 # Define TypedDict for zone structures

@@ -1,144 +1,201 @@
-from kubernetes import client, config
-import yaml
-from datetime import datetime
-import logging
-import json
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+
+"""
+Module to manage Kubernetes ConfigMap-based locking mechanism.
+This module includes functions to create, acquire, release, and update configmaps
+in Kubernetes to manage a lock mechanism for resources.
+"""
+
+from flask import current_app as app
 import time
+import os
+from typing import Dict, Optional, Union
+from src.lib.lib_rms import Helper
+from kubernetes import client  # type: ignore
+from src.lib.rrs_logging import get_log_id
 
-config.load_kube_config()  # Or use load_incluster_config() if running inside a Kubernetes pod
-v1 = client.CoreV1Api()
-apps_v1 = client.AppsV1Api()
-"""
-logging.basicConfig(
-    format='%(asctime)s [%(threadName)s] %(levelname)s: %(message)s',  # Include thread name in logs
-    level=logging.INFO
-)
-"""
-logger = logging.getLogger(__name__)
+class ConfigMapHelper:
+    """
+    Helper class for managing ConfigMaps in Kubernetes.
+    """
+    # Load Kubernetes config
+    Helper.load_k8s_config()
 
+    v1 = client.CoreV1Api()
+    apps_v1 = client.AppsV1Api()
 
-def create_configmap(namespace, configmap_lock_name):
-    """Create a configmap with provided name in provided namespace"""
-    try:
-        config_map = client.V1ConfigMap(
-            metadata=client.V1ObjectMeta(name=configmap_lock_name), data={}
-        )
-        v1.create_namespaced_config_map(namespace=namespace, body=config_map)
-    except client.exceptions.ApiException as e:
-        logger.error(f"Error creating ConfigMap {configmap_lock_name}: {e}")
+    @staticmethod
+    def create_configmap(namespace: str, configmap_lock_name: str) -> None:
+        """Create a ConfigMap with the provided name in the given namespace."""
+        try:
+            config_map = client.V1ConfigMap(
+                metadata=client.V1ObjectMeta(name=configmap_lock_name), data={}
+            )
+            ConfigMapHelper.v1.create_namespaced_config_map(namespace=namespace, body=config_map)
+        except client.exceptions.ApiException as e:
+            app.logger.error("Error creating ConfigMap %s: %s", configmap_lock_name, e)
 
+    @staticmethod
+    def acquire_lock(namespace: str, configmap_name: str) -> bool:
+        """Acquire the lock by creating the ConfigMap {configmap_lock_name}."""
+        configmap_lock_name = configmap_name + "-lock"
+        # Check if the ConfigMap already exists
+        while True:
+            try:
+                config_map = ConfigMapHelper.v1.read_namespaced_config_map(
+                    namespace=namespace, name=configmap_lock_name
+                )
+                # print(config_map)
+                app.logger.info(
+                    "Lock is already acquired by some other resource. Retrying in 1 second..."
+                )
+                time.sleep(1)
+            except client.exceptions.ApiException as e:
+                if e.status == 404:
+                    app.logger.debug(
+                        "Config map %s is not present. Acquiring the lock",
+                        configmap_lock_name,
+                    )
+                    ConfigMapHelper.create_configmap(namespace, configmap_lock_name)
+                    return True  # Returning True as the lock is acquired
+                app.logger.error("Error checking for lock: %s", e)
+                break  # Exit the loop in case of error
 
-def acquire_lock(namespace, configmap_name):
-    """Acquire the lock by creating the configmap {configmap_lock_name}"""
-    # print('In acquire_lock')
-    while True:
+        return False  # Return False if lock could not be acquired
+
+    @staticmethod
+    def release_lock(namespace: str, configmap_name: str) -> None:
+        """Release the lock by deleting the ConfigMap {configmap_lock_name}."""
         configmap_lock_name = configmap_name + "-lock"
         try:
-            config_map = v1.read_namespaced_config_map(
-                namespace=namespace, name=configmap_lock_name
+            ConfigMapHelper.v1.delete_namespaced_config_map(name=configmap_lock_name, namespace=namespace)
+            app.logger.debug(
+                "ConfigMap %s deleted successfully from namespace %s",
+                configmap_lock_name,
+                namespace,
             )
-            # print(config_map)
-            logger.info(
-                "Lock is already acquired by some other resource. Retrying in 1 second..."
-            )
-            time.sleep(1)
         except client.exceptions.ApiException as e:
-            if e.status == 404:
-                logger.debug(
-                    f"Config map {configmap_lock_name} is not present. Acquiring the lock"
-                )
-                create_configmap(namespace, configmap_lock_name)
-                return True
-            else:
-                logger.error(f"Error checking for lock: {e}")
-                break
+            app.logger.error("Error deleting ConfigMap %s: %s", configmap_lock_name, e)
 
 
-def release_lock(namespace, configmap_name):
-    """Release the lock by deleting the configmap {configmap_lock_name}"""
-
-    configmap_lock_name = configmap_name + "-lock"
-    try:
-        v1.delete_namespaced_config_map(name=configmap_lock_name, namespace=namespace)
-        logger.debug(
-            f"ConfigMap {configmap_lock_name} deleted successfully from namespace {namespace}"
+    # pylint: disable=R0917
+    @staticmethod
+    def update_configmap_data(
+        namespace: str,
+        configmap_name: str,
+        configmap_data: Dict[str, str],
+        key: str,
+        new_data: str,
+        mount_path: str = "",
+    ) -> None:
+        """Update a ConfigMap in Kubernetes and the mounted file in the pod."""
+        # print(f"In update_configmap_data, key is {key} and data is {new_data}")
+        configmap_data[key] = new_data
+        # print(configmap_data)
+        configmap_body = client.V1ConfigMap(
+            metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
         )
-    except client.exceptions.ApiException as e:
-        logger.error(f"Error deleting ConfigMap {configmap_lock_name}: {e}")
 
+        if ConfigMapHelper.acquire_lock(namespace, configmap_name):
+            try:
+                # print("updating the configmap")
+                app.logger.info(
+                    f"Updating ConfigMap {configmap_name} in namespace {namespace}"
+                )
+                ConfigMapHelper.v1.replace_namespaced_config_map(
+                    name=configmap_name, namespace=namespace, body=configmap_body
+                )
+                app.logger.info(
+                    f"ConfigMap {configmap_name} in namespace {namespace} updated successfully"
+                )
 
-def update_configmap_data(
-    namespace, configmap_name, configmap_data, key, new_data, mount_path=""
-):
-    """Update a ConfigMap both in k8s and inside the pod"""
+                if mount_path:
+                    # Update mounted configmap volume from environment value
+                    file_path = os.path.join(mount_path, key)
+                    with open(file_path, "w", encoding="utf-8") as f:  # Specified encoding
+                        f.write(new_data)
+                    app.logger.debug(
+                        f"Mounted file {file_path} updated successfully inside the pod"
+                    )
 
-    configmap_body = client.V1ConfigMap(
-        metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
-    )
+            finally:
+                ConfigMapHelper.release_lock(namespace, configmap_name)
 
-    if acquire_lock(namespace, configmap_name):
+    @staticmethod
+    def get_configmap(namespace: str, configmap_name: str) -> Dict[str, str]:
+        """Fetch data from a Kubernetes ConfigMap."""
+        log_id = get_log_id()
+        app.logger.info(
+                f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
+            )
         try:
-            # print("updating the configmap")
-            v1.replace_namespaced_config_map(
-                name=configmap_name, namespace=namespace, body=configmap_body
+            config_map = ConfigMapHelper.v1.read_namespaced_config_map(
+                name=configmap_name, namespace=namespace
             )
-            logger.debug(
-                f"ConfigMap '{configmap_name}' in namespace '{namespace}' updated successfully"
-            )
-
-            if mount_path:
-                # Update mounted configmap volume from environment value
-                file_path = os.path.join(mount_path, key)
-                with open(file_path, "w") as f:
-                    f.write(new_data)
-                logger.debug(
-                    f"Mounted file {file_path} updated successfully inside the pod"
-                )
+            return config_map.data or {}  # Return empty dict if data is None
+        
+        except client.exceptions.ApiException as e:
+            app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
+            return {"error": f"API error: {str(e)}"}
         except Exception as e:
-            logger.error(f"Failed to update ConfigMap or mounted file: {str(e)}")
-        finally:
-            release_lock(namespace, configmap_name)
+            app.logger.exception(
+                f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
+            )
+            return {"error": f"Unexpected error: {str(e)}"}
 
+    @staticmethod
+    def read_configmap_data_from_mount(
+        mount_path: str, key: str = ""
+    ) -> Optional[Union[Dict[str, str], str]]:
+        """Reads all files in the mounted directory and returns the content of each file.
+        If key parameter is empty, it will read the entire contents from the mount location.
+        """
+        configmap_data: Dict[str, str] = {}
+        try:
+            if not key:
+                for file_name in os.listdir(mount_path):
+                    file_path = os.path.join(mount_path, file_name)
 
-def get_configmap(namespace, configmap_name):
-    """Get data from k8s configmap"""
-    # print("In get_configmap")
-    try:
-        config_map = v1.read_namespaced_config_map(
-            name=configmap_name, namespace=namespace
-        )
-        return config_map.data
+                    if os.path.isfile(file_path):
+                        with open(
+                            file_path, "r", encoding="utf-8"
+                        ) as file:  # Specified encoding
+                            configmap_data[file_name] = file.read()
+                return configmap_data
 
-    except client.exceptions.ApiException as e:
-        logger.error(f"Error fetching ConfigMap {configmap_name}: {e}")
-        return None
-
-
-def read_configmap_data_from_mount(mount_path, key=""):
-    """Reads all files in the mounted directory and returns the content of each file.
-    If key parameter is empty is will read entire contents from the mount location"""
-
-    configmap_data = {}
-    try:
-        if not key:
-            for file_name in os.listdir(mount_path):
-                file_path = os.path.join(mount_path, file_name)
-
-                if os.path.isfile(file_path):
-                    with open(file_path, "r") as file:
-                        configmap_data[file_name] = file.read()
-                        return configmap_data
-        else:
+            # Removed unnecessary else block here
             file_path = os.path.join(mount_path, key)
             if os.path.isfile(file_path):
-                with open(file_path, "r") as file:
+                with open(file_path, "r", encoding="utf-8") as file:  # Specified encoding
                     return file.read()
-            else:
-                logger.error(
-                    f"File for key {key} not found in the mount path {mount_path}"
-                )
-                return None
 
-    except Exception as e:
-        logger.error(f"Error reading ConfigMap data from mount path {mount_path}: {e}")
-        return None
+            app.logger.error("File for key %s not found in the mount path %s", key, mount_path)
+            return None
+
+        except Exception as e:
+            app.logger.error(
+                "Error reading ConfigMap data from mount path %s: %s", mount_path, e
+            )
+            return None

@@ -28,7 +28,7 @@ Rack Resiliency Service Version API
 from typing import Tuple, Dict, Any
 from flask import current_app as app
 from flask_restful import Resource
-from src.server.utils.rrs_logging import get_log_id
+from src.lib.rrs_logging import get_log_id
 
 
 class Version(Resource):  # type: ignore[misc]

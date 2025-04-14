@@ -9,8 +9,7 @@ from flask import Flask
 from flask_restful import Api
 from src.server.resources.healthz import Ready, Live
 from src.server.resources.version import Version
-from src.server.utils.helper import Helper
-from src.server.utils.lib_configmap import ConfigMapHelper
+from src.lib.lib_rms import Helper
 from src.server.routes import (
     ZoneListResource,
     ZoneDescribeResource,

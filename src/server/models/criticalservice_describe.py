@@ -28,9 +28,9 @@ Model to describe the critical service.
 import json
 from typing import Dict, Any, Union, Tuple
 from flask import current_app as app
-from src.server.utils.lib_configmap import ConfigMapHelper
-from src.server.utils.error_print import pretty_print_error
-from src.server.utils.rrs_logging import get_log_id
+from src.lib.lib_configmap import ConfigMapHelper
+from src.lib.error_print import pretty_print_error
+from src.lib.rrs_logging import get_log_id
 from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.server.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,

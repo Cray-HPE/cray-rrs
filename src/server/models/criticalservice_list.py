@@ -29,9 +29,9 @@ Model to fetch and format critical services from a Kubernetes ConfigMap.
 import json
 from typing import Dict, List, Tuple, Any
 from flask import current_app as app
-from src.server.utils.lib_configmap import ConfigMapHelper
-from src.server.utils.error_print import pretty_print_error
-from src.server.utils.rrs_logging import get_log_id
+from src.lib.lib_configmap import ConfigMapHelper
+from src.lib.error_print import pretty_print_error
+from src.lib.rrs_logging import get_log_id
 
 CM_NAME = "rrs-mon-static"
 CM_NAMESPACE = "rack-resiliency"

@@ -1,446 +1,565 @@
 from kubernetes import client, config
-import yaml
+import os
 from datetime import datetime
+from kubernetes.client.rest import ApiException
 import logging
-import json
+import json, yaml
 import re
 import subprocess
-
-config.load_kube_config()  # Or use load_incluster_config() if running inside a Kubernetes pod
-v1 = client.CoreV1Api()
-apps_v1 = client.AppsV1Api()
-
-"""
-logging.basicConfig(
-    format='%(asctime)s [%(threadName)s] %(levelname)s: %(message)s',  # Include thread name in logs
-    level=logging.INFO
-)"""
+import base64
+import requests
+from flask import current_app as _app
+from src.rms.rms import RMSStateManager
+from src.lib.lib_configmap import ConfigMapHelper
 logger = logging.getLogger(__name__)
 
 
 HOST = "ncn-m001"
+namespace = "rack-resiliency"
+dynamic_cm = "dynamic-sravani-test"
+static_cm = "static-sravani-test"
 
+class Helper:
+    """
+    Helper class to provide utility functions for the application.
+    """
+    @staticmethod
+    def load_k8s_config() -> None:
+        """Load Kubernetes configuration for API access."""
+        try:
+            config.load_incluster_config()
+        except Exception:
+            config.load_kube_config()
 
-def run_command(command):
-    """Helper function to run a command and return the result."""
-    logger.debug(f"Running command: {command}")
-    try:
-        result = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            shell=True,
-            check=True,
+    load_k8s_config()  # Or use load_incluster_config() if running inside a Kubernetes pod
+    v1 = client.CoreV1Api()
+    apps_v1 = client.AppsV1Api()
+    state_manager = RMSStateManager()
+
+    @staticmethod
+    def run_command(command):
+        """Helper function to run a command and return the result."""
+        _app.logger.debug(f"Running command: {command}")
+        try:
+            result = subprocess.run(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                shell=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            raise ValueError(f"Command {command} errored out with : {e.stderr}")
+        return result.stdout
+
+    @staticmethod
+    def get_current_node():
+        pod_name = os.getenv("HOSTNAME")
+        pod = Helper.v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
+        node_name = pod.spec.nodeName  # node_name if nodeName does not work
+        return node_name
+
+    @staticmethod
+    def getNodeMonitorGracePeriod():
+        # Get the kube-controller-manager pod which would be having nodeMonitorGracePeriod if configured
+        pods = Helper.v1.list_namespaced_pod(
+            namespace="kube-system", label_selector="component=kube-controller-manager"
         )
-    except subprocess.CalledProcessError as e:
-        raise ValueError(f"Command {command} errored out with : {e.stderr}")
-    return result.stdout
+        if pods.items:
+            command = pods.items[0].spec.containers[0].command
+            grace_period_flag = next(
+                (arg for arg in command if "--node-monitor-grace-period" in arg), None
+            )
+            if grace_period_flag:
+                nodeMonitorGracePeriod = grace_period_flag.split("=")[1]
+                return int(nodeMonitorGracePeriod.rstrip("s"))
+        else:
+            _app.logger.error("kube-controller-manager pod not found")
+        return None
 
+    @staticmethod
+    def update_configmap_with_timestamp(configmap_name: str, namespace: str, timestamp: str, key: str) -> None:
+        try:
+            # Load in-cluster config
+            Helper.load_k8s_config()
+            v1 = client.CoreV1Api()
+            # Update the key in the data dict
+            body = {
+                    "data": {
+                        key: timestamp
+                    }
+                }
+            
+            # Push the update back to the cluster
+            v1.patch_namespaced_config_map(name=configmap_name, namespace=namespace, body=body)
 
-def get_current_node():
-    pod_name = os.getenv("HOSTNAME")
-    pod = v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
-    node_name = pod.spec.nodeName  # node_name if nodeName does not work
-    return node_name
+            _app.logger.info(f"Updated ConfigMap '{configmap_name}' with start_timestamp_api = {timestamp}")
+        except ApiException as e:
+            _app.logger.error(f"Failed to update ConfigMap: {e.reason}")
+        except Exception as e:
+            _app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
 
+    @staticmethod
+    def token_fetch():
+        try:
+            secret = Helper.v1.read_namespaced_secret("admin-client-auth", "default")
+            client_secret = base64.b64decode(secret.data["client-secret"]).decode("utf-8")
+            # logger.debug(f"Client Secret: {client_secret}")
 
-def getNodeMonitorGracePeriod():
-    # Get the kube-controller-manager pod which would be having nodeMonitorGracePeriod if configured
-    pods = v1.list_namespaced_pod(
-        namespace="kube-system", label_selector="component=kube-controller-manager"
-    )
-    if pods.items:
-        command = pods.items[0].spec.containers[0].command
-        grace_period_flag = next(
-            (arg for arg in command if "--node-monitor-grace-period" in arg), None
-        )
-        if grace_period_flag:
-            nodeMonitorGracePeriod = grace_period_flag.split("=")[1]
-            return int(nodeMonitorGracePeriod.rstrip("s"))
-    else:
-        logger.error("kube-controller-manager pod not found")
-    return None
+            keycloak_url = "https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token"
+            data = {
+                "grant_type": "client_credentials",
+                "client_id": "admin-client",
+                "client_secret": f"{client_secret}",
+            }
+            response = requests.post(keycloak_url, data=data)
+            token = response.json()
+            token = token.get("access_token")
+            return token
 
+        except requests.exceptions.RequestException as e:
+            _app.logger.error(f"Request failed: {e}")
+            Helper.state_manager.set_state("internal_failure")
+            # exit(1)
+        except ValueError as e:
+            _app.logger.error(f"Failed to parse JSON: {e}")
+            Helper.state_manager.set_state("internal_failure")
+            # exit(1)
+        except Exception as err:
+            _app.logger.error("Error collecting secret from Kubernetes: {}".format(err))
+            Helper.state_manager.set_state("internal_failure")
+            # exit(1)
 
-def ceph_health_check():
-
-    # ceph_status_cmd = f"ssh {HOST} 'ceph -s -f json'"
-    # ceph_services_cmd = f"ssh {HOST} 'ceph orch ps -f json'"
-
-    ceph_status_cmd = "ceph -s -f json"
-    ceph_services_cmd = "ceph orch ps -f json"
-    ceph_services = json.loads(run_command(ceph_services_cmd))
-    ceph_status = json.loads(run_command(ceph_status_cmd))
-
-    ceph_healthy = True
-    health_status = ceph_status.get("health", {}).get("status", "UNKNOWN")
-    # print(health_status)
-
-    if "HEALTH_OK" not in health_status:
-        ceph_healthy = False
-        logger.warning(f"CEPH is not healthy with health status as {health_status}")
-        pg_degraded_message = (
-            ceph_status.get("health", {})
-            .get("checks", {})
-            .get("PG_DEGRADED", {})
-            .get("summary", {})
-            .get("message", "")
-        )
-
-        if "Degraded" in pg_degraded_message:
-            if "recovering_objects_per_sec" or "recovering_bytes_per_sec" in data.get(
-                "pgmap", {}
-            ):
-                logger.info(f"CEPH recovery is in progress...")
+    @staticmethod
+    def update_state_timestamp(
+    state_field="None", new_state="None", timestamp_field="None"
+):
+        try:
+            dynamic_cm_data = Helper.state_manager.get_dynamic_cm_data()
+            yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
+            if yaml_content:
+                dynamic_data = yaml.safe_load(yaml_content)
             else:
-                logger.warning(
-                    "CEPH PGs are in degraded state, but recovery is not happening"
+                logger.error(
+                    "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
                 )
-        else:
-            health_checks = ceph_status.get("health", {}).get("checks", {})
-            logger.warning(
-                f"Reason for CEPH unhealthy state are - {list(health_checks.keys())}"
-            )
-    else:
-        logger.info("CEPH is healthy")
+            if new_state:
+                logger.info(f"Updating state {state_field} to {new_state}")
+                state = dynamic_data.get("state", {})
+                state[state_field] = new_state
+            if timestamp_field:
+                logger.info(f"Updating timestamp {timestamp_field}")
+                timestamp = dynamic_data.get("timestamps", {})
+                timestamp[timestamp_field] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    failed_services = []
-    for service in ceph_services:
-        if service["status_desc"] != "running":
+            dynamic_cm_data["dynamic-data.yaml"] = yaml.dump(
+                dynamic_data, default_flow_style=False
+            )
+            Helper.state_manager.set_dynamic_cm_data(dynamic_cm_data)
+            ConfigMapHelper.update_configmap_data(
+                namespace,
+                dynamic_cm,
+                dynamic_cm_data,
+                "dynamic-data.yaml",
+                dynamic_cm_data["dynamic-data.yaml"],
+            )
+            # logger.info(f"Updated rms_state in rrs-dynamic configmap from {rms_state} to {new_state}")
+        except ValueError as e:
+            _app.logger.error(f"Error during configuration check and update: {e}")
+            Helper.state_manager.set_state("internal_failure")
+            # exit(1)
+        except Exception as e:
+            _app.logger.error(f"Unexpected error: {e}")
+            Helper.state_manager.set_state("internal_failure")
+            # exit(1)
+
+class cephHelper:
+    
+    @staticmethod
+    def ceph_health_check():
+
+        # ceph_status_cmd = f"ssh {HOST} 'ceph -s -f json'"
+        # ceph_services_cmd = f"ssh {HOST} 'ceph orch ps -f json'"
+
+        ceph_status_cmd = "ceph -s -f json"
+        ceph_services_cmd = "ceph orch ps -f json"
+        ceph_services = json.loads(Helper.run_command(ceph_services_cmd))
+        ceph_status = json.loads(Helper.run_command(ceph_status_cmd))
+
+        ceph_healthy = True
+        health_status = ceph_status.get("health", {}).get("status", "UNKNOWN")
+        # print(health_status)
+
+        if "HEALTH_OK" not in health_status:
             ceph_healthy = False
-            failed_services.append(service["service_name"])
-            logger.warning(
-                f"Service {service['service_name']} running on "
-                f"{service['hostname']} is in {service['status_desc']} state"
+            _app.logger.warning(f"CEPH is not healthy with health status as {health_status}")
+            pg_degraded_message = (
+                ceph_status.get("health", {})
+                .get("checks", {})
+                .get("PG_DEGRADED", {})
+                .get("summary", {})
+                .get("message", "")
             )
-        else:
-            logger.debug(
-                f"Service {service['service_name']} running on "
-                f"{service['hostname']} is in {service['status_desc']} state"
-            )
-    if failed_services:
-        logger.warning(
-            f"{len(failed_services)} out of {len(ceph_services)} ceph services are not running"
-        )
 
-    return ceph_healthy
-
-
-def fetch_ceph_data():
-    """
-    Fetch Ceph OSD and host details using SSH commands.
-    This function retrieves the OSD tree and host status using ceph commands executed remotely.
-    Returns:
-        tuple: JSONs containing the Ceph OSD tree and host details.
-    """
-    # ceph_details_cmd = f"ssh {HOST} 'ceph osd tree -f json'"
-    # ceph_hosts_cmd = f"ssh {HOST} 'ceph orch host ls -f json'"
-
-    ceph_details_cmd = "ceph osd tree -f json"
-    ceph_hosts_cmd = "ceph orch host ls -f json"
-
-    ceph_tree = json.loads(run_command(ceph_details_cmd))
-    ceph_hosts = json.loads(run_command(ceph_hosts_cmd))
-
-    return ceph_tree, ceph_hosts
-
-
-def get_ceph_status():
-    """
-    Fetch Ceph storage nodes and their OSD statuses.
-    This function processes Ceph data fetched from the Ceph OSD tree and the host status.
-    Returns:
-        dict or str: A dictionary of storage nodes with their OSD status
-    """
-    ceph_tree, ceph_hosts = fetch_ceph_data()
-    # print(ceph_hosts)
-    host_status_map = {host["hostname"]: host["status"] for host in ceph_hosts}
-    final_output = {}
-    failed_hosts = []
-    for item in ceph_tree.get("nodes", []):
-        if item["type"] == "rack":
-            rack_name = item["name"]
-            storage_nodes = []
-
-            for child_id in item.get("children", []):
-                host_node = next(
-                    (x for x in ceph_tree["nodes"] if x["id"] == child_id), None
-                )
-
-                if (
-                    host_node
-                    and host_node["type"] == "host"
-                    and host_node["name"].startswith("ncn-s")
+            if "Degraded" in pg_degraded_message:
+                if "recovering_objects_per_sec" or "recovering_bytes_per_sec" in data.get(
+                    "pgmap", {}
                 ):
-                    osd_ids = host_node.get("children", [])
+                    _app.logger.info(f"CEPH recovery is in progress...")
+                else:
+                    _app.logger.warning(
+                        "CEPH PGs are in degraded state, but recovery is not happening"
+                    )
+            else:
+                health_checks = ceph_status.get("health", {}).get("checks", {})
+                _app.logger.warning(
+                    f"Reason for CEPH unhealthy state are - {list(health_checks.keys())}"
+                )
+        else:
+            _app.logger.info("CEPH is healthy")
 
-                    osds = [
-                        osd
-                        for osd in ceph_tree["nodes"]
-                        if osd["id"] in osd_ids and osd["type"] == "osd"
-                    ]
-                    osd_status_list = [
-                        {"name": osd["name"], "status": osd.get("status", "unknown")}
-                        for osd in osds
-                    ]
+        failed_services = []
+        for service in ceph_services:
+            if service["status_desc"] != "running":
+                ceph_healthy = False
+                failed_services.append(service["service_name"])
+                _app.logger.warning(
+                    f"Service {service['service_name']} running on "
+                    f"{service['hostname']} is in {service['status_desc']} state"
+                )
+            else:
+                _app.logger.debug(
+                    f"Service {service['service_name']} running on "
+                    f"{service['hostname']} is in {service['status_desc']} state"
+                )
+        if failed_services:
+            _app.logger.warning(
+                f"{len(failed_services)} out of {len(ceph_services)} ceph services are not running"
+            )
 
-                    node_status = host_status_map.get(host_node["name"], "No Status")
-                    if node_status in ["", "online"]:
-                        node_status = "Ready"
-                    else:
-                        failed_hosts.append(host_node["name"])
-                        logger.warning(
-                            f"Host {host_node['name']} is in - {node_status} state"
-                        )
+        return ceph_healthy
 
-                    storage_nodes.append(
-                        {
-                            "name": host_node["name"],
-                            "status": node_status,
-                            "osds": osd_status_list,
-                        }
+    @staticmethod
+    def fetch_ceph_data():
+        """
+        Fetch Ceph OSD and host details using SSH commands.
+        This function retrieves the OSD tree and host status using ceph commands executed remotely.
+        Returns:
+            tuple: JSONs containing the Ceph OSD tree and host details.
+        """
+        # ceph_details_cmd = f"ssh {HOST} 'ceph osd tree -f json'"
+        # ceph_hosts_cmd = f"ssh {HOST} 'ceph orch host ls -f json'"
+
+        ceph_details_cmd = "ceph osd tree -f json"
+        ceph_hosts_cmd = "ceph orch host ls -f json"
+
+        ceph_tree = json.loads(Helper.run_command(ceph_details_cmd))
+        ceph_hosts = json.loads(Helper.run_command(ceph_hosts_cmd))
+
+        return ceph_tree, ceph_hosts
+
+    @staticmethod
+    def get_ceph_status():
+        """
+        Fetch Ceph storage nodes and their OSD statuses.
+        This function processes Ceph data fetched from the Ceph OSD tree and the host status.
+        Returns:
+            dict or str: A dictionary of storage nodes with their OSD status
+        """
+        ceph_tree, ceph_hosts = cephHelper.fetch_ceph_data()
+        # print(ceph_hosts)
+        host_status_map = {host["hostname"]: host["status"] for host in ceph_hosts}
+        final_output = {}
+        failed_hosts = []
+        for item in ceph_tree.get("nodes", []):
+            if item["type"] == "rack":
+                rack_name = item["name"]
+                storage_nodes = []
+
+                for child_id in item.get("children", []):
+                    host_node = next(
+                        (x for x in ceph_tree["nodes"] if x["id"] == child_id), None
                     )
 
-            final_output[rack_name] = storage_nodes
-    if failed_hosts:
-        logger.warning(
-            f"{len(failed_hosts)} out of {len(ceph_hosts)} ceph nodes are not healthy"
-        )
+                    if (
+                        host_node
+                        and host_node["type"] == "host"
+                        and host_node["name"].startswith("ncn-s")
+                    ):
+                        osd_ids = host_node.get("children", [])
 
-    ceph_healthy = ceph_health_check()
+                        osds = [
+                            osd
+                            for osd in ceph_tree["nodes"]
+                            if osd["id"] in osd_ids and osd["type"] == "osd"
+                        ]
+                        osd_status_list = [
+                            {"name": osd["name"], "status": osd.get("status", "unknown")}
+                            for osd in osds
+                        ]
 
-    return final_output, ceph_healthy
+                        node_status = host_status_map.get(host_node["name"], "No Status")
+                        if node_status in ["", "online"]:
+                            node_status = "Ready"
+                        else:
+                            failed_hosts.append(host_node["name"])
+                            _app.logger.warning(
+                                f"Host {host_node['name']} is in - {node_status} state"
+                            )
+
+                        storage_nodes.append(
+                            {
+                                "name": host_node["name"],
+                                "status": node_status,
+                                "osds": osd_status_list,
+                            }
+                        )
+
+                final_output[rack_name] = storage_nodes
+        if failed_hosts:
+            _app.logger.warning(
+                f"{len(failed_hosts)} out of {len(ceph_hosts)} ceph nodes are not healthy"
+            )
+
+        ceph_healthy = cephHelper.ceph_health_check()
+
+        return final_output, ceph_healthy
 
 
-def get_k8s_nodes():
-    """Retrieve all Kubernetes nodes"""
-    try:
-        return v1.list_node().items
-    except client.exceptions.ApiException as e:
-        return {"error": f"API error: {str(e)}"}
-    except Exception as e:
-        return {"error": f"Unexpected error: {str(e)}"}
+class k8sHelper:
 
+    @staticmethod
+    def get_k8s_nodes():
+        """Retrieve all Kubernetes nodes"""
+        try:
+            return Helper.v1.list_node().items
+        except client.exceptions.ApiException as e:
+            return {"error": f"API error: {str(e)}"}
+        except Exception as e:
+            return {"error": f"Unexpected error: {str(e)}"}
 
-def get_node_status(node_name):
-    """Extract and return the status of a node"""
+    @staticmethod
+    def get_node_status(node_name):
+        """Extract and return the status of a node"""
 
-    nodes = get_k8s_nodes()
-    for node in nodes:
-        if node.metadata.name == node_name:
-            # If the node has conditions, we check the last one
+        nodes = k8sHelper.get_k8s_nodes()
+        for node in nodes:
+            if node.metadata.name == node_name:
+                # If the node has conditions, we check the last one
+                status = (
+                    node.status.conditions[-1].status
+                    if node.status.conditions
+                    else "Unknown"
+                )
+                return "Ready" if status == "True" else "NotReady"
+        return "Unknown"
+
+    @staticmethod
+    def get_k8s_nodes_data():
+        """Fetch Kubernetes nodes and organize them by topology zone"""
+        nodes = k8sHelper.get_k8s_nodes()
+        if isinstance(nodes, dict) and "error" in nodes:
+            return {"error": nodes["error"]}
+
+        zone_mapping = {}
+
+        for node in nodes:
+            node_name = node.metadata.name
             status = (
-                node.status.conditions[-1].status
-                if node.status.conditions
-                else "Unknown"
+                node.status.conditions[-1].status if node.status.conditions else "Unknown"
             )
-            return "Ready" if status == "True" else "NotReady"
-    return "Unknown"
+            node_status = "Ready" if status == "True" else "NotReady"
+            node_zone = node.metadata.labels.get("topology.kubernetes.io/zone")
 
+            # Skip nodes without a zone label
+            if not node_zone:
+                continue
 
-def get_k8s_nodes_data():
-    """Fetch Kubernetes nodes and organize them by topology zone"""
-    nodes = get_k8s_nodes()
-    if isinstance(nodes, dict) and "error" in nodes:
-        return {"error": nodes["error"]}
+            # Initialize the zone if it doesn't exist
+            if node_zone not in zone_mapping:
+                zone_mapping[node_zone] = {"masters": [], "workers": []}
 
-    zone_mapping = {}
+            # Classify nodes as master or worker based on name prefix
+            if node_name.startswith("ncn-m"):
+                zone_mapping[node_zone]["masters"].append(
+                    {"name": node_name, "status": node_status}
+                )
+            elif node_name.startswith("ncn-w"):
+                zone_mapping[node_zone]["workers"].append(
+                    {"name": node_name, "status": node_status}
+                )
+        if zone_mapping:
+            return zone_mapping
+        else:
+            _app.logger.error("No K8s topology zone present")
+            return "No K8s topology zone present"
 
-    for node in nodes:
-        node_name = node.metadata.name
-        status = (
-            node.status.conditions[-1].status if node.status.conditions else "Unknown"
-        )
-        node_status = "Ready" if status == "True" else "NotReady"
-        node_zone = node.metadata.labels.get("topology.kubernetes.io/zone")
+    @staticmethod
+    def fetch_all_pods():
+        """Fetch all pods in a single API call to reduce request time."""
+        nodes_data = k8sHelper.get_k8s_nodes_data()
+        # _app.logger.info(f"from fetch_all_pods - {nodes_data}")
+        if isinstance(nodes_data, dict) and "error" in nodes_data:
+            # _app.logger.info("nodes_data is disctionary")
+            return {"error": nodes_data["error"]}
 
-        # Skip nodes without a zone label
-        if not node_zone:
-            continue
-
-        # Initialize the zone if it doesn't exist
-        if node_zone not in zone_mapping:
-            zone_mapping[node_zone] = {"masters": [], "workers": []}
-
-        # Classify nodes as master or worker based on name prefix
-        if node_name.startswith("ncn-m"):
-            zone_mapping[node_zone]["masters"].append(
-                {"name": node_name, "status": node_status}
-            )
-        elif node_name.startswith("ncn-w"):
-            zone_mapping[node_zone]["workers"].append(
-                {"name": node_name, "status": node_status}
-            )
-    if zone_mapping:
-        return zone_mapping
-    else:
-        logger.error("No K8s topology zone present")
-        return "No K8s topology zone present"
-
-
-def fetch_all_pods():
-    """Fetch all pods in a single API call to reduce request time."""
-    nodes_data = get_k8s_nodes_data()
-    # logger.info(f"from fetch_all_pods - {nodes_data}")
-    if isinstance(nodes_data, dict) and "error" in nodes_data:
-        # logger.info("nodes_data is disctionary")
-        return {"error": nodes_data["error"]}
-
-    node_zone_map = {
-        node["name"]: zone
-        for zone, node_types in nodes_data.items()
-        for node_type in ["masters", "workers"]
-        for node in node_types[node_type]
-    }
-
-    all_pods = v1.list_pod_for_all_namespaces(watch=False).items
-    pod_info = []
-
-    for pod in all_pods:
-        node_name = pod.spec.node_name
-        zone = node_zone_map.get(node_name, "unknown")
-        pod_info.append(
-            {
-                "Name": pod.metadata.name,
-                "Node": node_name,
-                "Zone": zone,
-                "labels": pod.metadata.labels,
-            }
-        )
-
-    return pod_info
-
-
-def check_skew(service_name, pods):
-    """Check the replica skew across zones efficiently."""
-    zone_pod_map = {}
-
-    for pod in pods:
-        zone = pod["Zone"]
-        node = pod["Node"]
-        pod_name = pod["Name"]
-
-        if zone not in zone_pod_map:
-            zone_pod_map[zone] = {}
-        if node not in zone_pod_map[zone]:
-            zone_pod_map[zone][node] = []
-        zone_pod_map[zone][node].append(pod_name)
-
-    counts = [
-        sum(len(pods) for pods in zone.values()) for zone in zone_pod_map.values()
-    ]
-
-    if not counts:
-        return {
-            "service-name": service_name,
-            "status": "no replicas found",
-            "replicaDistribution": {},
+        node_zone_map = {
+            node["name"]: zone
+            for zone, node_types in nodes_data.items()
+            for node_type in ["masters", "workers"]
+            for node in node_types[node_type]
         }
 
-    balanced = "true" if max(counts) - min(counts) <= 1 else "false"
+        all_pods = Helper.v1.list_pod_for_all_namespaces(watch=False).items
+        pod_info = []
 
-    return {
-        "service-name": service_name,
-        "balanced": balanced,
-        "replicaDistribution": zone_pod_map,
-    }
-
-
-def get_service_status(service_name, service_namespace, service_type):
-    """Helper function to fetch service status based on service type."""
-    try:
-        if service_type == "Deployment":
-            app = apps_v1.read_namespaced_deployment(service_name, service_namespace)
-            return (
-                app.status.replicas,
-                app.status.ready_replicas,
-                app.spec.selector.match_labels,
+        for pod in all_pods:
+            node_name = pod.spec.node_name
+            zone = node_zone_map.get(node_name, "unknown")
+            pod_info.append(
+                {
+                    "Name": pod.metadata.name,
+                    "Node": node_name,
+                    "Zone": zone,
+                    "labels": pod.metadata.labels,
+                }
             )
-        elif service_type == "StatefulSet":
-            app = apps_v1.read_namespaced_stateful_set(service_name, service_namespace)
-            return (
-                app.status.replicas,
-                app.status.ready_replicas,
-                app.spec.selector.match_labels,
-            )
-        elif service_type == "DaemonSet":
-            app = apps_v1.read_namespaced_daemon_set(service_name, service_namespace)
-            return (
-                app.status.desired_number_scheduled,
-                app.status.number_ready,
-                app.spec.selector.match_labels,
-            )
-        else:
-            logger.warning(f"Unsupported service type: {service_type}")
-            return None, None, None
-    except client.exceptions.ApiException as e:
-        match = re.search(r"Reason: (.*?)\n", str(e))
-        if match:
-            error_message = match.group(1)
-        logger.error(f"Error fetching {service_type} {service_name}: {error_message}")
-        return None, None, None
 
+        return pod_info
 
-def get_critical_services_status(services_data):
-    """Update critical service info with status and balanced values"""
+class criticalServicesHelper:
 
-    # logger.info(f"In lib_rms get_critical_services_status, input data is - {services_data}")
-    # Fetch all pods in one API call
-    all_pods = fetch_all_pods()
+    @staticmethod
+    def check_skew(service_name, pods):
+        """Check the replica skew across zones efficiently."""
+        zone_pod_map = {}
 
-    critical_services = services_data["critical-services"]
-    logger.info(f"Number of critical services are - {len(critical_services)}")
-    imbalanced_services = []
-    for service_name, service_info in critical_services.items():
-        # print(service_name)
-        # print(service_info)
+        for pod in pods:
+            zone = pod["Zone"]
+            node = pod["Node"]
+            pod_name = pod["Name"]
 
-        service_namespace = service_info["namespace"]
-        service_type = service_info["type"]
-        desired_replicas, ready_replicas, labels = get_service_status(
-            service_name, service_namespace, service_type
-        )
+            if zone not in zone_pod_map:
+                zone_pod_map[zone] = {}
+            if node not in zone_pod_map[zone]:
+                zone_pod_map[zone][node] = []
+            zone_pod_map[zone][node].append(pod_name)
 
-        # If replicas data was returned
-        if (
-            desired_replicas is not None
-            and ready_replicas is not None
-            and labels is not None
-        ):
-            status = "Configured"
-            if ready_replicas < desired_replicas:
-                imbalanced_services.append(service_name)
-                status = "PartiallyConfigured"
-                logger.warning(
-                    f"{service_type} '{service_name}' in namespace '{service_namespace}' is not ready. "
-                    f"Only {ready_replicas} replicas are ready out of {desired_replicas} desired replicas"
+        counts = [
+            sum(len(pods) for pods in zone.values()) for zone in zone_pod_map.values()
+        ]
+
+        if not counts:
+            return {
+                "service-name": service_name,
+                "status": "no replicas found",
+                "replicaDistribution": {},
+            }
+
+        balanced = "true" if max(counts) - min(counts) <= 1 else "false"
+
+        return {
+            "service-name": service_name,
+            "balanced": balanced,
+            "replicaDistribution": zone_pod_map,
+        }
+
+    @staticmethod
+    def get_service_status(service_name, service_namespace, service_type):
+        """Helper function to fetch service status based on service type."""
+        try:
+            if service_type == "Deployment":
+                app = Helper.apps_v1.read_namespaced_deployment(service_name, service_namespace)
+                return (
+                    app.status.replicas,
+                    app.status.ready_replicas,
+                    app.spec.selector.match_labels,
+                )
+            elif service_type == "StatefulSet":
+                app = Helper.apps_v1.read_namespaced_stateful_set(service_name, service_namespace)
+                return (
+                    app.status.replicas,
+                    app.status.ready_replicas,
+                    app.spec.selector.match_labels,
+                )
+            elif service_type == "DaemonSet":
+                app = Helper.apps_v1.read_namespaced_daemon_set(service_name, service_namespace)
+                return (
+                    app.status.desired_number_scheduled,
+                    app.status.number_ready,
+                    app.spec.selector.match_labels,
                 )
             else:
-                logger.debug(
-                    f"Desired replicas and ready replicas are matching for '{service_name}'"
-                )
+                _app.logger.warning(f"Unsupported service type: {service_type}")
+                return None, None, None
+        except client.exceptions.ApiException as e:
+            match = re.search(r"Reason: (.*?)\n", str(e))
+            if match:
+                error_message = match.group(1)
+            _app.logger.error(f"Error fetching {service_type} {service_name}: {error_message}")
+            return None, None, None
 
-            label_selector = ",".join(
-                [f"{key}={value}" for key, value in labels.items()]
-            )
-            filtered_pods = [
-                pod
-                for pod in all_pods
-                if pod.get("labels")
-                and all(
-                    pod["labels"].get(key) == value for key, value in labels.items()
-                )
-            ]
+    @staticmethod
+    def get_critical_services_status(services_data):
+        """Update critical service info with status and balanced values"""
 
-            balance_details = check_skew(service_name, filtered_pods)
-            if balance_details["balanced"] == "False":
-                imbalanced_services.append(service_name)
-            service_info.update(
-                {"status": status, "balanced": balance_details["balanced"]}
+        # _app.logger.info(f"In lib_rms get_critical_services_status, input data is - {services_data}")
+        # Fetch all pods in one API call
+        all_pods = k8sHelper.fetch_all_pods()
+
+        critical_services = services_data["critical-services"]
+        _app.logger.info(f"Number of critical services are - {len(critical_services)}")
+        imbalanced_services = []
+        for service_name, service_info in critical_services.items():
+            # print(service_name)
+            # print(service_info)
+
+            service_namespace = service_info["namespace"]
+            service_type = service_info["type"]
+            desired_replicas, ready_replicas, labels = criticalServicesHelper.get_service_status(
+                service_name, service_namespace, service_type
             )
-        else:
-            service_info.update({"status": "Unconfigured", "balanced": "NA"})
-    if imbalanced_services:
-        logger.warning(f"List of imbalanced services are - {imbalanced_services}")
-    return services_data
+
+            # If replicas data was returned
+            if (
+                desired_replicas is not None
+                and ready_replicas is not None
+                and labels is not None
+            ):
+                status = "Configured"
+                if ready_replicas < desired_replicas:
+                    imbalanced_services.append(service_name)
+                    status = "PartiallyConfigured"
+                    _app.logger.warning(
+                        f"{service_type} '{service_name}' in namespace '{service_namespace}' is not ready. "
+                        f"Only {ready_replicas} replicas are ready out of {desired_replicas} desired replicas"
+                    )
+                else:
+                    _app.logger.debug(
+                        f"Desired replicas and ready replicas are matching for '{service_name}'"
+                    )
+
+                label_selector = ",".join(
+                    [f"{key}={value}" for key, value in labels.items()]
+                )
+                filtered_pods = [
+                    pod
+                    for pod in all_pods
+                    if pod.get("labels")
+                    and all(
+                        pod["labels"].get(key) == value for key, value in labels.items()
+                    )
+                ]
+
+                balance_details = criticalServicesHelper.check_skew(service_name, filtered_pods)
+                if balance_details["balanced"] == "False":
+                    imbalanced_services.append(service_name)
+                service_info.update(
+                    {"status": status, "balanced": balance_details["balanced"]}
+                )
+            else:
+                service_info.update({"status": "Unconfigured", "balanced": "NA"})
+        if imbalanced_services:
+            _app.logger.warning(f"List of imbalanced services are - {imbalanced_services}")
+        return services_data

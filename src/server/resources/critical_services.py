@@ -38,11 +38,11 @@ Dependencies:
 """
 
 from typing import Dict, Any, Tuple, List
-from flask import json, current_app as app
+from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.k8s_zones import K8sZoneService
-from src.server.utils.rrs_logging import get_log_id
-from src.server.utils.helper import Helper
+from src.lib.rrs_logging import get_log_id
+from src.lib.lib_rms import Helper
 
 
 class CriticalServiceHelper:

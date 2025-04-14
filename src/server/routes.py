@@ -29,8 +29,7 @@ Defines all Flask-RESTful resource classes for handling zone and critical servic
 from typing import Dict, List, Tuple, Any, Union, cast
 from flask import request
 from flask_restful import Resource
-from src.server.app import app
-from src.server.utils.rrs_logging import log_event
+from src.lib.rrs_logging import log_event
 from src.server.models.zone_list import ZoneMapper
 from src.server.models.zone_describe import ZoneDescriber
 from src.server.models.criticalservice_list import CriticalServicesLister
