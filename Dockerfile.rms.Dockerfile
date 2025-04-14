@@ -1,0 +1,49 @@
+#
+# MIT License
+#
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 as base
+
+RUN apk add --upgrade --no-cache apk-tools && \
+    apk update && \
+    apk add --no-cache curl ca-certificates python3 py3-pip python3-dev build-base && \
+    update-ca-certificates
+
+ADD requirements.txt constraints.txt /rrs
+ENV VIRTUAL_ENV=/rrs/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN python3 -m venv $VIRTUAL_ENV && \
+    pip3 install --no-cache-dir -U pip -c constraints.txt && \
+    pip3 install --no-cache-dir -U wheel -c constraints.txt && \
+    pip3 install --no-cache-dir -r requirements.txt
+
+FROM base as build
+RUN mkdir -P /rrs/rms /rrs/lib
+WORKDIR /rrs
+
+# Copy rms sources
+EXPOSE 80
+COPY src/rms /rrs/rms
+COPY src/lib /rrs/lib
+
+CMD [ "python", "rms.py" ]

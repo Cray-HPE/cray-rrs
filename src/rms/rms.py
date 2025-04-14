@@ -25,8 +25,7 @@
 
 import threading
 import time
-import json
-import yaml
+import json, yaml
 import logging
 from datetime import datetime
 from flask import Flask, request, jsonify
@@ -34,11 +33,10 @@ from kubernetes import client, config
 
 # from concurrent.futures import ThreadPoolExecutor
 import requests
-import sys
 import base64
 import copy
-import lib_configmap
-import lib_rms
+from src.lib.lib_configmap import ConfigMapHelper
+from src.lib.lib_rms import (Helper, k8sHelper, cephHelper, criticalServicesHelper)
 
 
 app = Flask(__name__)
@@ -90,7 +88,7 @@ class RMSStateManager:
     def get_dynamic_cm_data(self):
         with self.lock:
             if not self.dynamic_cm_data:
-                self.dynamic_cm_data = lib_configmap.get_configmap(
+                self.dynamic_cm_data = ConfigMapHelper.get_configmap(
                     namespace, dynamic_cm
                 )
             return self.dynamic_cm_data
@@ -133,12 +131,12 @@ def update_zone_status():
 
         for zone, nodes in k8s_info.items():
             for node in nodes:
-                node["Status"] = lib_rms.get_node_status(node["name"])
+                node["Status"] = k8sHelper.get_node_status(node["name"])
 
         zone_info["k8s_zones_with_nodes"] = k8s_info
 
         ceph_info_old = zone_info.get("ceph_zones_with_nodes")
-        updated_ceph_data, ceph_healthy_status = lib_rms.get_ceph_status()
+        updated_ceph_data, ceph_healthy_status = cephHelper.get_ceph_status()
         zone_info["ceph_zones_with_nodes"] = updated_ceph_data
 
         if k8s_info_old != k8s_info or ceph_info_old != updated_ceph_data:
@@ -148,7 +146,7 @@ def update_zone_status():
                 dynamic_data, default_flow_style=False
             )
             state_manager.set_dynamic_cm_data(dynamic_cm_data)
-            lib_configmap.update_configmap_data(
+            ConfigMapHelper.update_configmap_data(
                 namespace,
                 dynamic_cm,
                 dynamic_cm_data,
@@ -176,7 +174,7 @@ def update_critical_services(reloading=False):
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         if reloading:
-            static_cm_data = lib_configmap.get_configmap(namespace, static_cm)
+            static_cm_data = ConfigMapHelper.get_configmap(namespace, static_cm)
             logger.info(
                 "Retrieving critical services information from rrs-static configmap"
             )
@@ -194,7 +192,7 @@ def update_critical_services(reloading=False):
             )
             exit(1)
 
-        updated_services = lib_rms.get_critical_services_status(services_data)
+        updated_services = criticalServicesHelper.get_critical_services_status(services_data)
         services_json = json.dumps(updated_services, indent=2)
         logger.info(services_json)
         if services_json != dynamic_cm_data.get("critical-service-config.json", None):
@@ -203,7 +201,7 @@ def update_critical_services(reloading=False):
             )
             dynamic_cm_data["critical-service-config.json"] = services_json
             state_manager.set_dynamic_cm_data(dynamic_cm_data)
-            lib_configmap.update_configmap_data(
+            ConfigMapHelper.update_configmap_data(
                 namespace,
                 dynamic_cm,
                 dynamic_cm_data,
@@ -230,7 +228,7 @@ def monitor_k8s(polling_interval, total_time, pre_delay):
     update_state_timestamp(
         "k8s_monitoring", "Started", "start_timestamp_k8s_monitoring"
     )
-    nodeMonitorGracePeriod = lib_rms.getNodeMonitorGracePeriod()
+    nodeMonitorGracePeriod = Helper.getNodeMonitorGracePeriod()
     if nodeMonitorGracePeriod:
         time.sleep(nodeMonitorGracePeriod)
     else:
@@ -289,7 +287,7 @@ def monitoring_loop():
     state_manager.set_state(state)
     update_state_timestamp("rms_state", state)
     # Read the 'rrs-mon' configmap and parse the data
-    static_cm_data = lib_configmap.get_configmap(namespace, static_cm)
+    static_cm_data = ConfigMapHelper.get_configmap(namespace, static_cm)
 
     k8s_args = (
         int(static_cm_data.get("k8s_monitoring_polling_interval", 60)),
@@ -562,7 +560,7 @@ def check_and_create_hmnfd_subscription(node_ip=""):
 
 def initial_check_and_update():
     launch_monitoring = False
-    dynamic_cm_data = lib_configmap.get_configmap(namespace, dynamic_cm)
+    dynamic_cm_data = ConfigMapHelper.get_configmap(namespace, dynamic_cm)
     try:
         yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
         if yaml_content:
@@ -605,7 +603,7 @@ def initial_check_and_update():
             dynamic_data, default_flow_style=False
         )
         state_manager.set_dynamic_cm_data(dynamic_cm_data)
-        lib_configmap.update_configmap_data(
+        ConfigMapHelper.update_configmap_data(
             namespace,
             dynamic_cm,
             dynamic_cm_data,
@@ -664,7 +662,7 @@ def update_state_timestamp(
             dynamic_data, default_flow_style=False
         )
         state_manager.set_dynamic_cm_data(dynamic_cm_data)
-        lib_configmap.update_configmap_data(
+        ConfigMapHelper.update_configmap_data(
             namespace,
             dynamic_cm,
             dynamic_cm_data,
