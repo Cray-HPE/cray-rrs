@@ -28,10 +28,11 @@ Model handles updates to critical services in the ConfigMap.
 import json
 from typing import Dict, Any, Tuple, Union
 from flask import current_app as app
+from datetime import datetime
 from kubernetes import client  # type: ignore
-from src.server.resources.critical_services import CriticalServiceHelper
 from src.server.models.criticalservice_list import CM_KEY, CM_NAME, CM_NAMESPACE
-from src.server.utils.rrs_logging import get_log_id
+from src.lib.rrs_logging import get_log_id
+from src.lib.lib_configmap import ConfigMapHelper
 
 
 class CriticalServiceUpdater:
@@ -73,16 +74,23 @@ class CriticalServiceUpdater:
                 existing_services[service_name] = new_services[service_name]
 
             # Patch ConfigMap
+            # new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
             if not test:
                 body = {
                     "data": {
                         CM_KEY: json.dumps(
                             {"critical-services": existing_services}, indent=2
-                        )
+                        ),
+                        "last_updated_timestamp": datetime.utcnow().isoformat() + "Z"
                     }
                 }
                 v1.patch_namespaced_config_map(CM_NAME, CM_NAMESPACE, body)
-
+                
+                # ConfigMapHelper.update_configmap_data(CM_NAMESPACE, CM_NAME, CM_KEY, new_cm_data,"")
+                app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
+                # ConfigMapHelper.update_configmap_data(
+                #     CM_NAMESPACE, CM_NAME, "last_updated_timestamp", datetime.utcnow().isoformat() + "Z",""
+                #     )
             # Log the event using app.logger
             app.logger.info(
                 f"[{log_id}] Successfully added {len(added_services)} services to ConfigMap"
@@ -146,9 +154,13 @@ class CriticalServiceUpdater:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
                 return ({"error": "Missing 'critical-services' in payload"}), 400
 
-            existing_data = CriticalServiceHelper.get_configmap(
-                CM_NAME, CM_NAMESPACE, CM_KEY
-            )
+            cm_data = ConfigMapHelper.get_configmap(                                                  
+                CM_NAMESPACE, CM_NAME                                                                 
+            )                                                                                         
+            config_data={}                                                                            
+            if CM_KEY in cm_data:                                                                     
+                config_data=json.loads(cm_data[CM_KEY])                                               
+            existing_data = config_data.get("critical-services", {})
             result = CriticalServiceUpdater.update_configmap(
                 json.dumps(new_services), existing_data
             )
