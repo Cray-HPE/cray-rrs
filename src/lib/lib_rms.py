@@ -9,7 +9,7 @@ import subprocess
 import base64
 import requests
 from flask import current_app as _app
-from src.rms.rms import RMSStateManager
+from src.rms.state_manager import RMSStateManager
 from src.lib.lib_configmap import ConfigMapHelper
 logger = logging.getLogger(__name__)
 
