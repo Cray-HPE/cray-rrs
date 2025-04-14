@@ -32,8 +32,7 @@ from flask import current_app as app
 import time
 import os
 from typing import Dict, Optional, Union
-from src.lib.lib_rms import Helper
-from kubernetes import client  # type: ignore
+from kubernetes import client, config  # type: ignore
 from src.lib.rrs_logging import get_log_id
 
 class ConfigMapHelper:
@@ -41,7 +40,15 @@ class ConfigMapHelper:
     Helper class for managing ConfigMaps in Kubernetes.
     """
     # Load Kubernetes config
-    Helper.load_k8s_config()
+    @staticmethod
+    def load_k8s_config() -> None:
+        """Load Kubernetes configuration for API access."""
+        try:
+            config.load_incluster_config()
+        except Exception:
+            config.load_kube_config()
+
+    load_k8s_config()
 
     v1 = client.CoreV1Api()
     apps_v1 = client.AppsV1Api()

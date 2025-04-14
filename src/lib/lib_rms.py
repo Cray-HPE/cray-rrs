@@ -23,15 +23,7 @@ class Helper:
     """
     Helper class to provide utility functions for the application.
     """
-    @staticmethod
-    def load_k8s_config() -> None:
-        """Load Kubernetes configuration for API access."""
-        try:
-            config.load_incluster_config()
-        except Exception:
-            config.load_kube_config()
-
-    load_k8s_config()  # Or use load_incluster_config() if running inside a Kubernetes pod
+    ConfigMapHelper.load_k8s_config()  # Or use load_incluster_config() if running inside a Kubernetes pod
     v1 = client.CoreV1Api()
     apps_v1 = client.AppsV1Api()
     state_manager = RMSStateManager()
