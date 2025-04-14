@@ -29,7 +29,7 @@ RUN apk add --upgrade --no-cache apk-tools && \
     apk add --no-cache curl ca-certificates python3 py3-pip python3-dev build-base && \
     update-ca-certificates
 
-ADD requirements.txt constraints.txt /rrs
+ADD requirements.txt constraints.txt /rrs/
 ENV VIRTUAL_ENV=/rrs/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN python3 -m venv $VIRTUAL_ENV && \

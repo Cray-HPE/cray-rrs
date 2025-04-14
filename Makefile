@@ -24,6 +24,10 @@
 NAME ?= cray-rrs-api
 VERSION ?= $(shell cat .version)
 
+DOCKERFILE_API ?= Dockerfile.rrs.api
+DOCKERFILE_RMS ?= Dockerfile.rrs.rms
+DOCKERFILE_INIT ?= Dockerfile.rrs.init
+
 CHART_VERSION ?= $(VERSION)
 IMAGE ?= artifactory.algol60.net/csm-docker/stable/${NAME}
 
@@ -44,10 +48,10 @@ COMMA := ,
 all : image chart
 
 image:
-	docker build --no-cache --pull ${DOCKER_ARGS} --tag '${NAME}:${VERSION}' .
+	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${NAME}:${VERSION}' .
 
 dev-image:
-	docker build --no-cache --pull ${DOCKER_ARGS} --target dev --tag '${NAME}-dev:${VERSION}' .
+	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --target dev --tag '${NAME}-dev:${VERSION}' .
 
 lint: dev-image
 	docker run --rm '${NAME}-dev:${VERSION}' /app/run_lint.sh
