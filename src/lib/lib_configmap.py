@@ -48,19 +48,16 @@ class ConfigMapHelper:
         except Exception:
             config.load_kube_config()
 
-    load_k8s_config()
-
-    v1 = client.CoreV1Api()
-    apps_v1 = client.AppsV1Api()
-
     @staticmethod
     def create_configmap(namespace: str, configmap_lock_name: str) -> None:
         """Create a ConfigMap with the provided name in the given namespace."""
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         try:
             config_map = client.V1ConfigMap(
                 metadata=client.V1ObjectMeta(name=configmap_lock_name), data={}
             )
-            ConfigMapHelper.v1.create_namespaced_config_map(namespace=namespace, body=config_map)
+            v1.create_namespaced_config_map(namespace=namespace, body=config_map)
         except client.exceptions.ApiException as e:
             app.logger.error("Error creating ConfigMap %s: %s", configmap_lock_name, e)
 
@@ -68,10 +65,12 @@ class ConfigMapHelper:
     def acquire_lock(namespace: str, configmap_name: str) -> bool:
         """Acquire the lock by creating the ConfigMap {configmap_lock_name}."""
         configmap_lock_name = configmap_name + "-lock"
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         # Check if the ConfigMap already exists
         while True:
             try:
-                config_map = ConfigMapHelper.v1.read_namespaced_config_map(
+                config_map = v1.read_namespaced_config_map(
                     namespace=namespace, name=configmap_lock_name
                 )
                 # print(config_map)
@@ -96,8 +95,10 @@ class ConfigMapHelper:
     def release_lock(namespace: str, configmap_name: str) -> None:
         """Release the lock by deleting the ConfigMap {configmap_lock_name}."""
         configmap_lock_name = configmap_name + "-lock"
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         try:
-            ConfigMapHelper.v1.delete_namespaced_config_map(name=configmap_lock_name, namespace=namespace)
+            v1.delete_namespaced_config_map(name=configmap_lock_name, namespace=namespace)
             app.logger.debug(
                 "ConfigMap %s deleted successfully from namespace %s",
                 configmap_lock_name,
@@ -121,6 +122,9 @@ class ConfigMapHelper:
         # print(f"In update_configmap_data, key is {key} and data is {new_data}")
         configmap_data[key] = new_data
         # print(configmap_data)
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
+
         configmap_body = client.V1ConfigMap(
             metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
         )
@@ -131,7 +135,7 @@ class ConfigMapHelper:
                 app.logger.info(
                     f"Updating ConfigMap {configmap_name} in namespace {namespace}"
                 )
-                ConfigMapHelper.v1.replace_namespaced_config_map(
+                v1.replace_namespaced_config_map(
                     name=configmap_name, namespace=namespace, body=configmap_body
                 )
                 app.logger.info(
@@ -157,8 +161,11 @@ class ConfigMapHelper:
         app.logger.info(
                 f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
             )
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
+
         try:
-            config_map = ConfigMapHelper.v1.read_namespaced_config_map(
+            config_map = v1.read_namespaced_config_map(
                 name=configmap_name, namespace=namespace
             )
             return config_map.data or {}  # Return empty dict if data is None

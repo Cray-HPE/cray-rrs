@@ -23,9 +23,6 @@ class Helper:
     """
     Helper class to provide utility functions for the application.
     """
-    ConfigMapHelper.load_k8s_config()  # Or use load_incluster_config() if running inside a Kubernetes pod
-    v1 = client.CoreV1Api()
-    apps_v1 = client.AppsV1Api()
     state_manager = RMSStateManager()
 
     @staticmethod
@@ -47,15 +44,19 @@ class Helper:
 
     @staticmethod
     def get_current_node():
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         pod_name = os.getenv("HOSTNAME")
-        pod = Helper.v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
+        pod = v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
         node_name = pod.spec.nodeName  # node_name if nodeName does not work
         return node_name
 
     @staticmethod
     def getNodeMonitorGracePeriod():
         # Get the kube-controller-manager pod which would be having nodeMonitorGracePeriod if configured
-        pods = Helper.v1.list_namespaced_pod(
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
+        pods = v1.list_namespaced_pod(
             namespace="kube-system", label_selector="component=kube-controller-manager"
         )
         if pods.items:
@@ -94,8 +95,10 @@ class Helper:
 
     @staticmethod
     def token_fetch():
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         try:
-            secret = Helper.v1.read_namespaced_secret("admin-client-auth", "default")
+            secret = v1.read_namespaced_secret("admin-client-auth", "default")
             client_secret = base64.b64decode(secret.data["client-secret"]).decode("utf-8")
             # logger.debug(f"Client Secret: {client_secret}")
 
@@ -324,8 +327,10 @@ class k8sHelper:
     @staticmethod
     def get_k8s_nodes():
         """Retrieve all Kubernetes nodes"""
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         try:
-            return Helper.v1.list_node().items
+            return v1.list_node().items
         except client.exceptions.ApiException as e:
             return {"error": f"API error: {str(e)}"}
         except Exception as e:
@@ -390,6 +395,8 @@ class k8sHelper:
     @staticmethod
     def fetch_all_pods():
         """Fetch all pods in a single API call to reduce request time."""
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         nodes_data = k8sHelper.get_k8s_nodes_data()
         # _app.logger.info(f"from fetch_all_pods - {nodes_data}")
         if isinstance(nodes_data, dict) and "error" in nodes_data:
@@ -403,7 +410,7 @@ class k8sHelper:
             for node in node_types[node_type]
         }
 
-        all_pods = Helper.v1.list_pod_for_all_namespaces(watch=False).items
+        all_pods = v1.list_pod_for_all_namespaces(watch=False).items
         pod_info = []
 
         for pod in all_pods:
@@ -460,23 +467,25 @@ class criticalServicesHelper:
     @staticmethod
     def get_service_status(service_name, service_namespace, service_type):
         """Helper function to fetch service status based on service type."""
+        ConfigMapHelper.load_k8s_config()
+        apps_v1 = client.AppsV1Api()
         try:
             if service_type == "Deployment":
-                app = Helper.apps_v1.read_namespaced_deployment(service_name, service_namespace)
+                app = apps_v1.read_namespaced_deployment(service_name, service_namespace)
                 return (
                     app.status.replicas,
                     app.status.ready_replicas,
                     app.spec.selector.match_labels,
                 )
             elif service_type == "StatefulSet":
-                app = Helper.apps_v1.read_namespaced_stateful_set(service_name, service_namespace)
+                app = apps_v1.read_namespaced_stateful_set(service_name, service_namespace)
                 return (
                     app.status.replicas,
                     app.status.ready_replicas,
                     app.spec.selector.match_labels,
                 )
             elif service_type == "DaemonSet":
-                app = Helper.apps_v1.read_namespaced_daemon_set(service_name, service_namespace)
+                app = apps_v1.read_namespaced_daemon_set(service_name, service_namespace)
                 return (
                     app.status.desired_number_scheduled,
                     app.status.number_ready,
