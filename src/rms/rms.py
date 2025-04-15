@@ -33,7 +33,6 @@ The module runs continuously and updates system state in a time-driven loop
 to maintain rack-level resiliency awareness across the platform.
 """
 
-from pickle import NONE
 import threading
 import sys
 import time
@@ -57,13 +56,13 @@ formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
-"""
+'''
 logging.basicConfig(
     format="%(asctime)s [%(threadName)s] %(levelname)s: %(message)s",  # Include thread name in logs
     level=logging.INFO,
 )
 logger = logging.getlogger()
-"""
+'''
 
 state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager)
@@ -135,11 +134,11 @@ def check_failure_type(component_xname: str) -> None:
         # implement this
 
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Request failed: {e}")
+        app.logger.error("Request failed: %s", e)
         state_manager.set_state("internal_failure")
         # exit(1)
     except ValueError as e:
-        app.logger.error(f"Failed to parse JSON: {e}")
+        app.logger.error("Failed to parse JSON: %s", e)
         state_manager.set_state("internal_failure")
         # exit(1)
 
@@ -167,19 +166,19 @@ def handleSCN() -> tuple[Response, int]:
 
         if state == "Off":
             for component in components:
-                app.logger.info(f"Node {component} is turned Off")
+                app.logger.info("Node %s is turned Off", component)
                 check_failure_type(component)
             # Start monitoring services in a new thread
             threading.Thread(target=monitor.monitoring_loop).start()
 
         elif state == "On":
             for component in components:
-                app.logger.info(f"Node {component} is turned On")
+                app.logger.info("Node %s is turned On", component)
             # Handle discovery of nodes
             # Handle cleanup or other actions here if needed
 
         else:
-            app.logger.warning(f"Unexpected state '{state}' received for {components}.")
+            app.logger.warning("Unexpected state '%s' received for %s.", state, components)
 
         return jsonify({"message": "POST call received"}), 200
 
@@ -216,12 +215,12 @@ def get_management_xnames() -> list[str] | None:
         return list(management_xnames)
 
     except requests.exceptions.RequestException as e:
-        app.logger.error(f"Request failed: {e}")
+        app.logger.error("Request failed: %s", e)
         state_manager.set_state("internal_failure")
         return None
         # exit(1)
     except ValueError as e:
-        app.logger.error(f"Failed to parse JSON: {e}")
+        app.logger.error("Failed to parse JSON: %s", e)
         state_manager.set_state("internal_failure")
         return None
         # exit(1)
@@ -250,7 +249,7 @@ def check_and_create_hmnfd_subscription() -> None:
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
 
     try:
-        get_response = requests.get(get_url, headers=headers)
+        get_response = requests.get(get_url, headers=headers, timeout=10)
         data = get_response.json()
         exists = any(
             "rms" in subscription["Subscriber"]
@@ -270,12 +269,12 @@ def check_and_create_hmnfd_subscription() -> None:
             app.logger.info("rms is already present in the subscription list")
     except requests.exceptions.RequestException as e:
         # Handle request errors (e.g., network issues, timeouts, non-2xx status codes)
-        app.logger.error(f"Failed to make subscription request to hmnfd. Error: {e}")
+        app.logger.error("Failed to make subscription request to hmnfd. Error: %s", e)
         state_manager.set_state("internal_failure")
         # exit(1)
     except ValueError as e:
         # Handle JSON parsing errors
-        app.logger.error(f"Failed to parse JSON response: {e}")
+        app.logger.error("Failed to parse JSON response: %s", e)
         state_manager.set_state("internal_failure")
         # exit(1)
 
@@ -300,7 +299,7 @@ def initial_check_and_update() -> bool:
         state = dynamic_data.get("state", {})
         rms_state_value = state.get("rms_state", None)
         if rms_state_value != "Ready":
-            app.logger.info(f"RMS state is {rms_state_value}")
+            app.logger.info("RMS state is %s", rms_state_value)
             if rms_state_value == "Monitoring":
                 is_monitoring = True
             elif rms_state_value == "Init_fail":
@@ -339,11 +338,11 @@ def initial_check_and_update() -> bool:
         app.logger.debug("Updated rms_start_timestamp in rrs-dynamic configmap")
 
     except ValueError as e:
-        app.logger.error(f"Error during configuration check and update: {e}")
+        app.logger.error("Error during configuration check and update: %s", e)
         state_manager.set_state("internal_failure")
         # exit(1)
     except Exception as e:
-        app.logger.error(f"Unexpected error: {e}")
+        app.logger.error("Unexpected error: %s", e)
         state_manager.set_state("internal_failure")
         # exit(1)
     if is_monitoring:
@@ -361,14 +360,6 @@ def run_flask() -> None:
 
 
 if __name__ == "__main__":
-    """
-    Main execution loop for the Rack Resiliency Service (RRS).
-
-    - Runs initial config and state setup.
-    - Starts the Flask API server in a background thread.
-    - Subscribes to HMNFD for SCN events.
-    - Triggers critical services and zone monitoring in a timed loop.
-    """
     launch_monitoring = initial_check_and_update()
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.start()

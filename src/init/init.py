@@ -52,10 +52,10 @@ formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
-"""
+'''
 logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
-"""
+'''
 
 state_manager = RMSStateManager()
 
@@ -78,7 +78,7 @@ def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, A
         node_name = node.metadata.name
         zone = node.metadata.labels.get("topology.kubernetes.io/zone")
         if not zone:
-            app.logger.error(f"Node {node_name} does not have a zone marked for it")
+            app.logger.error("Node %s does not have a zone marked for it", node_name)
             status = False
             updated_k8s_data = {}
             break
@@ -167,7 +167,7 @@ def init() -> None:
             state["rms_state"] = "Init"
         else:
             app.logger.debug("rms_state is already present in configmap")
-            app.logger.info(f"RMS is already in {rms_state} state.")
+            app.logger.info("RMS is already in %s state", rms_state)
         # check on condition here
         timestamps["init_timestamp"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         ConfigMapHelper.update_configmap_data(
@@ -204,7 +204,7 @@ def init() -> None:
         rrs_pod_placement["zone"] = rack_name
         rrs_pod_placement["node"] = node_name
         app.logger.info(
-            f"RMS pod is running on node: {node_name} under zone {rack_name}"
+            "RMS pod is running on node: %s under zone %s", node_name, rack_name
         )
 
         if check_critical_services_and_timers() and discovery_status:
@@ -224,11 +224,11 @@ def init() -> None:
         )
 
     except KeyError as e:
-        app.logger.error(f"KeyError: Missing expected key in the configmap data - {e}")
+        app.logger.error("KeyError: Missing expected key in the configmap data - %s", e)
     except yaml.YAMLError as e:
-        app.logger.error(f"YAML parsing error occurred: {e}")
+        app.logger.error("YAML parsing error occurred: %s", e)
     except Exception as e:
-        app.logger.error(f"An unexpected error occurred: {e}")
+        app.logger.error("An unexpected error occurred: %s", e)
 
 
 if __name__ == "__main__":
