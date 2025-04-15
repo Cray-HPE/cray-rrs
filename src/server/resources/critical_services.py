@@ -42,7 +42,6 @@ from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.resources.k8s_zones import K8sZoneService
 from src.lib.rrs_logging import get_log_id
-from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
 
 

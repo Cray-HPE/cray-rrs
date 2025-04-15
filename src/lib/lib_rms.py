@@ -21,14 +21,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-
+"""File to keep all helper functions for the RMS application."""
 import os
 import json
 import re
 import subprocess
 import base64
-import requests
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional
+import requests
 from flask import current_app as _app
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -49,7 +49,7 @@ class Helper:
     def run_command(command: str):
         """Helper function to run a command and return the result.
         Returns:
-            str: result of the command run."""        
+            str: result of the command run."""
         _app.logger.debug(f"Running command: {command}")
         try:
             result = subprocess.run(

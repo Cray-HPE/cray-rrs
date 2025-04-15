@@ -99,13 +99,13 @@ class CriticalServiceStatusLister:
             app.logger.info(
                 f"[{log_id}] Fetching ConfigMap: {CM_NAME} from namespace: {CM_NAMESPACE}"
             )
-            cm_data = ConfigMapHelper.get_configmap(                                                  
-                CM_NAMESPACE, CM_NAME                                                                 
-            )                                                                                         
-            config_data={}                                                                            
-            if CM_KEY in cm_data:                                                                     
-                config_data=json.loads(cm_data[CM_KEY])                                               
-            services = config_data.get("critical-services", {})                                       
+            cm_data = ConfigMapHelper.get_configmap(
+                CM_NAMESPACE, CM_NAME
+            )
+            config_data={}
+            if CM_KEY in cm_data:
+                config_data=json.loads(cm_data[CM_KEY])
+            services = config_data.get("critical-services", {})
             if not services:
                 app.logger.warning(
                     f"[{log_id}] No 'critical-services' found in the ConfigMap"

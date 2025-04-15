@@ -27,8 +27,8 @@ Model handles updates to critical services in the ConfigMap.
 
 import json
 from typing import Dict, Any, Tuple, Union
-from flask import current_app as app
 from datetime import datetime
+from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.server.models.criticalservice_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.lib.rrs_logging import get_log_id
@@ -154,12 +154,12 @@ class CriticalServiceUpdater:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
                 return ({"error": "Missing 'critical-services' in payload"}), 400
 
-            cm_data = ConfigMapHelper.get_configmap(                                                  
-                CM_NAMESPACE, CM_NAME                                                                 
-            )                                                                                         
-            config_data={}                                                                            
-            if CM_KEY in cm_data:                                                                     
-                config_data=json.loads(cm_data[CM_KEY])                                               
+            cm_data = ConfigMapHelper.get_configmap(
+                CM_NAMESPACE, CM_NAME
+            )
+            config_data={}
+            if CM_KEY in cm_data:
+                config_data=json.loads(cm_data[CM_KEY])
             existing_data = config_data
             result = CriticalServiceUpdater.update_configmap(
                 json.dumps(new_services), existing_data
