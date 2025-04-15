@@ -97,7 +97,7 @@ class ConfigMapHelper:
     @staticmethod
     def release_lock(namespace: str, configmap_name: str) -> None:
         """Release the lock by deleting the ConfigMap {configmap_lock_name}."""
-        configmap_lock_name = configmap_name + "-lock" 
+        configmap_lock_name = configmap_name + "-lock"
         try:
             ConfigMapHelper.load_k8s_config()
             v1 = client.CoreV1Api()
@@ -128,7 +128,9 @@ class ConfigMapHelper:
             ConfigMapHelper.load_k8s_config()
             v1 = client.CoreV1Api()
             if configmap_data is None:
-                configmap_data = ConfigMapHelper.get_configmap(namespace, configmap_name)
+                configmap_data = ConfigMapHelper.get_configmap(
+                    namespace, configmap_name
+                )
             configmap_data[key] = new_data
 
             configmap_body = client.V1ConfigMap(
