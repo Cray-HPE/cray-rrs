@@ -42,7 +42,7 @@ import yaml
 from flask import Flask, request, jsonify, Response
 import requests
 from src.rms.rms_statemanager import RMSStateManager
-from src.lib.lib_rms import Helper, criticalServicesHelper
+from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rms.rms_monitor import RMSMonitor, update_zone_status, update_critical_services
 
@@ -67,7 +67,6 @@ monitor = RMSMonitor(state_manager)
 # helper = Helper(state_manager)
 # ceph_helper = cephHelper(state_manager)
 # k8s_helper = k8sHelper(state_manager)
-critical_services_helper = criticalServicesHelper(state_manager)
 
 
 @staticmethod
