@@ -31,6 +31,7 @@ in Kubernetes to manage a lock mechanism for resources.
 import time
 import os
 from typing import Dict, Optional, Union
+from kubernetes.client.exceptions import ApiException
 from flask import current_app as app
 from kubernetes import client, config  # type: ignore
 from src.lib.rrs_logging import get_log_id
@@ -123,15 +124,20 @@ class ConfigMapHelper:
     ) -> None:
         """Update a ConfigMap in Kubernetes and the mounted file in the pod."""
         # print(f"In update_configmap_data, key is {key} and data is {new_data}")
-        ConfigMapHelper.load_k8s_config()
-        v1 = client.CoreV1Api()
-        if configmap_data is None:
-            configmap_data = ConfigMapHelper.get_configmap(namespace, configmap_name)
-        configmap_data[key] = new_data
+        try:
+            ConfigMapHelper.load_k8s_config()
+            v1 = client.CoreV1Api()
+            if configmap_data is None:
+                configmap_data = ConfigMapHelper.get_configmap(namespace, configmap_name)
+            configmap_data[key] = new_data
 
-        configmap_body = client.V1ConfigMap(
-            metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
-        )
+            configmap_body = client.V1ConfigMap(
+                metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
+            )
+        except ApiException as e:
+            app.logger.error(f"Failed to update ConfigMap: {e.reason}")
+        except Exception as e:
+            app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
 
         if ConfigMapHelper.acquire_lock(namespace, configmap_name):
             try:
