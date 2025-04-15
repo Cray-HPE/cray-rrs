@@ -38,7 +38,7 @@ import json
 from typing import Dict, List, Tuple, Any
 from flask import Flask
 import yaml
-from src.rms.rms_statemanager import RMSStateManager
+from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import cephHelper, k8sHelper
 from src.lib.lib_configmap import ConfigMapHelper
 

@@ -41,10 +41,10 @@ from datetime import datetime
 import yaml
 from flask import Flask, request, jsonify, Response
 import requests
-from src.rms.rms_statemanager import RMSStateManager
+from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.rms.rms_monitor import RMSMonitor, update_zone_status, update_critical_services
+from src.rrs.rms.rms_monitor import RMSMonitor, update_zone_status, update_critical_services
 
 app = Flask(__name__)
 
