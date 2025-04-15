@@ -23,6 +23,16 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
+"""
+RMS Entry Point and Flask Service Handler
+
+This module serves as the main entry point for the Rack Resiliency Service (RRS).
+It initializes monitoring components, manages state transitions, and exposes a 
+Flask-based HTTP endpoint for handling State Change Notifications (SCNs) from HMNFD.
+The module runs continuously and updates system state in a time-driven loop 
+to maintain rack-level resiliency awareness across the platform.
+"""
+
 import threading
 import time
 import yaml
@@ -272,6 +282,7 @@ def check_and_create_hmnfd_subscription() -> None:
 
 @staticmethod
 def initial_check_and_update() -> bool:
+    """Perform needed initialization checks and update configmap"""
     launch_monitoring = False
     dynamic_cm_data = ConfigMapHelper.get_configmap(
         state_manager.namespace, state_manager.dynamic_cm
@@ -396,6 +407,14 @@ def update_state_timestamp(
 
 
 if __name__ == "__main__":
+    """
+    Main execution loop for the Rack Resiliency Service (RRS).
+
+    - Runs initial config and state setup.
+    - Starts the Flask API server in a background thread.
+    - Subscribes to HMNFD for SCN events.
+    - Triggers critical services and zone monitoring in a timed loop.
+    """
     launch_monitoring = initial_check_and_update()
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.start()

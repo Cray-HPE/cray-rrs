@@ -1,9 +1,41 @@
-import yaml
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+
+"""
+RRS Initialization and Zone Discovery Module
+
+This module initializes the Rack Resiliency Service (RRS), retrieves node and zone
+information for both Kubernetes and Ceph, and updates the dynamic configmap with
+RRS metadata.
+"""
+
 from datetime import datetime
 from collections import defaultdict
 import logging
 import json
 from typing import Dict, List, Tuple, Any
+import yaml
 from src.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
@@ -14,7 +46,13 @@ state_manager = RMSStateManager()
 
 
 def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, Any]]:
-    """Retrieving zone information and status of k8s and CEPH nodes"""
+    """Retrieving zone information and status of k8s and CEPH nodes
+    Returns:
+        Tuple containing:
+            - A boolean indicating if discovery was successful.
+            - A dict of updated k8s zone-node data.
+            - A dict of updated Ceph zone-node data.
+    """    
     status = True
     updated_k8s_data = defaultdict(list)
     updated_ceph_data = dict()
@@ -42,7 +80,10 @@ def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, A
 
 
 def check_critical_services_and_timers() -> bool:
-    """Validate if critical services and timers are present in RRS static configmap"""
+    """Validate if critical services and timers are present in RRS static configmap
+    Returns:
+        bool: True if all required configurations are present, False otherwise.
+    """
     static_cm_data = ConfigMapHelper.get_configmap(
         state_manager.namespace, state_manager.static_cm
     )
@@ -83,7 +124,7 @@ def check_critical_services_and_timers() -> bool:
 
 
 def init() -> None:
-    """RRS initialization"""
+    """Initialize the Rack Resiliency Service (RRS)."""
     configmap_data = ConfigMapHelper.get_configmap(
         state_manager.namespace, state_manager.dynamic_cm
     )

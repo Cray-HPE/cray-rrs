@@ -1,10 +1,42 @@
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+
+"""
+RMS Monitoring Module
+
+This module is responsible for monitoring Kubernetes and Ceph cluster health and 
+status using the RRS (Rack Resiliency Service) framework. It provides functionality 
+to update zone information, monitor critical service status, and orchestrate the 
+K8s and Ceph monitoring loops in separate threads.
+"""
+
 import time
 import json
-import logging
-import yaml
 import copy
 import threading
 from flask import current_app as app
+import yaml
 from src.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
@@ -14,6 +46,17 @@ from src.lib.lib_configmap import ConfigMapHelper
 
 @staticmethod
 def update_zone_status(state_manager: RMSStateManager) -> bool | None:
+    """
+    Update the zone information in the dynamic ConfigMap with the latest
+    Kubernetes node statuses and Ceph health status.
+    Args:
+        state_manager (RMSStateManager): An instance of the RMS state manager used
+        to fetch and update dynamic configmap data safely.
+
+    Returns:
+        bool | None: True if Ceph is healthy, False if unhealthy, or None if an error occurs.
+    """
+    
     app.logger.info("Getting latest status for zones and nodes")
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
@@ -75,6 +118,15 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
 def update_critical_services(
     state_manager: RMSStateManager, reloading: bool = False
 ) -> str | None:
+    """
+    Update critical service status and configuration in the dynamic ConfigMap.
+    Args:
+        state_manager (RMSStateManager): State manager instance used to access and modify configmaps.
+        reloading (bool, optional): If True, fetches the config from the static configmap instead of dynamic. Defaults to False.
+    Returns:
+        str | None: A JSON-formatted string of the updated critical service configuration if successful,
+        or None in case of failure
+    """
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         if reloading:
@@ -132,12 +184,27 @@ def update_critical_services(
 
 
 class RMSMonitor:
+    """
+    RMSMonitor is responsible for monitoring Kubernetes and Ceph environments
+    as part of the Rack Resiliency Service (RRS). It manages the coordination
+    of monitoring loops for critical services and infrastructure health.
+    """
     def __init__(self, state_manager: RMSStateManager) -> None:
+        """
+        Initialize the RMSMonitor with a reference to the state manager.
+        Args:
+            state_manager (RMSStateManager): The RMS state manager instance.
+        """
         self.state_manager = state_manager
 
     def monitor_k8s(
         self, polling_interval: int, total_time: int, pre_delay: int
     ) -> None:
+        """
+        Monitor Kubernetes cluster status, focusing on critical service readiness and balance.
+        This function updates the k8s monitoring state, polls service status at intervals,
+        and logs any services that remain partially configured or imbalanced.
+        """
         app.logger.info("Starting k8s monitoring")
         Helper.update_state_timestamp(
             "k8s_monitoring", "Started", "start_timestamp_k8s_monitoring"
@@ -174,6 +241,7 @@ class RMSMonitor:
     def monitor_ceph(
         self, polling_interval: int, total_time: int, pre_delay: int
     ) -> None:
+        """Monitor Ceph storage system status, including health and zone node details."""
         app.logger.info("Starting CEPH monitoring")
         Helper.update_state_timestamp(
             "ceph_monitoring", "Started", "start_timestamp_ceph_monitoring"
@@ -192,7 +260,7 @@ class RMSMonitor:
             app.logger.error(f"CEPH is still unhealthy after {total_time} seconds")
 
     def monitoring_loop(self) -> None:
-        """Initiate monitoring critical services and CEPH"""
+        """Initiate monitoring of critical services and CEPH"""
         if not self.state_manager.start_monitoring():
             app.logger.warn(
                 f"Skipping launch of a new monitoring instance as a previous one is still active"

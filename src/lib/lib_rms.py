@@ -21,7 +21,14 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-"""File to keep all helper functions for the RMS application."""
+
+"""
+lib_rms.py
+
+This module contains utility functions for managing and monitoring critical services,
+including Kubernetes and Ceph zone discovery, status checking, and configuration updates.
+"""
+
 import os
 import json
 import re
@@ -49,7 +56,7 @@ class Helper:
     def run_command(command: str):
         """Helper function to run a command and return the result.
         Returns:
-            str: result of the command run."""
+            str: result of the command run."""      
         _app.logger.debug(f"Running command: {command}")
         try:
             result = subprocess.run(
@@ -125,11 +132,10 @@ class Helper:
             _app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
 
     @staticmethod
-    def token_fetch() -> str | None:
+    def token_fetch() -> str:
         """Fetch an access token from Keycloak using client credentials.
         Returns:
-            str | None: The access token if the request is successful, otherwise None.
-        """
+            str: The access token if the request is successful"""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
@@ -197,11 +203,8 @@ class cephHelper:
             )
 
             if "Degraded" in pg_degraded_message:
-                pgmap = ceph_status.get("pgmap", {})
-                if (
-                    "recovering_objects_per_sec" in pgmap
-                    or "recovering_bytes_per_sec" in pgmap
-                ):
+                pgmap = ceph_status.get('pgmap', {})
+                if ('recovering_objects_per_sec' in pgmap or 'recovering_bytes_per_sec' in pgmap):
                     _app.logger.info("CEPH recovery is in progress...")
                 else:
                     _app.logger.warning(
@@ -337,10 +340,9 @@ class k8sHelper:
     def get_k8s_nodes() -> Union[List[V1Node], Dict[str, str]]:
         """Retrieve all Kubernetes nodes
         Returns:
-            Union[List[V1Node], Dict[str, str]]:
+            Union[List[V1Node], Dict[str, str]]: 
                 - A list of V1Node objects representing Kubernetes nodes if successful.
-                - A dictionary with an "error" key and error message string if an exception occurs.
-        """
+                - A dictionary with an "error" key and error message string if an exception occurs."""
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
@@ -408,9 +410,8 @@ class k8sHelper:
                 )
         if zone_mapping:
             return zone_mapping
-        else:
-            _app.logger.error("No K8s topology zone present")
-            return "No K8s topology zone present"
+        _app.logger.error("No K8s topology zone present")
+        return "No K8s topology zone present"
 
     @staticmethod
     def fetch_all_pods() -> Union[Dict[str, str], List[Dict[str, Any]]]:
