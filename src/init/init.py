@@ -238,4 +238,5 @@ def init() -> None:
 
 
 if __name__ == "__main__":
-    init()
+    with app.app_context():
+        init()

@@ -35,7 +35,7 @@ import time
 import json
 import copy
 import threading
-from flask import current_app as app
+from flask import Flask, current_app as app
 import yaml
 from src.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
@@ -44,7 +44,6 @@ from src.lib.lib_configmap import ConfigMapHelper
 # logger = logging.getlogger()
 
 
-@staticmethod
 def update_zone_status(state_manager: RMSStateManager) -> bool | None:
     """
     Update the zone information in the dynamic ConfigMap with the latest
@@ -113,7 +112,6 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
         return None
 
 
-@staticmethod
 def update_critical_services(
     state_manager: RMSStateManager, reloading: bool = False
 ) -> str | None:
@@ -197,13 +195,14 @@ class RMSMonitor:
     of monitoring loops for critical services and infrastructure health.
     """
 
-    def __init__(self, state_manager: RMSStateManager) -> None:
+    def __init__(self, state_manager: RMSStateManager, app: Flask) -> None:
         """
         Initialize the RMSMonitor with a reference to the state manager.
         Args:
             state_manager (RMSStateManager): The RMS state manager instance.
         """
         self.state_manager = state_manager
+        self.app = app
 
     def monitor_k8s(
         self, polling_interval: int, total_time: int, pre_delay: int
@@ -213,120 +212,125 @@ class RMSMonitor:
         This function updates the k8s monitoring state, polls service status at intervals,
         and logs any services that remain partially configured or imbalanced.
         """
-        app.logger.info("Starting k8s monitoring")
-        Helper.update_state_timestamp(
-            self.state_manager,
-            "k8s_monitoring",
-            "Started",
-            "start_timestamp_k8s_monitoring",
-        )
-        nodeMonitorGracePeriod = k8sHelper.getNodeMonitorGracePeriod()
-        if nodeMonitorGracePeriod:
-            time.sleep(nodeMonitorGracePeriod)
-        else:
-            time.sleep(pre_delay)
-        start = time.time()
-        while time.time() - start < total_time:
-            # Retrieve and update critical services status
-            latest_services_json = update_critical_services(self.state_manager)
-            time.sleep(polling_interval)
+        with self.app.app_context():
+            app.logger.info("Starting k8s monitoring")
+            Helper.update_state_timestamp(
+                self.state_manager,
+                "k8s_monitoring",
+                "Started",
+                "start_timestamp_k8s_monitoring",
+            )
+            nodeMonitorGracePeriod = k8sHelper.getNodeMonitorGracePeriod()
+            if nodeMonitorGracePeriod:
+                time.sleep(nodeMonitorGracePeriod)
+            else:
+                time.sleep(pre_delay)
+            start = time.time()
+            while time.time() - start < total_time:
+                # Retrieve and update critical services status
+                latest_services_json = update_critical_services(self.state_manager)
+                time.sleep(polling_interval)
 
-        app.logger.info(f"Ending the k8s monitoring loop after {total_time} seconds")
-        Helper.update_state_timestamp(
-            self.state_manager,
-            "k8s_monitoring",
-            "Completed",
-            "end_timestamp_k8s_monitoring",
-        )
+            app.logger.info(
+                f"Ending the k8s monitoring loop after {total_time} seconds"
+            )
+            Helper.update_state_timestamp(
+                self.state_manager,
+                "k8s_monitoring",
+                "Completed",
+                "end_timestamp_k8s_monitoring",
+            )
 
-        if latest_services_json is None:
-            app.logger.error("No services JSON data available to process")
-            return
+            if latest_services_json is None:
+                app.logger.error("No services JSON data available to process")
+                return
 
-        try:
-            services_data = json.loads(latest_services_json)
-            unrecovered_services = []
+            try:
+                services_data = json.loads(latest_services_json)
+                unrecovered_services = []
 
-            for service, details in services_data["critical-services"].items():
-                if (
-                    details["status"] == "PartiallyConfigured"
-                    or details["balanced"] == "false"
-                ):
-                    unrecovered_services.append(service)
+                for service, details in services_data["critical-services"].items():
+                    if (
+                        details["status"] == "PartiallyConfigured"
+                        or details["balanced"] == "false"
+                    ):
+                        unrecovered_services.append(service)
 
-            if unrecovered_services:
-                app.logger.error(
-                    f"Services {unrecovered_services} are still not recovered even after {total_time} seconds"
-                )
-        except (json.JSONDecodeError, KeyError) as e:
-            app.logger.error(f"Error processing services data: {e}")
+                if unrecovered_services:
+                    app.logger.error(
+                        f"Services {unrecovered_services} are still not recovered even after {total_time} seconds"
+                    )
+            except (json.JSONDecodeError, KeyError) as e:
+                app.logger.error(f"Error processing services data: {e}")
 
     def monitor_ceph(
         self, polling_interval: int, total_time: int, pre_delay: int
     ) -> None:
         """Monitor Ceph storage system status, including health and zone node details."""
-        app.logger.info("Starting CEPH monitoring")
-        Helper.update_state_timestamp(
-            self.state_manager,
-            "ceph_monitoring",
-            "Started",
-            "start_timestamp_ceph_monitoring",
-        )
-        time.sleep(pre_delay)
-        start = time.time()
-        while time.time() - start < total_time:
-            # Retrieve and update k8s/CEPH status and CEPH health
-            ceph_health_status = update_zone_status(self.state_manager)
-            time.sleep(polling_interval)
+        with self.app.app_context():
+            app.logger.info("Starting CEPH monitoring")
+            Helper.update_state_timestamp(
+                self.state_manager,
+                "ceph_monitoring",
+                "Started",
+                "start_timestamp_ceph_monitoring",
+            )
+            time.sleep(pre_delay)
+            start = time.time()
+            while time.time() - start < total_time:
+                # Retrieve and update k8s/CEPH status and CEPH health
+                ceph_health_status = update_zone_status(self.state_manager)
+                time.sleep(polling_interval)
 
-        Helper.update_state_timestamp(
-            self.state_manager,
-            "ceph_monitoring",
-            "Completed",
-            "end_timestamp_ceph_monitoring",
-        )
-        if ceph_health_status is False:
-            app.logger.error(f"CEPH is still unhealthy after {total_time} seconds")
+            Helper.update_state_timestamp(
+                self.state_manager,
+                "ceph_monitoring",
+                "Completed",
+                "end_timestamp_ceph_monitoring",
+            )
+            if ceph_health_status is False:
+                app.logger.error(f"CEPH is still unhealthy after {total_time} seconds")
 
     def monitoring_loop(self) -> None:
         """Initiate monitoring of critical services and CEPH"""
-        if not self.state_manager.start_monitoring():
-            app.logger.warning(
-                "Skipping launch of a new monitoring instance as a previous one is still active"
+        with self.app.app_context():
+            if not self.state_manager.start_monitoring():
+                app.logger.warning(
+                    "Skipping launch of a new monitoring instance as a previous one is still active"
+                )
+                return  # Return early if the function is already running
+
+            app.logger.info("Monitoring critical services and zone status...")
+            state = "Monitoring"
+            self.state_manager.set_state(state)
+            Helper.update_state_timestamp(self.state_manager, "rms_state", state)
+            # Read the 'rrs-mon' configmap and parse the data
+            static_cm_data = ConfigMapHelper.get_configmap(
+                self.state_manager.namespace, self.state_manager.static_cm
             )
-            return  # Return early if the function is already running
 
-        app.logger.info("Monitoring critical services and zone status...")
-        state = "Monitoring"
-        self.state_manager.set_state(state)
-        Helper.update_state_timestamp(self.state_manager, "rms_state", state)
-        # Read the 'rrs-mon' configmap and parse the data
-        static_cm_data = ConfigMapHelper.get_configmap(
-            self.state_manager.namespace, self.state_manager.static_cm
-        )
+            k8s_args = (
+                int(static_cm_data.get("k8s_monitoring_polling_interval", 60)),
+                int(static_cm_data.get("k8s_monitoring_total_time", 600)),
+                int(static_cm_data.get("k8s_pre_monitoring_delay", 40)),
+            )
 
-        k8s_args = (
-            int(static_cm_data.get("k8s_monitoring_polling_interval", 60)),
-            int(static_cm_data.get("k8s_monitoring_total_time", 600)),
-            int(static_cm_data.get("k8s_pre_monitoring_delay", 40)),
-        )
+            ceph_args = (
+                int(static_cm_data.get("ceph_monitoring_polling_interval", 60)),
+                int(static_cm_data.get("ceph_monitoring_total_time", 600)),
+                int(static_cm_data.get("ceph_pre_monitoring_delay", 40)),
+            )
 
-        ceph_args = (
-            int(static_cm_data.get("ceph_monitoring_polling_interval", 60)),
-            int(static_cm_data.get("ceph_monitoring_total_time", 600)),
-            int(static_cm_data.get("ceph_pre_monitoring_delay", 40)),
-        )
+            t1 = threading.Thread(target=self.monitor_k8s, args=k8s_args)
+            t2 = threading.Thread(target=self.monitor_ceph, args=ceph_args)
 
-        t1 = threading.Thread(target=self.monitor_k8s, args=k8s_args)
-        t2 = threading.Thread(target=self.monitor_ceph, args=ceph_args)
+            t1.start()
+            t2.start()
 
-        t1.start()
-        t2.start()
+            t1.join()
+            t2.join()
 
-        t1.join()
-        t2.join()
-
-        app.logger.info("Monitoring complete")
-        self.state_manager.stop_monitoring()
-        self.state_manager.set_state("Started")
-        Helper.update_state_timestamp(self.state_manager, "rms_state", "Started")
+            app.logger.info("Monitoring complete")
+            self.state_manager.stop_monitoring()
+            self.state_manager.set_state("Started")
+            Helper.update_state_timestamp(self.state_manager, "rms_state", "Started")

@@ -52,7 +52,9 @@ app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler("app.log")
 file_handler.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter(
+    "%(asctime)s - %(levelname)s - %(threadName)s - %(message)s"
+)
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
@@ -64,12 +66,8 @@ app.logger.addHandler(file_handler)
 
 state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager)
-# helper = Helper(state_manager)
-# ceph_helper = cephHelper(state_manager)
-# k8s_helper = k8sHelper(state_manager)
 
 
-@staticmethod
 def check_failure_type(component_xname: str) -> None:
     """Check if it is a rack or node failure"""
     app.logger.info(
@@ -194,7 +192,6 @@ def handleSCN() -> tuple[Response, int]:
         return jsonify({"error": "Internal server error."}), 500
 
 
-@staticmethod
 def get_management_xnames() -> list[str] | None:
     """Get xnames for all the management nodes from HSM"""
     app.logger.info("Getting xnames for all the management nodes from HSM ...")
@@ -232,7 +229,6 @@ def get_management_xnames() -> list[str] | None:
         # exit(1)
 
 
-@staticmethod
 def check_and_create_hmnfd_subscription() -> None:
     """Create a subscription entry in hmnfd to recieve SCNs(state change notification) for the management components"""
     app.logger.info("Checking HMNFD subscription for SCN notifications ...")
@@ -285,7 +281,6 @@ def check_and_create_hmnfd_subscription() -> None:
         # exit(1)
 
 
-@staticmethod
 def initial_check_and_update() -> bool:
     """Perform needed initialization checks and update configmap"""
     is_monitoring = False
@@ -356,7 +351,6 @@ def initial_check_and_update() -> bool:
     return False
 
 
-@staticmethod
 def run_flask() -> None:
     """Run the Flask app in a separate thread for listening to HMNFD notifications"""
     app.logger.info(
@@ -366,27 +360,28 @@ def run_flask() -> None:
 
 
 if __name__ == "__main__":
-    launch_monitoring = initial_check_and_update()
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.start()
-    check_and_create_hmnfd_subscription()
-    update_critical_services(state_manager, True)
-    update_zone_status(state_manager)
-    if launch_monitoring:
-        app.logger.info(
-            "RMS is in 'Monitoring' state - starting monitoring loop to resume previous incomplete process"
-        )
-        threading.Thread(target=monitor.monitoring_loop).start()
-    time.sleep(600)
-    while True:
-        rms_state = "Started"
-        state_manager.set_state(rms_state)
-        Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
-        app.logger.info("Starting the main loop")
+    with app.app_context():
+        launch_monitoring = initial_check_and_update()
+        flask_thread = threading.Thread(target=run_flask)
+        flask_thread.start()
         check_and_create_hmnfd_subscription()
         update_critical_services(state_manager, True)
         update_zone_status(state_manager)
-        rms_state = "Waiting"
-        state_manager.set_state(rms_state)
-        Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
+        if launch_monitoring:
+            app.logger.info(
+                "RMS is in 'Monitoring' state - starting monitoring loop to resume previous incomplete process"
+            )
+            threading.Thread(target=monitor.monitoring_loop).start()
         time.sleep(600)
+        while True:
+            rms_state = "Started"
+            state_manager.set_state(rms_state)
+            Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
+            app.logger.info("Starting the main loop")
+            check_and_create_hmnfd_subscription()
+            update_critical_services(state_manager, True)
+            update_zone_status(state_manager)
+            rms_state = "Waiting"
+            state_manager.set_state(rms_state)
+            Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
+            time.sleep(600)
