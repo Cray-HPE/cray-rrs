@@ -55,7 +55,6 @@ class CriticalServiceUpdater:
         """
         log_id = get_log_id()  # Generate a unique log ID
         try:
-            v1 = client.CoreV1Api()
             if "error" in new_data:
                 app.logger.error(f"[{log_id}] Error in new data: {new_data}")
                 return new_data  # type: ignore
@@ -77,10 +76,10 @@ class CriticalServiceUpdater:
             new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
             if not test:
                 ConfigMapHelper.update_configmap_data(CM_NAMESPACE, CM_NAME, None, CM_KEY, new_cm_data,"")
-                app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")                            
-                ConfigMapHelper.update_configmap_data(                                                    
+                app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
+                ConfigMapHelper.update_configmap_data(
                     CM_NAMESPACE, CM_NAME, None, "last_updated_timestamp", datetime.utcnow().isoformat() + "Z",""
-                    ) 
+                    )
             # Log the event using app.logger
             app.logger.info(
                 f"[{log_id}] Successfully added {len(added_services)} services to ConfigMap"

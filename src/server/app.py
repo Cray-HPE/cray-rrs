@@ -9,7 +9,7 @@ from flask import Flask
 from flask_restful import Api
 from src.server.resources.healthz import Ready, Live
 from src.server.resources.version import Version
-from src.lib.lib_rms import Helper
+from src.lib.lib_configmap import ConfigMapHelper
 from src.server.routes import (
     ZoneListResource,
     ZoneDescribeResource,
@@ -36,8 +36,8 @@ app.logger.addHandler(file_handler)
 start_timestamp_api = datetime.datetime.utcnow().isoformat() + "Z"
 app.logger.info("API server started at %s", start_timestamp_api)
 with app.app_context():
-    Helper.update_configmap_with_timestamp(
-        "rrs-mon-dynamic", "rack-resiliency", start_timestamp_api, "start_timestamp_api"
+    ConfigMapHelper.update_configmap_with_timestamp(
+        "rack-resiliency", "rrs-mon-dynamic", None, "start_timestamp_api", start_timestamp_api
     )
 
 # Read version info
