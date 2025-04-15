@@ -6,3 +6,4 @@ pycodestyle
 pylint
 mypy
 types-PyYAML
+types-requests

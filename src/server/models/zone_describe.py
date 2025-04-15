@@ -143,7 +143,7 @@ class ZoneDescriber:
         # Ensure type compatibility by using the correct type or casting
         result = ZoneDescriber.get_zone_info(
             zone_name,
-            k8s_zones,
+            cast(Union[Dict[str, Dict[str, List[NodeInfo]]], str], k8s_zones),
             cast(
                 Union[Dict[str, List[Union[NodeInfo, CephNodeInfo]]], str], ceph_zones
             ),

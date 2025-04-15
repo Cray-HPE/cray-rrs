@@ -71,16 +71,23 @@ class CriticalServiceHelper:
             app.logger.error(
                 f"[{log_id}] Error fetching nodes data: {nodes_data['error']}"
             )
-            return [{"error": nodes_data["error"]}], 0  # Ensure returning a list
+            return [{"error": nodes_data["error"]}], 0
 
-        # Ensure nodes_data is a dictionary before using .items()
+        # Build node to zone mapping - refactored to reduce nesting
+        node_zone_map = {}
         if isinstance(nodes_data, dict):
-            node_zone_map = {
-                node["name"]: zone
-                for zone, node_types in nodes_data.items()
-                for node_type in ["masters", "workers"]
-                for node in node_types[node_type]
-            }
+            for zone, node_types in nodes_data.items():
+                if not isinstance(node_types, dict):
+                    continue
+
+                for node_type in ["masters", "workers"]:
+                    node_list = node_types.get(node_type, [])
+                    if not isinstance(node_list, list):
+                        continue
+
+                    for node in node_list:
+                        if isinstance(node, dict) and "name" in node:
+                            node_zone_map[node["name"]] = zone
         else:
             app.logger.error(f"Expected dictionary, got {type(nodes_data)}")
             return [{"error": "Invalid data format"}], 0
@@ -89,13 +96,11 @@ class CriticalServiceHelper:
             pod_list = v1.list_namespaced_pod(namespace)
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
-            return [
-                {"error": f"Failed to fetch pods: {str(e)}"}
-            ], 0  # Ensure returning a list
+            return [{"error": f"Failed to fetch pods: {str(e)}"}], 0
 
         running_pods = 0
-        result: List[Dict[str, Any]] = []  # List of dictionaries containing pod info
-        zone_pod_count: Dict[str, int] = {}  # Zone pod count map
+        result: List[Dict[str, Any]] = []
+        zone_pod_count: Dict[str, int] = {}
 
         for pod in pod_list.items:
             if pod.metadata.owner_references and any(
@@ -122,7 +127,7 @@ class CriticalServiceHelper:
                 )
 
         app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
-        return result, running_pods  # Ensure this is a list of dicts
+        return result, running_pods
 
     @staticmethod
     def _resolve_owner_kind(resource_type: str) -> str:

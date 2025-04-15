@@ -60,6 +60,10 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
+        if yaml_content is None:
+            app.logger.error("dynamic-data.yaml not found in the configmap")
+            state_manager.set_state("internal_failure")
+            return None
         dynamic_data = yaml.safe_load(yaml_content)
         zone_info = dynamic_data.get("zone")
         k8s_info = zone_info.get("k8s_zones_with_nodes")
@@ -132,11 +136,23 @@ def update_critical_services(
                 "Retrieving critical services information from rrs-static configmap"
             )
             json_content = static_cm_data.get("critical-service-config.json", None)
+            if json_content is None:
+                app.logger.error(
+                    "critical-service-config.json not found in the configmap"
+                )
+                state_manager.set_state("internal_failure")
+                return None
         else:
             app.logger.info(
                 "Retrieving critical services information from rrs-dynamic configmap"
             )
             json_content = dynamic_cm_data.get("critical-service-config.json", None)
+            if json_content is None:
+                app.logger.error(
+                    "critical-service-config.json not found in the configmap"
+                )
+                state_manager.set_state("internal_failure")
+                return None
 
         services_data = json.loads(json_content)
         updated_services = criticalServicesHelper.get_critical_services_status(
@@ -222,19 +238,30 @@ class RMSMonitor:
             "Completed",
             "end_timestamp_k8s_monitoring",
         )
-        unrecovered_services = []
-        for service, details in json.loads(latest_services_json)[
-            "critical-services"
-        ].items():
-            if (
-                details["status"] == "PartiallyConfigured"
-                or details["balanced"] == "false"
-            ):
-                unrecovered_services.append(service)
-        if unrecovered_services:
-            app.logger.error(
-                f"Services {unrecovered_services} are still not recovered even after {total_time} seconds"
-            )
+
+        # Add this check before trying to use latest_services_json
+        if latest_services_json is None:
+            app.logger.error("No services JSON data available to process")
+            return
+
+        # Now it's safe to parse the JSON
+        try:
+            services_data = json.loads(latest_services_json)
+            unrecovered_services = []
+
+            for service, details in services_data["critical-services"].items():
+                if (
+                    details["status"] == "PartiallyConfigured"
+                    or details["balanced"] == "false"
+                ):
+                    unrecovered_services.append(service)
+
+            if unrecovered_services:
+                app.logger.error(
+                    f"Services {unrecovered_services} are still not recovered even after {total_time} seconds"
+                )
+        except (json.JSONDecodeError, KeyError) as e:
+            app.logger.error(f"Error processing services data: {e}")
 
     def monitor_ceph(
         self, polling_interval: int, total_time: int, pre_delay: int

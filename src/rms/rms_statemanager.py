@@ -48,7 +48,7 @@ class RMSStateManager:
         self.lock = threading.Lock()
         self.monitor_running = False
         self.rms_state = ""
-        self.dynamic_cm_data = {}
+        self.dynamic_cm_data: Dict[str, Any] = {}
         self.namespace = "rack-resiliency"
         self.dynamic_cm = "dynamic-sravani-test"
         self.static_cm = "static-sravani-test"
@@ -63,7 +63,7 @@ class RMSStateManager:
         with self.lock:
             return self.rms_state
 
-    def set_dynamic_cm_data(self, data) -> None:
+    def set_dynamic_cm_data(self, data: Dict[str, Any]) -> None:
         """Thread-safe method to update the dynamic ConfigMap data."""
         with self.lock:
             self.dynamic_cm_data = data

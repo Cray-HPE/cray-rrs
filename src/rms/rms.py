@@ -124,20 +124,27 @@ def check_failure_type(component_xname: str) -> None:
 
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
+        if yaml_content is None:
+            app.logger.error("dynamic-data.yaml not found in the configmap")
+            state_manager.set_state("internal_failure")
+            return None
         dynamic_data = yaml.safe_load(yaml_content)
         pod_zone = dynamic_data.get("rrs").get("zone")
         # pod_node = dynamic_data.get("rrs").get("node")
         if rack_id in pod_zone:
             print("Monitoring pod was on the failed rack")
+        return None
         # implement this
 
     except requests.exceptions.RequestException as e:
         app.logger.error("Request failed: %s", e)
         state_manager.set_state("internal_failure")
+        return None
         # exit(1)
     except ValueError as e:
         app.logger.error("Failed to parse JSON: %s", e)
         state_manager.set_state("internal_failure")
+        return None
         # exit(1)
 
 
@@ -176,7 +183,9 @@ def handleSCN() -> tuple[Response, int]:
             # Handle cleanup or other actions here if needed
 
         else:
-            app.logger.warning("Unexpected state '%s' received for %s.", state, components)
+            app.logger.warning(
+                "Unexpected state '%s' received for %s.", state, components
+            )
 
         return jsonify({"message": "POST call received"}), 200
 
