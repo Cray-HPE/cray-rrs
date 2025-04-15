@@ -75,11 +75,18 @@ class CriticalServiceUpdater:
             # Patch ConfigMap
             new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
             if not test:
-                ConfigMapHelper.update_configmap_data(CM_NAMESPACE, CM_NAME, None, CM_KEY, new_cm_data,"")
+                ConfigMapHelper.update_configmap_data(
+                    CM_NAMESPACE, CM_NAME, None, CM_KEY, new_cm_data, ""
+                )
                 app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
                 ConfigMapHelper.update_configmap_data(
-                    CM_NAMESPACE, CM_NAME, None, "last_updated_timestamp", datetime.utcnow().isoformat() + "Z",""
-                    )
+                    CM_NAMESPACE,
+                    CM_NAME,
+                    None,
+                    "last_updated_timestamp",
+                    datetime.utcnow().isoformat() + "Z",
+                    "",
+                )
             # Log the event using app.logger
             app.logger.info(
                 f"[{log_id}] Successfully added {len(added_services)} services to ConfigMap"
