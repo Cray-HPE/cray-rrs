@@ -38,12 +38,12 @@ RUN python3 -m venv $VIRTUAL_ENV && \
     pip3 install --no-cache-dir -r requirements.txt
 
 FROM base as build
-RUN mkdir -P /rrs/rms /rrs/lib
+RUN mkdir -P /rrs/init /rrs/lib
 WORKDIR /rrs
 
-# Copy rms sources
+# Copy rrs init sources
 EXPOSE 80
-COPY src/rms /rrs/rms
-COPY src/lib /rrs/lib
+COPY src/rrs/init /rrs/init
+COPY src/rrs/lib /rrs/lib
 
-CMD [ "python", "init.py" ]
+CMD [ "python", "/rrs/init/init.py" ]

@@ -43,7 +43,7 @@ WORKDIR /rrs
 
 # Copy rms sources
 EXPOSE 80
-COPY src/rms /rrs/rms
-COPY src/lib /rrs/lib
+COPY src/rrs/rms /rrs/rms
+COPY src/rrs/lib /rrs/lib
 
-CMD [ "python", "rms.py" ]
+CMD [ "python", "/rrs/rms/rms.py" ]
