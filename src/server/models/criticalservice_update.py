@@ -81,11 +81,11 @@ class CriticalServiceUpdater:
                         CM_KEY: json.dumps(
                             {"critical-services": existing_services}, indent=2
                         ),
-                        "last_updated_timestamp": datetime.utcnow().isoformat() + "Z"
+                        "last_updated_timestamp": datetime.utcnow().isoformat() + "Z",
                     }
                 }
                 v1.patch_namespaced_config_map(CM_NAME, CM_NAMESPACE, body)
-                
+
                 # ConfigMapHelper.update_configmap_data(CM_NAMESPACE, CM_NAME, CM_KEY, new_cm_data,"")
                 app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
                 # ConfigMapHelper.update_configmap_data(
@@ -154,12 +154,10 @@ class CriticalServiceUpdater:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
                 return ({"error": "Missing 'critical-services' in payload"}), 400
 
-            cm_data = ConfigMapHelper.get_configmap(
-                CM_NAMESPACE, CM_NAME
-            )
-            config_data={}
+            cm_data = ConfigMapHelper.get_configmap(CM_NAMESPACE, CM_NAME)
+            config_data = {}
             if CM_KEY in cm_data:
-                config_data=json.loads(cm_data[CM_KEY])
+                config_data = json.loads(cm_data[CM_KEY])
             existing_data = config_data
             result = CriticalServiceUpdater.update_configmap(
                 json.dumps(new_services), existing_data

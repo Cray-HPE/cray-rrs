@@ -59,12 +59,10 @@ class CriticalServiceDescriber:
                 f"[{log_id}] Attempting to retrieve details for service: {service_name}"
             )
 
-            cm_data = ConfigMapHelper.get_configmap(
-                CM_NAMESPACE, CM_NAME
-            )
-            config_data={}
+            cm_data = ConfigMapHelper.get_configmap(CM_NAMESPACE, CM_NAME)
+            config_data = {}
             if CM_KEY in cm_data:
-                config_data=json.loads(cm_data[CM_KEY])
+                config_data = json.loads(cm_data[CM_KEY])
             services = config_data.get("critical-services", {})
 
             result = CriticalServiceStatusDescriber.get_service_details(

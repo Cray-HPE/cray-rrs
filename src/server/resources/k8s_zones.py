@@ -27,7 +27,9 @@ import yaml
 from flask import current_app as app
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
+
 # from resources.critical_services import CriticalServiceHelper
+
 
 class K8sZoneService:
     """Service class to fetch and parse Kubernetes zone data."""
@@ -39,10 +41,14 @@ class K8sZoneService:
         app.logger.info(f"[{log_id}] Fetching Kubernetes zone details from ConfigMap")
 
         try:
-            configmap_yaml = ConfigMapHelper.get_configmap("rack-resiliency", "rrs-mon-dynamic")
+            configmap_yaml = ConfigMapHelper.get_configmap(
+                "rack-resiliency", "rrs-mon-dynamic"
+            )
 
             if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
-                app.logger.error(f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}")
+                app.logger.error(
+                    f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
+                )
                 return configmap_yaml
 
             if not configmap_yaml:
@@ -90,15 +96,21 @@ class K8sZoneService:
                     elif node_name.startswith("ncn-w"):
                         zone_mapping[zone_name]["workers"].append(node_info)
                     else:
-                        zone_mapping[zone_name].setdefault("unknown", []).append(node_info)
+                        zone_mapping[zone_name].setdefault("unknown", []).append(
+                            node_info
+                        )
 
             if zone_mapping:
-                app.logger.info(f"[{log_id}] Successfully parsed Kubernetes zone details")
+                app.logger.info(
+                    f"[{log_id}] Successfully parsed Kubernetes zone details"
+                )
                 return zone_mapping
 
             app.logger.warning(f"[{log_id}] No Kubernetes zones present")
             return {"error": "No Kubernetes zones present"}
 
         except Exception as e:
-            app.logger.exception(f"[{log_id}] Unexpected error while parsing Kubernetes zones.")
+            app.logger.exception(
+                f"[{log_id}] Unexpected error while parsing Kubernetes zones."
+            )
             return {"error": f"Unexpected error occurred: {str(e)}"}

@@ -17,7 +17,7 @@ def lint(session):
     session.install("-r", "requirements-test.txt")
     session.install(".")
     session.log("Running pylint...")
-    session.run("pylint", "--rcfile=.pylintrc", "src", "tests")
+    session.run("pylint", "--rcfile=.pylintrc", "src/*", "tests")
 
     session.log("Running pycodestyle...")
     session.run("pycodestyle", "--config=.pycodestyle", "src", "tests")

@@ -32,12 +32,14 @@ from src.lib.rrs_logging import get_log_id
 # Define TypedDict for node info structure
 class OsdInfo(TypedDict):
     """Information about a Ceph Object Storage Daemon (OSD)."""
+
     name: str
     status: str
 
 
 class NodeInfo(TypedDict):
     """Information about a Ceph storage node including its OSDs."""
+
     name: str
     status: str
     osds: List[OsdInfo]
@@ -59,7 +61,9 @@ class CephService:
         app.logger.info(f"[{log_id}] Fetching Ceph zone details from ConfigMap.")
 
         try:
-            configmap_yaml = ConfigMapHelper.get_configmap("rack-resiliency", "rrs-mon-dynamic")
+            configmap_yaml = ConfigMapHelper.get_configmap(
+                "rack-resiliency", "rrs-mon-dynamic"
+            )
 
             if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
                 app.logger.error(
@@ -137,5 +141,7 @@ class CephService:
             return {"error": "No Ceph zones present"}
 
         except Exception as e:
-            app.logger.exception(f"[{log_id}] Unexpected error while parsing Ceph zones.")
+            app.logger.exception(
+                f"[{log_id}] Unexpected error while parsing Ceph zones."
+            )
             return {"error": f"Unexpected error occurred: {str(e)}"}
