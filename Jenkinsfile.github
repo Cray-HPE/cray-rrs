@@ -79,7 +79,7 @@ pipeline {
         stage("Publish") {
             steps {
                 script {
-                    publishCsmDockerImage(image: env.NAME, tag: env.VERSION, isStable: env.IS_STABLE)
+                    publishCsmDockerImage(image: env.NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api")
                     // publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
                 }
             }
