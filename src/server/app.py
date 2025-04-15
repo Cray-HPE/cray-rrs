@@ -36,7 +36,7 @@ app.logger.addHandler(file_handler)
 start_timestamp_api = datetime.datetime.utcnow().isoformat() + "Z"
 app.logger.info("API server started at %s", start_timestamp_api)
 with app.app_context():
-    ConfigMapHelper.update_configmap_with_timestamp(
+    ConfigMapHelper.update_configmap_data(
         "rack-resiliency", "rrs-mon-dynamic", None, "start_timestamp_api", start_timestamp_api
     )
 
