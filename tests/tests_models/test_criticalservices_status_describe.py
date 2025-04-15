@@ -31,8 +31,8 @@ These tests validate the function's behavior when retrieving details of critical
 import unittest
 from typing import Any, Dict, cast
 
-from src.server.app import app
-from src.server.models.criticalservice_status_describe import (
+from src.api.app import app
+from src.api.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,
 )
 from tests.tests_models.mock_data import (

@@ -30,8 +30,8 @@ These tests validate the function's behavior when retrieving critical services.
 
 import unittest
 
-from src.server.app import app
-from src.server.models.criticalservice_status_list import CriticalServiceStatusLister
+from src.api.app import app
+from src.api.models.criticalservice_status_list import CriticalServiceStatusLister
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
     MOCK_ERROR_CRT_SVC,

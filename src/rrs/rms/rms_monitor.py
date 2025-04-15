@@ -37,7 +37,7 @@ import copy
 import threading
 from flask import Flask, current_app as app
 import yaml
-from src.rms.rms_statemanager import RMSStateManager
+from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
 

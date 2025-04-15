@@ -44,7 +44,11 @@ import requests
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.rrs.rms.rms_monitor import RMSMonitor, update_zone_status, update_critical_services
+from src.rrs.rms.rms_monitor import (
+    RMSMonitor,
+    update_zone_status,
+    update_critical_services,
+)
 
 app = Flask(__name__)
 

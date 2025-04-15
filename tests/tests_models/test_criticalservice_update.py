@@ -31,8 +31,8 @@ These tests validate the update behavior of critical services in a ConfigMap.
 import unittest
 from typing import cast
 
-from src.server.models.criticalservice_update import CriticalServiceUpdater
-from src.server.app import app
+from src.api.models.criticalservice_update import CriticalServiceUpdater
+from src.api.app import app
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,

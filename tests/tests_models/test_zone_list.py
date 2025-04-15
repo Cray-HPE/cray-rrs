@@ -30,8 +30,8 @@ These tests validate the function's behavior when retrieving and mapping zone de
 
 import unittest
 
-from src.server.app import app
-from src.server.models.zone_list import ZoneMapper
+from src.api.app import app
+from src.api.models.zone_list import ZoneMapper
 from tests.tests_models.mock_data import (
     MOCK_K8S_RESPONSE,
     MOCK_CEPH_RESPONSE,

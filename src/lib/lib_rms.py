@@ -43,7 +43,7 @@ from kubernetes import client  # type: ignore
 from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
-from src.rms.rms_statemanager import RMSStateManager
+from src.rrs.rms.rms_statemanager import RMSStateManager
 
 # logger = logging.getLogger(__name__)
 

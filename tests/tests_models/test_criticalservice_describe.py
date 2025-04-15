@@ -30,10 +30,10 @@ Validates retrieval of critical service details.
 
 import unittest
 from typing import Any, Dict, cast
-from src.server.models.criticalservice_status_describe import (
+from src.api.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,
 )
-from src.server.app import app
+from src.api.app import app
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
