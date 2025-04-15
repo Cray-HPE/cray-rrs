@@ -195,14 +195,14 @@ class RMSMonitor:
     of monitoring loops for critical services and infrastructure health.
     """
 
-    def __init__(self, state_manager: RMSStateManager, app: Flask) -> None:
+    def __init__(self, state_manager: RMSStateManager, app_arg: Flask) -> None:
         """
         Initialize the RMSMonitor with a reference to the state manager.
         Args:
             state_manager (RMSStateManager): The RMS state manager instance.
         """
         self.state_manager = state_manager
-        self.app = app
+        self.app_arg = app_arg
 
     def monitor_k8s(
         self, polling_interval: int, total_time: int, pre_delay: int
@@ -212,7 +212,7 @@ class RMSMonitor:
         This function updates the k8s monitoring state, polls service status at intervals,
         and logs any services that remain partially configured or imbalanced.
         """
-        with self.app.app_context():
+        with self.app_arg.app_context():
             app.logger.info("Starting k8s monitoring")
             Helper.update_state_timestamp(
                 self.state_manager,
@@ -267,7 +267,7 @@ class RMSMonitor:
         self, polling_interval: int, total_time: int, pre_delay: int
     ) -> None:
         """Monitor Ceph storage system status, including health and zone node details."""
-        with self.app.app_context():
+        with self.app_arg.app_context():
             app.logger.info("Starting CEPH monitoring")
             Helper.update_state_timestamp(
                 self.state_manager,
@@ -293,7 +293,7 @@ class RMSMonitor:
 
     def monitoring_loop(self) -> None:
         """Initiate monitoring of critical services and CEPH"""
-        with self.app.app_context():
+        with self.app_arg.app_context():
             if not self.state_manager.start_monitoring():
                 app.logger.warning(
                     "Skipping launch of a new monitoring instance as a previous one is still active"

@@ -65,7 +65,7 @@ app.logger.addHandler(file_handler)
 # logger = logging.getlogger()
 
 state_manager = RMSStateManager()
-monitor = RMSMonitor(state_manager)
+monitor = RMSMonitor(state_manager, app)
 
 
 def check_failure_type(component_xname: str) -> None:
