@@ -30,13 +30,13 @@ from typing import Dict, List, Tuple, Any, Union, cast
 from flask import request
 from flask_restful import Resource
 from src.lib.rrs_logging import log_event
-from src.server.models.zone_list import ZoneMapper
-from src.server.models.zone_describe import ZoneDescriber
-from src.server.models.criticalservice_list import CriticalServicesLister
-from src.server.models.criticalservice_describe import CriticalServiceDescriber
-from src.server.models.criticalservice_update import CriticalServiceUpdater
-from src.server.models.criticalservice_status_list import CriticalServiceStatusLister
-from src.server.models.criticalservice_status_describe import (
+from src.api.models.zone_list import ZoneMapper
+from src.api.models.zone_describe import ZoneDescriber
+from src.api.models.criticalservice_list import CriticalServicesLister
+from src.api.models.criticalservice_describe import CriticalServiceDescriber
+from src.api.models.criticalservice_update import CriticalServiceUpdater
+from src.api.models.criticalservice_status_list import CriticalServiceStatusLister
+from src.api.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,
 )
 

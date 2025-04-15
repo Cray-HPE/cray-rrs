@@ -29,9 +29,9 @@ import json
 from typing import Dict, List, Any, Optional
 from flask import current_app as app
 from kubernetes import client  # type: ignore
-from src.server.resources.critical_services import CriticalServiceHelper
+from src.api.resources.critical_services import CriticalServiceHelper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
+from src.api.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
 from src.lib.rrs_logging import get_log_id
 
 

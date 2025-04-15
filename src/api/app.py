@@ -7,10 +7,10 @@ import logging
 import datetime
 from flask import Flask
 from flask_restful import Api
-from src.server.resources.healthz import Ready, Live
-from src.server.resources.version import Version
+from src.api.resources.healthz import Ready, Live
+from src.api.resources.version import Version
 from src.lib.lib_configmap import ConfigMapHelper
-from src.server.routes import (
+from src.api.routes import (
     ZoneListResource,
     ZoneDescribeResource,
     CriticalServiceListResource,

@@ -27,13 +27,13 @@
 from typing import Dict, List, Any, Optional, Union, TypedDict, cast
 
 from flask import current_app as app
-from src.server.resources.k8s_zones import K8sZoneService
-from src.server.resources.ceph_zones import CephService
-from src.server.models.zone_list import ZoneMapper
+from src.api.resources.k8s_zones import K8sZoneService
+from src.api.resources.ceph_zones import CephService
+from src.api.models.zone_list import ZoneMapper
 from src.lib.rrs_logging import get_log_id
 
 # Import the NodeInfo type from ceph_zones to ensure type compatibility
-from src.server.resources.ceph_zones import NodeInfo as CephNodeInfo
+from src.api.resources.ceph_zones import NodeInfo as CephNodeInfo
 
 
 class NodeInfo(TypedDict, total=False):

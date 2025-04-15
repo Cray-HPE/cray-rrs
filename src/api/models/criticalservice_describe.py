@@ -31,8 +31,8 @@ from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.error_print import pretty_print_error
 from src.lib.rrs_logging import get_log_id
-from src.server.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
-from src.server.models.criticalservice_status_describe import (
+from src.api.models.criticalservice_status_list import CM_KEY, CM_NAME, CM_NAMESPACE
+from src.api.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,
 )
 
