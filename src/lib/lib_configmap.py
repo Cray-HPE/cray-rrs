@@ -31,9 +31,9 @@ in Kubernetes to manage a lock mechanism for resources.
 import time
 import os
 from typing import Dict, Optional, Union
-from kubernetes.client.exceptions import ApiException
 from flask import current_app as app
 from kubernetes import client, config  # type: ignore
+from kubernetes.client.exceptions import ApiException
 from src.lib.rrs_logging import get_log_id
 
 
@@ -54,9 +54,9 @@ class ConfigMapHelper:
     @staticmethod
     def create_configmap(namespace: str, configmap_lock_name: str) -> None:
         """Create a ConfigMap with the provided name in the given namespace."""
-        ConfigMapHelper.load_k8s_config()
-        v1 = client.CoreV1Api()
         try:
+            ConfigMapHelper.load_k8s_config()
+            v1 = client.CoreV1Api()
             config_map = client.V1ConfigMap(
                 metadata=client.V1ObjectMeta(name=configmap_lock_name), data={}
             )
@@ -68,11 +68,11 @@ class ConfigMapHelper:
     def acquire_lock(namespace: str, configmap_name: str) -> bool:
         """Acquire the lock by creating the ConfigMap {configmap_lock_name}."""
         configmap_lock_name = configmap_name + "-lock"
-        ConfigMapHelper.load_k8s_config()
-        v1 = client.CoreV1Api()
         # Check if the ConfigMap already exists
         while True:
             try:
+                ConfigMapHelper.load_k8s_config()
+                v1 = client.CoreV1Api()
                 v1.read_namespaced_config_map(
                     namespace=namespace, name=configmap_lock_name
                 )
@@ -97,10 +97,10 @@ class ConfigMapHelper:
     @staticmethod
     def release_lock(namespace: str, configmap_name: str) -> None:
         """Release the lock by deleting the ConfigMap {configmap_lock_name}."""
-        configmap_lock_name = configmap_name + "-lock"
-        ConfigMapHelper.load_k8s_config()
-        v1 = client.CoreV1Api()
+        configmap_lock_name = configmap_name + "-lock" 
         try:
+            ConfigMapHelper.load_k8s_config()
+            v1 = client.CoreV1Api()
             v1.delete_namespaced_config_map(
                 name=configmap_lock_name, namespace=namespace
             )
@@ -173,10 +173,10 @@ class ConfigMapHelper:
         app.logger.info(
             f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
         )
-        ConfigMapHelper.load_k8s_config()
-        v1 = client.CoreV1Api()
 
         try:
+            ConfigMapHelper.load_k8s_config()
+            v1 = client.CoreV1Api()
             config_map = v1.read_namespaced_config_map(
                 name=configmap_name, namespace=namespace
             )
