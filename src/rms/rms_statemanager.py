@@ -25,7 +25,7 @@
 """
 RMS State Manager Module
 
-This module defines the RMSStateManager class, which handles the synchronization and 
+This module defines the RMSStateManager class, which handles the synchronization and
 management of state transitions for the Rack Resiliency Service (RRS) monitoring logic.
 """
 
@@ -42,6 +42,7 @@ class RMSStateManager:
     RMSStateManager handles the monitoring state and access to dynamic ConfigMap data
     for the Rack Resiliency Service (RRS).
     """
+
     def __init__(self) -> None:
         """Initialize the state manager with default state values and resource identifiers."""
         self.lock = threading.Lock()

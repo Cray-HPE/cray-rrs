@@ -25,9 +25,9 @@
 """
 RMS Monitoring Module
 
-This module is responsible for monitoring Kubernetes and Ceph cluster health and 
-status using the RRS (Rack Resiliency Service) framework. It provides functionality 
-to update zone information, monitor critical service status, and orchestrate the 
+This module is responsible for monitoring Kubernetes and Ceph cluster health and
+status using the RRS (Rack Resiliency Service) framework. It provides functionality
+to update zone information, monitor critical service status, and orchestrate the
 K8s and Ceph monitoring loops in separate threads.
 """
 
@@ -56,24 +56,16 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
     Returns:
         bool | None: True if Ceph is healthy, False if unhealthy, or None if an error occurs.
     """
-    
     app.logger.info("Getting latest status for zones and nodes")
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
-        if yaml_content:
-            dynamic_data = yaml.safe_load(yaml_content)
-        else:
-            app.logger.error(
-                "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
-            )
-            # exit(1)
-
+        dynamic_data = yaml.safe_load(yaml_content)
         zone_info = dynamic_data.get("zone")
         k8s_info = zone_info.get("k8s_zones_with_nodes")
         k8s_info_old = copy.deepcopy(k8s_info)
 
-        for zone, nodes in k8s_info.items():
+        for _, nodes in k8s_info.items():
             for node in nodes:
                 node["Status"] = k8sHelper.get_node_status(node["name"])
 
@@ -84,7 +76,7 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
         zone_info["ceph_zones_with_nodes"] = updated_ceph_data
 
         if k8s_info_old != k8s_info or ceph_info_old != updated_ceph_data:
-            app.logger.info(f"Updating zone information in rrs-dynamic configmap")
+            app.logger.info("Updating zone information in rrs-dynamic configmap")
 
             dynamic_cm_data["dynamic-data.yaml"] = yaml.dump(
                 dynamic_data, default_flow_style=False
@@ -106,12 +98,15 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
             "Ensure that 'zone' and 'k8s_zones_with_nodes' keys are present in the dynamic configmap data."
         )
         state_manager.set_state("internal_failure")
+        return None
     except yaml.YAMLError as e:
         app.logger.error(f"YAML error occurred: {e}")
         state_manager.set_state("internal_failure")
+        return None
     except Exception as e:
         app.logger.error(f"An unexpected error occurred: {e}")
         state_manager.set_state("internal_failure")
+        return None
 
 
 @staticmethod
@@ -122,7 +117,7 @@ def update_critical_services(
     Update critical service status and configuration in the dynamic ConfigMap.
     Args:
         state_manager (RMSStateManager): State manager instance used to access and modify configmaps.
-        reloading (bool, optional): If True, fetches the config from the static configmap instead of dynamic. Defaults to False.
+        reloading (bool, optional): If True, fetches the config from the static configmap instead of dynamic.
     Returns:
         str | None: A JSON-formatted string of the updated critical service configuration if successful,
         or None in case of failure
@@ -142,14 +137,8 @@ def update_critical_services(
                 "Retrieving critical services information from rrs-dynamic configmap"
             )
             json_content = dynamic_cm_data.get("critical-service-config.json", None)
-        if json_content:
-            services_data = json.loads(json_content)
-        else:
-            app.logger.error(
-                "No content found under critical-service-config.json in rrs-mon configmap"
-            )
-            exit(1)
 
+        services_data = json.loads(json_content)
         updated_services = criticalServicesHelper.get_critical_services_status(
             services_data
         )
@@ -172,15 +161,17 @@ def update_critical_services(
     except json.JSONDecodeError:
         app.logger.error("Failed to decode critical-service-config.json from configmap")
         state_manager.set_state("internal_failure")
-        return
+        return None
     except KeyError as e:
         app.logger.error(
             f"KeyError occurred: {str(e)} - Check if the configmap contains the expected keys"
         )
         state_manager.set_state("internal_failure")
+        return None
     except Exception as e:
         app.logger.error(f"An unexpected error occurred: {str(e)}")
         state_manager.set_state("internal_failure")
+        return None
 
 
 class RMSMonitor:
@@ -189,6 +180,7 @@ class RMSMonitor:
     as part of the Rack Resiliency Service (RRS). It manages the coordination
     of monitoring loops for critical services and infrastructure health.
     """
+
     def __init__(self, state_manager: RMSStateManager) -> None:
         """
         Initialize the RMSMonitor with a reference to the state manager.
@@ -207,7 +199,10 @@ class RMSMonitor:
         """
         app.logger.info("Starting k8s monitoring")
         Helper.update_state_timestamp(
-            "k8s_monitoring", "Started", "start_timestamp_k8s_monitoring"
+            self.state_manager,
+            "k8s_monitoring",
+            "Started",
+            "start_timestamp_k8s_monitoring",
         )
         nodeMonitorGracePeriod = k8sHelper.getNodeMonitorGracePeriod()
         if nodeMonitorGracePeriod:
@@ -217,12 +212,15 @@ class RMSMonitor:
         start = time.time()
         while time.time() - start < total_time:
             # Retrieve and update critical services status
-            latest_services_json = update_critical_services()
+            latest_services_json = update_critical_services(self.state_manager)
             time.sleep(polling_interval)
 
         app.logger.info(f"Ending the k8s monitoring loop after {total_time} seconds")
         Helper.update_state_timestamp(
-            "k8s_monitoring", "Completed", "end_timestamp_k8s_monitoring"
+            self.state_manager,
+            "k8s_monitoring",
+            "Completed",
+            "end_timestamp_k8s_monitoring",
         )
         unrecovered_services = []
         for service, details in json.loads(latest_services_json)[
@@ -244,7 +242,10 @@ class RMSMonitor:
         """Monitor Ceph storage system status, including health and zone node details."""
         app.logger.info("Starting CEPH monitoring")
         Helper.update_state_timestamp(
-            "ceph_monitoring", "Started", "start_timestamp_ceph_monitoring"
+            self.state_manager,
+            "ceph_monitoring",
+            "Started",
+            "start_timestamp_ceph_monitoring",
         )
         time.sleep(pre_delay)
         start = time.time()
@@ -254,7 +255,10 @@ class RMSMonitor:
             time.sleep(polling_interval)
 
         Helper.update_state_timestamp(
-            "ceph_monitoring", "Completed", "end_timestamp_ceph_monitoring"
+            self.state_manager,
+            "ceph_monitoring",
+            "Completed",
+            "end_timestamp_ceph_monitoring",
         )
         if ceph_health_status is False:
             app.logger.error(f"CEPH is still unhealthy after {total_time} seconds")
@@ -262,15 +266,15 @@ class RMSMonitor:
     def monitoring_loop(self) -> None:
         """Initiate monitoring of critical services and CEPH"""
         if not self.state_manager.start_monitoring():
-            app.logger.warn(
-                f"Skipping launch of a new monitoring instance as a previous one is still active"
+            app.logger.warning(
+                "Skipping launch of a new monitoring instance as a previous one is still active"
             )
             return  # Return early if the function is already running
 
         app.logger.info("Monitoring critical services and zone status...")
         state = "Monitoring"
         self.state_manager.set_state(state)
-        Helper.update_state_timestamp("rms_state", state)
+        Helper.update_state_timestamp(self.state_manager, "rms_state", state)
         # Read the 'rrs-mon' configmap and parse the data
         static_cm_data = ConfigMapHelper.get_configmap(
             self.state_manager.namespace, self.state_manager.static_cm
@@ -300,4 +304,4 @@ class RMSMonitor:
         app.logger.info("Monitoring complete")
         self.state_manager.stop_monitoring()
         self.state_manager.set_state("Started")
-        Helper.update_state_timestamp("rms_state", "Started")
+        Helper.update_state_timestamp(self.state_manager, "rms_state", "Started")

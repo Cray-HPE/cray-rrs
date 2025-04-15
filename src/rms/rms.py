@@ -27,20 +27,21 @@
 RMS Entry Point and Flask Service Handler
 
 This module serves as the main entry point for the Rack Resiliency Service (RRS).
-It initializes monitoring components, manages state transitions, and exposes a 
+It initializes monitoring components, manages state transitions, and exposes a
 Flask-based HTTP endpoint for handling State Change Notifications (SCNs) from HMNFD.
-The module runs continuously and updates system state in a time-driven loop 
+The module runs continuously and updates system state in a time-driven loop
 to maintain rack-level resiliency awareness across the platform.
 """
 
+from pickle import NONE
 import threading
+import sys
 import time
-import yaml
 import logging
 from datetime import datetime
+import yaml
 from flask import Flask, request, jsonify, Response
 import requests
-from typing import Optional
 from src.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
@@ -83,7 +84,7 @@ def check_failure_type(component_xname: str) -> None:
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     try:
         # Make the GET request to hsm endpoint
-        hsm_response = requests.get(hsm_url, headers=headers)
+        hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
         hsm_response.raise_for_status()
         hsm_data = hsm_response.json()
 
@@ -126,14 +127,9 @@ def check_failure_type(component_xname: str) -> None:
 
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
-        if yaml_content:
-            dynamic_data = yaml.safe_load(yaml_content)
-        else:
-            app.logger.error(
-                "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
-            )
+        dynamic_data = yaml.safe_load(yaml_content)
         pod_zone = dynamic_data.get("rrs").get("zone")
-        pod_node = dynamic_data.get("rrs").get("node")
+        # pod_node = dynamic_data.get("rrs").get("node")
         if rack_id in pod_zone:
             print("Monitoring pod was on the failed rack")
         # implement this
@@ -172,8 +168,8 @@ def handleSCN() -> tuple[Response, int]:
         if state == "Off":
             for component in components:
                 app.logger.info(f"Node {component} is turned Off")
+                check_failure_type(component)
             # Start monitoring services in a new thread
-            check_failure_type(component)
             threading.Thread(target=monitor.monitoring_loop).start()
 
         elif state == "On":
@@ -194,7 +190,7 @@ def handleSCN() -> tuple[Response, int]:
 
 
 @staticmethod
-def get_management_xnames() -> list[str]:
+def get_management_xnames() -> list[str] | None:
     """Get xnames for all the management nodes from HSM"""
     app.logger.info("Getting xnames for all the management nodes from HSM ...")
     token = Helper.token_fetch()
@@ -202,7 +198,7 @@ def get_management_xnames() -> list[str]:
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     try:
         # Make the GET request to hsm endpoint
-        hsm_response = requests.get(hsm_url, headers=headers)
+        hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
         hsm_response.raise_for_status()
         hsm_data = hsm_response.json()
 
@@ -222,10 +218,12 @@ def get_management_xnames() -> list[str]:
     except requests.exceptions.RequestException as e:
         app.logger.error(f"Request failed: {e}")
         state_manager.set_state("internal_failure")
+        return None
         # exit(1)
     except ValueError as e:
         app.logger.error(f"Failed to parse JSON: {e}")
         state_manager.set_state("internal_failure")
+        return None
         # exit(1)
 
 
@@ -261,13 +259,15 @@ def check_and_create_hmnfd_subscription() -> None:
 
         if not exists:
             app.logger.info(
-                f"rms not present in the HMNFD subscription list, creating it ..."
+                "rms not present in the HMNFD subscription list, creating it ..."
             )
-            post_response = requests.post(post_url, json=post_data, headers=headers)
+            post_response = requests.post(
+                post_url, json=post_data, headers=headers, timeout=10
+            )
             post_response.raise_for_status()
-            app.logger.info(f"Successfully subscribed to hmnfd for SCN notifications")
+            app.logger.info("Successfully subscribed to hmnfd for SCN notifications")
         else:
-            app.logger.info(f"rms is already present in the subscription list")
+            app.logger.info("rms is already present in the subscription list")
     except requests.exceptions.RequestException as e:
         # Handle request errors (e.g., network issues, timeouts, non-2xx status codes)
         app.logger.error(f"Failed to make subscription request to hmnfd. Error: {e}")
@@ -283,7 +283,7 @@ def check_and_create_hmnfd_subscription() -> None:
 @staticmethod
 def initial_check_and_update() -> bool:
     """Perform needed initialization checks and update configmap"""
-    launch_monitoring = False
+    is_monitoring = False
     dynamic_cm_data = ConfigMapHelper.get_configmap(
         state_manager.namespace, state_manager.dynamic_cm
     )
@@ -295,31 +295,31 @@ def initial_check_and_update() -> bool:
             app.logger.error(
                 "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
             )
-            exit(1)
+            sys.exit(1)
 
         state = dynamic_data.get("state", {})
-        rms_state = state.get("rms_state", None)
-        if rms_state != "Ready":
-            app.logger.info(f"RMS state is {rms_state}")
-            if rms_state == "Monitoring":
-                launch_monitoring = True
-            elif rms_state == "Init_fail":
+        rms_state_value = state.get("rms_state", None)
+        if rms_state_value != "Ready":
+            app.logger.info(f"RMS state is {rms_state_value}")
+            if rms_state_value == "Monitoring":
+                is_monitoring = True
+            elif rms_state_value == "Init_fail":
                 app.logger.error(
                     "RMS is in 'init_fail' state indicating init container failed — not starting the RMS service"
                 )
-                exit(1)
+                sys.exit(1)
             else:
                 app.logger.info("Updating RMS state to Ready for this fresh run")
-                rms_state = "Ready"
-                state["rms_state"] = rms_state
-                state_manager.set_state(rms_state)
+                rms_state_value = "Ready"
+                state["rms_state"] = rms_state_value
+                state_manager.set_state(rms_state_value)
         # Update RMS start timestamp in dynamic configmap
         timestamps = dynamic_data.get("timestamps", {})
         rms_start_timestamp = timestamps.get("start_timestamp_rms", None)
         if rms_start_timestamp:
             app.logger.debug("RMS start time already present in configmap")
             app.logger.info(
-                f"Rack Resiliency Monitoring Service is restarted because of a failure"
+                "Rack Resiliency Monitoring Service is restarted because of a failure"
             )
         timestamps["start_timestamp_rms"] = datetime.now().strftime(
             "%Y-%m-%dT%H:%M:%SZ"
@@ -336,7 +336,7 @@ def initial_check_and_update() -> bool:
             "dynamic-data.yaml",
             dynamic_cm_data["dynamic-data.yaml"],
         )
-        app.logger.debug(f"Updated rms_start_timestamp in rrs-dynamic configmap")
+        app.logger.debug("Updated rms_start_timestamp in rrs-dynamic configmap")
 
     except ValueError as e:
         app.logger.error(f"Error during configuration check and update: {e}")
@@ -346,7 +346,7 @@ def initial_check_and_update() -> bool:
         app.logger.error(f"Unexpected error: {e}")
         state_manager.set_state("internal_failure")
         # exit(1)
-    if launch_monitoring:
+    if is_monitoring:
         return True
     return False
 
@@ -355,55 +355,9 @@ def initial_check_and_update() -> bool:
 def run_flask() -> None:
     """Run the Flask app in a separate thread for listening to HMNFD notifications"""
     app.logger.info(
-        f"Running flask on 3000 port on localhost to recieve notifications from HMNFD"
+        "Running flask on 3000 port on localhost to recieve notifications from HMNFD"
     )
     app.run(host="0.0.0.0", port=3000, threaded=True, debug=False, use_reloader=False)
-
-
-@staticmethod
-def update_state_timestamp(
-    state_field: Optional[str] = None,
-    new_state: Optional[str] = None,
-    timestamp_field: Optional[str] = None,
-) -> None:
-    try:
-        dynamic_cm_data = state_manager.get_dynamic_cm_data()
-        yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
-        if yaml_content:
-            dynamic_data = yaml.safe_load(yaml_content)
-        else:
-            app.logger.error(
-                "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
-            )
-        if new_state:
-            app.logger.info(f"Updating state {state_field} to {new_state}")
-            state = dynamic_data.get("state", {})
-            state[state_field] = new_state
-        if timestamp_field:
-            app.logger.info(f"Updating timestamp {timestamp_field}")
-            timestamp = dynamic_data.get("timestamps", {})
-            timestamp[timestamp_field] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-        dynamic_cm_data["dynamic-data.yaml"] = yaml.dump(
-            dynamic_data, default_flow_style=False
-        )
-        state_manager.set_dynamic_cm_data(dynamic_cm_data)
-        ConfigMapHelper.update_configmap_data(
-            state_manager.namespace,
-            state_manager.dynamic_cm,
-            dynamic_cm_data,
-            "dynamic-data.yaml",
-            dynamic_cm_data["dynamic-data.yaml"],
-        )
-        # app.logger.info(f"Updated rms_state in rrs-dynamic configmap from {rms_state} to {new_state}")
-    except ValueError as e:
-        app.logger.error(f"Error during configuration check and update: {e}")
-        state_manager.set_state("internal_failure")
-        # exit(1)
-    except Exception as e:
-        app.logger.error(f"Unexpected error: {e}")
-        state_manager.set_state("internal_failure")
-        # exit(1)
 
 
 if __name__ == "__main__":
@@ -419,8 +373,8 @@ if __name__ == "__main__":
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.start()
     check_and_create_hmnfd_subscription()
-    update_critical_services(True)
-    update_zone_status()
+    update_critical_services(state_manager, True)
+    update_zone_status(state_manager)
     if launch_monitoring:
         app.logger.info(
             "RMS is in 'Monitoring' state - starting monitoring loop to resume previous incomplete process"
@@ -428,14 +382,14 @@ if __name__ == "__main__":
         threading.Thread(target=monitor.monitoring_loop).start()
     time.sleep(600)
     while True:
-        state = "Started"
-        state_manager.set_state(state)
-        update_state_timestamp("rms_state", state)
+        rms_state = "Started"
+        state_manager.set_state(rms_state)
+        Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
         app.logger.info("Starting the main loop")
         check_and_create_hmnfd_subscription()
-        update_critical_services(True)
-        update_zone_status()
-        state = "Waiting"
-        state_manager.set_state(state)
-        update_state_timestamp("rms_state", state)
+        update_critical_services(state_manager, True)
+        update_zone_status(state_manager)
+        rms_state = "Waiting"
+        state_manager.set_state(rms_state)
+        Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
         time.sleep(600)

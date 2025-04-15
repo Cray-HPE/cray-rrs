@@ -34,13 +34,16 @@ import json
 import re
 import subprocess
 import base64
+from datetime import datetime
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional
 import requests
 from flask import current_app as _app
+import yaml
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
+from src.rms.rms_statemanager import RMSStateManager
 
 # logger = logging.getLogger(__name__)
 
@@ -56,7 +59,7 @@ class Helper:
     def run_command(command: str):
         """Helper function to run a command and return the result.
         Returns:
-            str: result of the command run."""      
+            str: result of the command run."""
         _app.logger.debug(f"Running command: {command}")
         try:
             result = subprocess.run(
@@ -72,38 +75,48 @@ class Helper:
         return result.stdout
 
     @staticmethod
-    def get_current_node() -> str:
-        """Get the kubernetes node where the current RMS pod is running
-        Returns:
-            str: node name where pod is running."""
-        ConfigMapHelper.load_k8s_config()
-        v1 = client.CoreV1Api()
-        pod_name = os.getenv("HOSTNAME")
-        pod = v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
-        node_name = pod.spec.nodeName  # node_name if nodeName does not work
-        return node_name
+    def update_state_timestamp(
+        state_manager: RMSStateManager,
+        state_field: Optional[str] = None,
+        new_state: Optional[str] = None,
+        timestamp_field: Optional[str] = None,
+    ) -> None:
+        """Update the RMS state and/or a timestamp field in the dynamic ConfigMap."""
+        try:
+            dynamic_cm_data = state_manager.get_dynamic_cm_data()
+            yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
+            dynamic_data = yaml.safe_load(yaml_content)
+            if new_state:
+                _app.logger.info(f"Updating state {state_field} to {new_state}")
+                state = dynamic_data.get("state", {})
+                state[state_field] = new_state
+            if timestamp_field:
+                _app.logger.info(f"Updating timestamp {timestamp_field}")
+                timestamp = dynamic_data.get("timestamps", {})
+                timestamp[timestamp_field] = datetime.now().strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                )
 
-    @staticmethod
-    def getNodeMonitorGracePeriod() -> int | None:
-        """Get the nodeMonitorGracePeriod value from kube-controller-manager pod.
-        Returns:
-            int|None: getNodeMonitorGracePeriod value if present, otherwise None."""
-        ConfigMapHelper.load_k8s_config()
-        v1 = client.CoreV1Api()
-        pods = v1.list_namespaced_pod(
-            namespace="kube-system", label_selector="component=kube-controller-manager"
-        )
-        if pods.items:
-            command = pods.items[0].spec.containers[0].command
-            grace_period_flag = next(
-                (arg for arg in command if "--node-monitor-grace-period" in arg), None
+            dynamic_cm_data["dynamic-data.yaml"] = yaml.dump(
+                dynamic_data, default_flow_style=False
             )
-            if grace_period_flag:
-                nodeMonitorGracePeriod = grace_period_flag.split("=")[1]
-                return int(nodeMonitorGracePeriod.rstrip("s"))
-        else:
-            _app.logger.error("kube-controller-manager pod not found")
-        return None
+            state_manager.set_dynamic_cm_data(dynamic_cm_data)
+            ConfigMapHelper.update_configmap_data(
+                state_manager.namespace,
+                state_manager.dynamic_cm,
+                dynamic_cm_data,
+                "dynamic-data.yaml",
+                dynamic_cm_data["dynamic-data.yaml"],
+            )
+            # app.logger.info(f"Updated rms_state in rrs-dynamic configmap from {rms_state} to {new_state}")
+        except ValueError as e:
+            _app.logger.error(f"Error during configuration check and update: {e}")
+            state_manager.set_state("internal_failure")
+            # exit(1)
+        except Exception as e:
+            _app.logger.error(f"Unexpected error: {e}")
+            state_manager.set_state("internal_failure")
+            # exit(1)
 
     @staticmethod
     def update_configmap_with_timestamp(
@@ -132,7 +145,7 @@ class Helper:
             _app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
 
     @staticmethod
-    def token_fetch() -> str:
+    def token_fetch() -> str | None:
         """Fetch an access token from Keycloak using client credentials.
         Returns:
             str: The access token if the request is successful"""
@@ -158,12 +171,15 @@ class Helper:
 
         except requests.exceptions.RequestException as e:
             _app.logger.error(f"Request failed: {e}")
+            return None
             # exit(1)
         except ValueError as e:
             _app.logger.error(f"Failed to parse JSON: {e}")
+            return None
             # exit(1)
         except Exception as err:
             _app.logger.error(f"Error collecting secret from Kubernetes: {err}")
+            return None
             # exit(1)
 
 
@@ -203,8 +219,11 @@ class cephHelper:
             )
 
             if "Degraded" in pg_degraded_message:
-                pgmap = ceph_status.get('pgmap', {})
-                if ('recovering_objects_per_sec' in pgmap or 'recovering_bytes_per_sec' in pgmap):
+                pgmap = ceph_status.get("pgmap", {})
+                if (
+                    "recovering_objects_per_sec" in pgmap
+                    or "recovering_bytes_per_sec" in pgmap
+                ):
                     _app.logger.info("CEPH recovery is in progress...")
                 else:
                     _app.logger.warning(
@@ -337,12 +356,47 @@ class k8sHelper:
     """
 
     @staticmethod
+    def get_current_node() -> str:
+        """Get the kubernetes node where the current RMS pod is running
+        Returns:
+            str: node name where pod is running."""
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
+        pod_name = os.getenv("HOSTNAME")
+        pod = v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
+        node_name = pod.spec.nodeName  # node_name if nodeName does not work
+        return node_name
+
+    @staticmethod
+    def getNodeMonitorGracePeriod() -> int | None:
+        """Get the nodeMonitorGracePeriod value from kube-controller-manager pod.
+        Returns:
+            int|None: getNodeMonitorGracePeriod value if present, otherwise None."""
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
+        pods = v1.list_namespaced_pod(
+            namespace="kube-system", label_selector="component=kube-controller-manager"
+        )
+        if pods.items:
+            command = pods.items[0].spec.containers[0].command
+            grace_period_flag = next(
+                (arg for arg in command if "--node-monitor-grace-period" in arg), None
+            )
+            if grace_period_flag:
+                nodeMonitorGracePeriod = grace_period_flag.split("=")[1]
+                return int(nodeMonitorGracePeriod.rstrip("s"))
+        else:
+            _app.logger.error("kube-controller-manager pod not found")
+        return None
+
+    @staticmethod
     def get_k8s_nodes() -> Union[List[V1Node], Dict[str, str]]:
         """Retrieve all Kubernetes nodes
         Returns:
-            Union[List[V1Node], Dict[str, str]]: 
+            Union[List[V1Node], Dict[str, str]]:
                 - A list of V1Node objects representing Kubernetes nodes if successful.
-                - A dictionary with an "error" key and error message string if an exception occurs."""
+                - A dictionary with an "error" key and error message string if an exception occurs.
+        """
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
