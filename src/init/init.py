@@ -72,13 +72,11 @@ def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, A
     nodes = k8sHelper.get_k8s_nodes()
     app.logger.info("Retrieving zone information and status of k8s and CEPH nodes")
 
-    # Handle the case where nodes might not be a valid list of k8s nodes
     if not nodes or not isinstance(nodes, list):
         app.logger.error("Failed to retrieve valid k8s nodes")
         return False, {}, {}
 
     for node in nodes:
-        # Check if node is a valid object with metadata attribute
         if not hasattr(node, "metadata"):
             app.logger.error("Invalid node object found without metadata")
             continue
@@ -94,7 +92,6 @@ def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, A
             {"Status": k8sHelper.get_node_status(node_name), "name": node_name}
         )
 
-    # Convert defaultdict to regular dict for return value
     updated_k8s_data_dict = dict(updated_k8s_data)
 
     if status:

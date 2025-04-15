@@ -239,12 +239,10 @@ class RMSMonitor:
             "end_timestamp_k8s_monitoring",
         )
 
-        # Add this check before trying to use latest_services_json
         if latest_services_json is None:
             app.logger.error("No services JSON data available to process")
             return
 
-        # Now it's safe to parse the JSON
         try:
             services_data = json.loads(latest_services_json)
             unrecovered_services = []

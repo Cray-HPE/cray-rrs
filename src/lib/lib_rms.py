@@ -367,7 +367,6 @@ class k8sHelper:
         v1 = client.CoreV1Api()
         pod_name = os.getenv("HOSTNAME")
         pod = v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
-        # Ensure nodeName is available and convert to string
         node_name: str = str(pod.spec.nodeName) if pod.spec.nodeName else ""
         return node_name
 
@@ -390,7 +389,6 @@ class k8sHelper:
                 grace_period_parts = grace_period_flag.split("=")
                 if len(grace_period_parts) > 1:
                     nodeMonitorGracePeriod = grace_period_parts[1]
-                    # Use string manipulation instead of direct indexing
                     if nodeMonitorGracePeriod.endswith("s"):
                         return int(nodeMonitorGracePeriod[:-1])  # Remove the 's' suffix
                     return int(nodeMonitorGracePeriod)
@@ -674,7 +672,6 @@ class criticalServicesHelper:
                         f"Desired replicas and ready replicas are matching for '{service_name}'"
                     )
 
-                # Handle the case where all_pods could be a dictionary with an error key
                 filtered_pods: List[Dict[str, Any]] = []
                 if isinstance(all_pods, list):
                     filtered_pods = [
