@@ -43,6 +43,7 @@ from kubernetes import client  # type: ignore
 from src.server.resources.k8s_zones import K8sZoneService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_rms import Helper
+from src.lib.lib_configmap import ConfigMapHelper
 
 
 class CriticalServiceHelper:
@@ -57,7 +58,7 @@ class CriticalServiceHelper:
         app.logger.info(f"[{log_id}] Fetching namespaced pods")
 
         # Load Kubernetes config (this can be done just once per method call)
-        Helper.load_k8s_config()
+        ConfigMapHelper.load_k8s_config()
 
         # Initialize Kubernetes client
         v1 = client.CoreV1Api()

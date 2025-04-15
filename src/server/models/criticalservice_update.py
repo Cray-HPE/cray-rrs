@@ -160,7 +160,7 @@ class CriticalServiceUpdater:
             config_data={}                                                                            
             if CM_KEY in cm_data:                                                                     
                 config_data=json.loads(cm_data[CM_KEY])                                               
-            existing_data = config_data.get("critical-services", {})
+            existing_data = config_data
             result = CriticalServiceUpdater.update_configmap(
                 json.dumps(new_services), existing_data
             )
