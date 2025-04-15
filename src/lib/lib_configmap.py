@@ -116,17 +116,18 @@ class ConfigMapHelper:
     def update_configmap_data(
         namespace: str,
         configmap_name: str,
-        configmap_data: Dict[str, str],
+        configmap_data: Union[Dict[str, str], None],
         key: str,
         new_data: str,
         mount_path: str = "",
     ) -> None:
         """Update a ConfigMap in Kubernetes and the mounted file in the pod."""
         # print(f"In update_configmap_data, key is {key} and data is {new_data}")
-        configmap_data[key] = new_data
-        # print(configmap_data)
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
+        if configmap_data is None:
+            configmap_data = ConfigMapHelper.get_configmap(namespace, configmap_name)
+        configmap_data[key] = new_data
 
         configmap_body = client.V1ConfigMap(
             metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data

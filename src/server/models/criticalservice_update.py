@@ -74,23 +74,13 @@ class CriticalServiceUpdater:
                 existing_services[service_name] = new_services[service_name]
 
             # Patch ConfigMap
-            # new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
+            new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
             if not test:
-                body = {
-                    "data": {
-                        CM_KEY: json.dumps(
-                            {"critical-services": existing_services}, indent=2
-                        ),
-                        "last_updated_timestamp": datetime.utcnow().isoformat() + "Z",
-                    }
-                }
-                v1.patch_namespaced_config_map(CM_NAME, CM_NAMESPACE, body)
-
-                # ConfigMapHelper.update_configmap_data(CM_NAMESPACE, CM_NAME, CM_KEY, new_cm_data,"")
-                app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
-                # ConfigMapHelper.update_configmap_data(
-                #     CM_NAMESPACE, CM_NAME, "last_updated_timestamp", datetime.utcnow().isoformat() + "Z",""
-                #     )
+                ConfigMapHelper.update_configmap_data(CM_NAMESPACE, CM_NAME, None, CM_KEY, new_cm_data,"")
+                app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")                            
+                ConfigMapHelper.update_configmap_data(                                                    
+                    CM_NAMESPACE, CM_NAME, None, "last_updated_timestamp", datetime.utcnow().isoformat() + "Z",""
+                    ) 
             # Log the event using app.logger
             app.logger.info(
                 f"[{log_id}] Successfully added {len(added_services)} services to ConfigMap"
