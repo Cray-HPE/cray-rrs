@@ -56,13 +56,11 @@ formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
-'''
-logging.basicConfig(
-    format="%(asctime)s [%(threadName)s] %(levelname)s: %(message)s",  # Include thread name in logs
-    level=logging.INFO,
-)
-logger = logging.getlogger()
-'''
+# logging.basicConfig(
+#     format="%(asctime)s [%(threadName)s] %(levelname)s: %(message)s",  # Include thread name in logs
+#     level=logging.INFO,
+# )
+# logger = logging.getlogger()
 
 state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager)

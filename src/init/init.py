@@ -52,10 +52,8 @@ formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
-'''
-logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
-logger = logging.getLogger(__name__)
-'''
+# logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
+# logger = logging.getLogger(__name__)
 
 state_manager = RMSStateManager()
 
