@@ -21,12 +21,15 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-NAME ?= cray-rrs-api
+RRS_API_CONTAINER_NAME ?= cray-rrs-api
+RRS_INIT_CONTAINER_NAME ?= cray-rrs-init
+RRS_RMS_CONTAINER_NAME ?= cray-rrs-rms
+
 VERSION ?= $(shell cat .version)
 
 DOCKERFILE_API ?= Dockerfile.rrs.api
-DOCKERFILE_RMS ?= Dockerfile.rrs.rms
 DOCKERFILE_INIT ?= Dockerfile.rrs.init
+DOCKERFILE_RMS ?= Dockerfile.rrs.rms
 
 CHART_VERSION ?= $(VERSION)
 IMAGE ?= artifactory.algol60.net/csm-docker/stable/${NAME}
@@ -45,10 +48,17 @@ else
 endif
 COMMA := ,
 
-all : image chart
+#all : rrs_api_image rrs_init_image rrs_rms_image chart
+all : rrs_api_image rrs_init_image rrs_rms_image
 
-image:
-	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${NAME}:${VERSION}' .
+rrs_api_image:
+	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${RRS_API_CONTAINER_NAME}:${VERSION}' .
+
+rrs_init_image:
+	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_INIT} --tag '${RRS_INIT_CONTAINER_NAME}:${VERSION}' .
+
+rrs_rms_image:
+	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_RMS} --tag '${RRS_RMS_CONTAINER_NAME}:${VERSION}' .
 
 dev-image:
 	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --target dev --tag '${NAME}-dev:${VERSION}' .

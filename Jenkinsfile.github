@@ -36,7 +36,7 @@ pipeline {
     }
 
     environment {
-        NAME = "cray-rrs-api"
+        NAME = "cray-rrs"
         DESCRIPTION = "Implements Rack Resiliency Service."
         IS_STABLE = getBuildIsStable()
         VERSION = getDockerBuildVersion(isStable: env.IS_STABLE)
@@ -61,7 +61,7 @@ pipeline {
             parallel {
                 stage('Image') {
                     steps {
-                        sh "make image"
+                        sh "make all"
                     }
                 }
 
