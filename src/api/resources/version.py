@@ -37,12 +37,17 @@ class Version(Resource):  # type: ignore[misc]
     def get(self) -> Tuple[Dict[str, Any], int]:
         """Return RRS version information"""
 
+        # Generate or fetch a unique log ID for traceability
         log_id = get_log_id()
         app.logger.info("%s ++ version.GET", log_id)
 
+        # Construct the version response from Flask config
         return_value = {
             "version": app.config["VERSION"],
         }
 
+        # Log the constructed response for debugging
         app.logger.debug("%s Returning json response: %s", log_id, return_value)
+
+        # Return version info with HTTP 200 OK
         return return_value, 200

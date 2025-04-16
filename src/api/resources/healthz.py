@@ -36,9 +36,9 @@ class Ready(Resource):
 
     def get(self) -> Tuple[Dict[str, Any], int]:
         """Return k8s readiness check"""
-        log_id = get_log_id()
-        app.logger.debug("%s ++ healthz/ready.GET", log_id)
-        return {}, 200
+        log_id = get_log_id()  # Get unique log ID for tracing the request
+        app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
+        return {}, 200  # Return empty body with HTTP 200 OK
 
 
 class Live(Resource):
@@ -46,6 +46,6 @@ class Live(Resource):
 
     def get(self) -> Tuple[Dict[str, Any], int]:
         """Return k8s liveness check"""
-        log_id = get_log_id()
-        app.logger.debug("%s ++ healthz/live.GET", log_id)
-        return {}, 200
+        log_id = get_log_id()  # Get unique log ID for tracing the request
+        app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
+        return {}, 200  # Return empty body with HTTP 200 OK

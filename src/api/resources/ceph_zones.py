@@ -29,23 +29,22 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 
 
-# Define TypedDict for node info structure
+# TypedDict defining structure of an individual OSD entry
 class OsdInfo(TypedDict):
     """Information about a Ceph Object Storage Daemon (OSD)."""
-
     name: str
     status: str
 
 
+# TypedDict defining structure of a Ceph node containing OSDs
 class NodeInfo(TypedDict):
     """Information about a Ceph storage node including its OSDs."""
-
     name: str
     status: str
     osds: List[OsdInfo]
 
 
-# Define a result type that covers all possible return values
+# Type aliases for method return values
 ZoneMapping = Dict[str, List[NodeInfo]]
 ErrorDict = Dict[str, str]
 ResultType = Union[ZoneMapping, ErrorDict]
@@ -61,34 +60,41 @@ class CephService:
         app.logger.info(f"[{log_id}] Fetching Ceph zone details from ConfigMap.")
 
         try:
+            # Fetch ConfigMap containing Ceph topology
             configmap_yaml = ConfigMapHelper.get_configmap(
                 "rack-resiliency", "rrs-mon-dynamic"
             )
 
+            # Return error if ConfigMap fetch fails
             if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
                 app.logger.error(
                     f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
                 )
                 return cast(ErrorDict, configmap_yaml)
 
+            # Handle missing or empty ConfigMap
             if not configmap_yaml:
                 app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
                 return {"error": "ConfigMap data is empty or missing."}
 
+            # Validate ConfigMap structure
             if not isinstance(configmap_yaml, dict):
                 app.logger.error(f"[{log_id}] Invalid ConfigMap format (not a dict)")
                 return {"error": "ConfigMap data is not a valid dictionary."}
 
             try:
+                # Parse the YAML content of the ConfigMap
                 parsed_data = yaml.safe_load(configmap_yaml["dynamic-data.yaml"])
             except yaml.YAMLError as e:
                 app.logger.exception(f"[{log_id}] YAML parsing failed.")
                 return {"error": f"Failed to parse ConfigMap YAML: {str(e)}"}
 
+            # Ensure parsed data is a dictionary
             if not isinstance(parsed_data, dict):
                 app.logger.error(f"[{log_id}] Invalid format: Expected a dictionary.")
                 return {"error": "Invalid format: Expected a dictionary."}
 
+            # Safely extract zone-level data
             zone_data = parsed_data.get("zone", {})
             if not isinstance(zone_data, dict):
                 zone_data = {}
@@ -99,6 +105,7 @@ class CephService:
 
             zone_mapping: ZoneMapping = {}
 
+            # Iterate through each zone and collect node/OSD details
             for zone_name, nodes in ceph_zones_with_nodes.items():
                 if not isinstance(nodes, list):
                     continue
@@ -133,13 +140,16 @@ class CephService:
 
                     zone_mapping[zone_name].append(node_info)
 
+            # Return parsed zone mapping if available
             if zone_mapping:
                 app.logger.info(f"[{log_id}] Successfully parsed Ceph zones.")
                 return zone_mapping
 
+            # No zones found after parsing
             app.logger.warning(f"[{log_id}] No Ceph zones found.")
             return {"error": "No Ceph zones present"}
 
+        # Catch-all exception handler
         except Exception as e:
             app.logger.exception(
                 f"[{log_id}] Unexpected error while parsing Ceph zones."

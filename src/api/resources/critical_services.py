@@ -78,12 +78,12 @@ class CriticalServiceHelper:
         if isinstance(nodes_data, dict):
             for zone, node_types in nodes_data.items():
                 if not isinstance(node_types, dict):
-                    continue
+                    continue  # Skip if not a dictionary
 
                 for node_type in ["masters", "workers"]:
                     node_list = node_types.get(node_type, [])
                     if not isinstance(node_list, list):
-                        continue
+                        continue  # Skip if not a list
 
                     for node in node_list:
                         if isinstance(node, dict) and "name" in node:
@@ -93,16 +93,20 @@ class CriticalServiceHelper:
             return [{"error": "Invalid data format"}], 0
 
         try:
+            # Get all pods in the given namespace
             pod_list = v1.list_namespaced_pod(namespace)
         except client.exceptions.ApiException as e:
+            # Catch and log Kubernetes API errors
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
             return [{"error": f"Failed to fetch pods: {str(e)}"}], 0
 
-        running_pods = 0
-        result: List[Dict[str, Any]] = []
-        zone_pod_count: Dict[str, int] = {}
+        running_pods = 0  # Counter for running pods
+        result: List[Dict[str, Any]] = []  # Final output list of pod details
+        zone_pod_count: Dict[str, int] = {}  # Optional: for tracking per-zone counts
 
+        # Iterate through each pod returned by the API
         for pod in pod_list.items:
+            # Check if the pod is owned by the expected kind and name
             if pod.metadata.owner_references and any(
                 owner.kind == CriticalServiceHelper._resolve_owner_kind(resource_type)
                 and owner.name.startswith(service_name)
@@ -112,11 +116,14 @@ class CriticalServiceHelper:
                 if pod_status == "Running":
                     running_pods += 1
 
+                # Get node name and corresponding zone
                 node_name = pod.spec.node_name
                 zone = node_zone_map.get(node_name, "unknown")
 
+                # Update zone-wise pod count
                 zone_pod_count[zone] = zone_pod_count.get(zone, 0) + 1
 
+                # Append pod details to result
                 result.append(
                     {
                         "Name": pod.metadata.name,
@@ -126,10 +133,12 @@ class CriticalServiceHelper:
                     }
                 )
 
+        # Log number of running pods
         app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
         return result, running_pods
 
     @staticmethod
     def _resolve_owner_kind(resource_type: str) -> str:
         """Check and return correct Kubernetes owner kind"""
+        # Deployment creates ReplicaSet, so we map that accordingly
         return "ReplicaSet" if resource_type == "Deployment" else resource_type

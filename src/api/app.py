@@ -20,10 +20,11 @@ from src.api.routes import (
     CriticalServiceStatusDescribeResource,
 )
 
+# Initialize Flask application and RESTful API
 app = Flask(__name__)
 api = Api(app)
 
-# Logging setup
+# Logging setup: Set logging level and format for file logging
 app.logger.setLevel(logging.INFO)
 file_handler = logging.FileHandler("app.log")
 file_handler.setLevel(logging.INFO)
@@ -31,42 +32,46 @@ formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 app.logger.addHandler(file_handler)
 
-
-# Set server start timestamp
+# Set the server start timestamp and log it
 start_timestamp_api = datetime.datetime.utcnow().isoformat() + "Z"
 app.logger.info("API server started at %s", start_timestamp_api)
+
+# Update ConfigMap with the server start timestamp for monitoring purposes
 with app.app_context():
     ConfigMapHelper.update_configmap_data(
-        "rack-resiliency",
-        "rrs-mon-dynamic",
-        None,
-        "start_timestamp_api",
+        "rack-resiliency", 
+        "rrs-mon-dynamic", 
+        None, 
+        "start_timestamp_api", 
         start_timestamp_api,
     )
 
-# Read version info
+# Read the application version from a version file and set it in the app config
 try:
     with open("/app/.version", encoding="utf-8") as version_file:
         app.config["VERSION"] = version_file.read().splitlines()[0]
 except IOError:
     app.config["VERSION"] = "Unknown"
 
-# Health & version endpoints
-api.add_resource(Ready, "/healthz/ready")
-api.add_resource(Live, "/healthz/live")
-api.add_resource(Version, "/version")
+# Register health and version endpoints
+api.add_resource(Ready, "/healthz/ready")  # Readiness check
+api.add_resource(Live, "/healthz/live")    # Liveness check
+api.add_resource(Version, "/version")      # Version info endpoint
 
-# Zone and critical service endpoints
-api.add_resource(ZoneListResource, "/zones")
-api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")
-api.add_resource(CriticalServiceListResource, "/criticalservices")
-api.add_resource(CriticalServiceDescribeResource, "/criticalservices/<service_name>")
-api.add_resource(CriticalServiceUpdateResource, "/criticalservices")
-api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")
+# Register zone-related endpoints
+api.add_resource(ZoneListResource, "/zones")              # List all zones
+api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")  # Describe a specific zone
+
+# Register critical service-related endpoints
+api.add_resource(CriticalServiceListResource, "/criticalservices")  # List all critical services
+api.add_resource(CriticalServiceDescribeResource, "/criticalservices/<service_name>")  # Describe a specific service
+api.add_resource(CriticalServiceUpdateResource, "/criticalservices")  # Update critical service data
+api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")  # List statuses of critical services
 api.add_resource(
-    CriticalServiceStatusDescribeResource, "/criticalservices/status/<service_name>"
+    CriticalServiceStatusDescribeResource, "/criticalservices/status/<service_name>"  # Describe status of a specific service
 )
 
 # Main entry point of the application
 if __name__ == "__main__":
+    # Run the Flask application on all available IPs on port 80, enabling debug mode and threading
     app.run(host="0.0.0.0", port=80, debug=True, threaded=True)

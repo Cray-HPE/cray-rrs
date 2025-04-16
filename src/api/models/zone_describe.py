@@ -21,7 +21,6 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-
 """Model to describe the requested zone"""
 
 from typing import Dict, List, Any, Optional, Union, TypedDict, cast
@@ -59,11 +58,15 @@ class ZoneDescriber:
         log_id: Optional[str] = None,
     ) -> ZoneInfoDict:
         """Internal method to get detailed information of a specific zone."""
+        
+        # If no log_id is provided, generate one
         if log_id is None:
             log_id = get_log_id()
 
+        # Log the request for zone information
         app.logger.info(f"[{log_id}] Fetching information for zone: {zone_name}")
 
+        # Check if the K8s or Ceph zone data is invalid
         if isinstance(k8s_zones, str) or isinstance(ceph_zones, str):
             app.logger.error(
                 f"[{log_id}] Invalid zone data: K8s Zones: {k8s_zones}, Ceph Zones: {ceph_zones}"
@@ -71,14 +74,17 @@ class ZoneDescriber:
             # Ensure this returns a Dict[str, Any] as promised
             return cast(ZoneInfoDict, ZoneMapper.zone_exist(k8s_zones, ceph_zones))
 
+        # Extract the master, worker, and storage node data for the requested zone
         masters = k8s_zones.get(zone_name, {}).get("masters", [])
         workers = k8s_zones.get(zone_name, {}).get("workers", [])
         storage = ceph_zones.get(zone_name, [])
 
+        # If no data is found for the requested zone, return an error message
         if not (masters or workers or storage):
             app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
             return {"error": "Zone not found"}
 
+        # Initialize the dictionary to store zone information
         zone_data: ZoneInfoDict = {
             "Zone Name": zone_name,
             "Management Masters": len(masters),
@@ -86,6 +92,7 @@ class ZoneDescriber:
             "Management Storages": len(storage),
         }
 
+        # Add details about the master nodes (Kubernetes)
         if masters:
             zone_data["Management Master"] = {
                 "Type": "Kubernetes Topology Zone",
@@ -97,6 +104,7 @@ class ZoneDescriber:
                 f"[{log_id}] Added {len(masters)} management master nodes for zone: {zone_name}"
             )
 
+        # Add details about the worker nodes (Kubernetes)
         if workers:
             zone_data["Management Worker"] = {
                 "Type": "Kubernetes Topology Zone",
@@ -108,13 +116,16 @@ class ZoneDescriber:
                 f"[{log_id}] Added {len(workers)} management worker nodes for zone: {zone_name}"
             )
 
+        # Add details about the storage nodes (Ceph)
         if storage:
             zone_data["Management Storage"] = {"Type": "CEPH Zone", "Nodes": []}
             for node in storage:
                 osd_status_map: Dict[str, List[str]] = {}
+                # Group OSDs by their status
                 for osd in node.get("osds", []):
                     osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
+                # Structure the storage node information
                 storage_node = {
                     "Name": node["name"],
                     "Status": node["status"],
@@ -126,6 +137,7 @@ class ZoneDescriber:
                 f"[{log_id}] Added {len(storage)} management storage nodes for zone: {zone_name}"
             )
 
+        # Log the success of the zone data retrieval
         app.logger.info(
             f"[{log_id}] Zone information fetched successfully for zone: {zone_name}"
         )
@@ -134,9 +146,12 @@ class ZoneDescriber:
     @staticmethod
     def describe_zone(zone_name: str) -> ZoneInfoDict:
         """Public method to describe a specific zone."""
+        
+        # Generate a log ID for the request
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Request received to describe zone: {zone_name}")
 
+        # Fetch the zone data for Kubernetes and Ceph
         k8s_zones = K8sZoneService.parse_k8s_zones()
         ceph_zones = CephService.parse_ceph_zones()
 
@@ -149,6 +164,8 @@ class ZoneDescriber:
             ),
             log_id,
         )
+
+        # Log the successful zone description response
         app.logger.info(
             f"[{log_id}] Zone description response generated for zone: {zone_name}"
         )

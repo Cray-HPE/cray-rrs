@@ -53,15 +53,18 @@ class CriticalServiceUpdater:
         Returns:
             Dict containing update status and details
         """
-        log_id = get_log_id()  # Generate a unique log ID
+        log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
+            # Check if there's an error in the new data
             if "error" in new_data:
                 app.logger.error(f"[{log_id}] Error in new data: {new_data}")
                 return new_data  # type: ignore
+            # Check if there's an error in the existing data
             if "error" in existing_data:
                 app.logger.error(f"[{log_id}] Error in existing data: {existing_data}")
                 return existing_data
 
+            # Extract existing critical services and the new critical services
             existing_services = existing_data.get("critical-services", {})
             new_services = json.loads(new_data)["critical-services"]
 
@@ -69,16 +72,18 @@ class CriticalServiceUpdater:
             added_services = [s for s in new_services if s not in existing_services]
             skipped_services = [s for s in new_services if s in existing_services]
 
+            # Add new services to existing services
             for service_name in added_services:
                 existing_services[service_name] = new_services[service_name]
 
-            # Patch ConfigMap
+            # Prepare new ConfigMap data
             new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
-            if not test:
+            if not test:  # Only update ConfigMap if not in test mode
                 ConfigMapHelper.update_configmap_data(
                     CM_NAMESPACE, CM_NAME, None, CM_KEY, new_cm_data, ""
                 )
                 app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
+                # Update the timestamp of the last update in the ConfigMap
                 ConfigMapHelper.update_configmap_data(
                     CM_NAMESPACE,
                     CM_NAME,
@@ -95,12 +100,14 @@ class CriticalServiceUpdater:
                 f"[{log_id}] Skipped {len(skipped_services)} services that already exist"
             )
 
+            # Return the result of the update operation
             return {
                 "Update": "Successful" if added_services else "Services Already Exist",
                 "Successfully Added Services": added_services or [],
                 "Already Existing Services": skipped_services or [],
             }
 
+        # Handle different types of exceptions and log the errors accordingly
         except json.JSONDecodeError as json_err:
             app.logger.error(f"[{log_id}] Invalid JSON format: {(json_err)}")
             return {"error": f"Invalid JSON format: {(json_err)}"}
@@ -130,14 +137,16 @@ class CriticalServiceUpdater:
         Returns:
             Either a dictionary with update results or a tuple with error dict and status code
         """
-        log_id = get_log_id()  # Generate a unique log ID
+        log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
+            # Validate if 'from_file' key is present in the request data
             if not new_data or "from_file" not in new_data:
                 app.logger.error(
                     f"[{log_id}] Invalid request format: Missing 'from_file' key"
                 )
                 return ({"error": "Invalid request format"}), 400
 
+            # Try parsing the JSON string from the 'from_file' key
             try:
                 new_services = json.loads(new_data["from_file"])
             except json.JSONDecodeError as json_err:
@@ -146,20 +155,25 @@ class CriticalServiceUpdater:
                 )
                 return ({"error": "Invalid JSON format in services"}), 400
 
+            # Check if 'critical-services' key is present in the parsed data
             if "critical-services" not in new_services:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
                 return ({"error": "Missing 'critical-services' in payload"}), 400
 
+            # Fetch the current ConfigMap data
             cm_data = ConfigMapHelper.get_configmap(CM_NAMESPACE, CM_NAME)
             config_data = {}
             if CM_KEY in cm_data:
                 config_data = json.loads(cm_data[CM_KEY])
-            existing_data = config_data
+            existing_data = config_data  # Existing critical services data
+
+            # Call the update_configmap function to update the critical services
             result = CriticalServiceUpdater.update_configmap(
                 json.dumps(new_services), existing_data
             )
             return result
 
+        # Handle any exceptions and return error responses
         except Exception as e:
             app.logger.error(
                 f"[{log_id}] Unhandled error in update_critical_services: {e}"

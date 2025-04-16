@@ -28,8 +28,6 @@ from flask import current_app as app
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
 
-# from resources.critical_services import CriticalServiceHelper
-
 
 class K8sZoneService:
     """Service class to fetch and parse Kubernetes zone data."""
@@ -41,75 +39,89 @@ class K8sZoneService:
         app.logger.info(f"[{log_id}] Fetching Kubernetes zone details from ConfigMap")
 
         try:
+            # Attempt to fetch the ConfigMap from the given namespace
             configmap_yaml = ConfigMapHelper.get_configmap(
                 "rack-resiliency", "rrs-mon-dynamic"
             )
 
+            # Handle possible error returned as dict
             if isinstance(configmap_yaml, dict) and "error" in configmap_yaml:
                 app.logger.error(
                     f"[{log_id}] Error fetching ConfigMap: {configmap_yaml['error']}"
                 )
                 return configmap_yaml
 
+            # Handle missing or empty ConfigMap
             if not configmap_yaml:
                 app.logger.warning(f"[{log_id}] ConfigMap data is empty or missing.")
                 return {"error": "ConfigMap data is empty or missing."}
 
+            # Validate ConfigMap is a dictionary
             if not isinstance(configmap_yaml, dict):
                 app.logger.error(f"[{log_id}] Invalid ConfigMap format (not a dict)")
                 return {"error": "ConfigMap data is not a valid dictionary."}
 
+            # Attempt to parse the embedded YAML content
             try:
                 parsed_data = yaml.safe_load(configmap_yaml["dynamic-data.yaml"])
             except yaml.YAMLError as e:
                 app.logger.exception(f"[{log_id}] YAML parsing failed.")
                 return {"error": f"Failed to parse ConfigMap YAML: {str(e)}"}
 
+            # Validate the parsed YAML structure
             if not isinstance(parsed_data, dict):
                 app.logger.error(f"[{log_id}] Invalid format: Expected a dictionary.")
                 return {"error": "Invalid format: Expected a dictionary."}
 
+            # Extract the zone data structure
             k8s_zones = parsed_data.get("zone", {}).get("k8s_zones_with_nodes", {})
 
+            # Ensure it's a dictionary (empty fallback if not)
             if not isinstance(k8s_zones, dict):
                 k8s_zones = {}
 
             zone_mapping: Dict[str, Dict[str, Any]] = {}
 
+            # Iterate over each zone and classify nodes
             for zone_name, nodes in k8s_zones.items():
                 zone_mapping[zone_name] = {"masters": [], "workers": []}
 
                 if not isinstance(nodes, list):
-                    continue
+                    continue  # Skip invalid node lists
 
                 for node in nodes:
                     if not isinstance(node, dict):
-                        continue
+                        continue  # Skip malformed node entries
 
                     node_name = node.get("name", "")
                     node_status = node.get("Status", "Unknown")
 
                     node_info = {"name": node_name, "status": node_status}
 
+                    # Classify nodes by their naming prefix
                     if node_name.startswith("ncn-m"):
                         zone_mapping[zone_name]["masters"].append(node_info)
                     elif node_name.startswith("ncn-w"):
                         zone_mapping[zone_name]["workers"].append(node_info)
                     else:
+                        # Unknown node types get placed into a separate key
                         zone_mapping[zone_name].setdefault("unknown", []).append(
                             node_info
                         )
 
+            # Return parsed data if available
             if zone_mapping:
                 app.logger.info(
                     f"[{log_id}] Successfully parsed Kubernetes zone details"
                 )
                 return zone_mapping
 
+            # Fallback if parsing yields no useful data
             app.logger.warning(f"[{log_id}] No Kubernetes zones present")
             return {"error": "No Kubernetes zones present"}
 
         except Exception as e:
+            # Catch and log any unexpected error
             app.logger.exception(
                 f"[{log_id}] Unexpected error while parsing Kubernetes zones."
             )

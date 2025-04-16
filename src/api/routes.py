@@ -58,12 +58,19 @@ class ZoneListResource(Resource):
             JSON response with the list of zones.
         """
         try:
+            # Log the event of fetching zones
             log_event("Fetching the list of zones")
+            
+            # Retrieve zones using the ZoneMapper utility
             zones = ZoneMapper.get_zones()
-            # Use cast to ensure the correct type is returned
+            
+            # Return the list of zones (cast to correct type)
             return cast(List[Dict[str, Any]], zones), 200
         except Exception as e:
+            # Log any error that occurs while fetching zones
             log_event(f"Error fetching zones: {str(e)}", level="ERROR")
+            
+            # Return error message with HTTP 500 status
             return {"error": str(e)}, 500
 
 
@@ -87,15 +94,24 @@ class ZoneDescribeResource(Resource):
             JSON response with the zone description or an error message.
         """
         try:
+            # Log the event of describing a specific zone
             log_event(f"Describing zone: {zone_name}")
+            
+            # Fetch the zone description using the ZoneDescriber utility
             zone = ZoneDescriber.describe_zone(zone_name)
+            
+            # If the zone does not exist, return a 404 error
             if not zone:
                 log_event(f"Zone {zone_name} not found", level="ERROR")
                 return {"error": "Zone not found"}, 404
-            # Removed redundant cast
+            
+            # Return the zone description
             return zone, 200
         except Exception as e:
+            # Log any error that occurs while describing the zone
             log_event(f"Error describing zone {zone_name}: {str(e)}", level="ERROR")
+            
+            # Return error message with HTTP 500 status
             return {"error": str(e)}, 500
 
 
@@ -116,11 +132,19 @@ class CriticalServiceListResource(Resource):
             JSON response with the list of critical services.
         """
         try:
+            # Log the event of fetching critical services
             log_event("Fetching the list of critical services")
+            
+            # Retrieve the list of critical services
             critical_services = CriticalServicesLister.get_critical_service_list()
+            
+            # Return the list of critical services
             return critical_services
         except Exception as e:
+            # Log any error that occurs while fetching critical services
             log_event(f"Error fetching critical services: {str(e)}", level="ERROR")
+            
+            # Return error message with HTTP 500 status
             return {"error": str(e)}, 500
 
 
@@ -144,21 +168,30 @@ class CriticalServiceDescribeResource(Resource):
             JSON response with the service description or an error message.
         """
         try:
+            # Log the event of describing a specific critical service
             log_event(f"Describing critical service status: {service_name}")
+            
+            # Fetch the critical service description using the CriticalServiceDescriber utility
             result = CriticalServiceDescriber.describe_service(service_name)
 
+            # If the result is an error tuple, return it
             if isinstance(result, tuple) and len(result) == 2:
                 return result
 
+            # If the service is not found, return a 404 error
             if not result:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return {"error": "Critical service not found"}, 404
 
+            # Return the service description
             return result, 200
         except Exception as e:
+            # Log any error that occurs while describing the service
             log_event(
                 f"Error describing service {service_name}: {str(e)}", level="ERROR"
             )
+            
+            # Return error message with HTTP 500 status
             return {"error": str(e)}, 500
 
 
@@ -178,15 +211,27 @@ class CriticalServiceUpdateResource(Resource):
             JSON response with the updated list of critical services.
         """
         try:
+            # Log the event of updating critical services
             log_event("Updating critical services list")
+            
+            # Get the new data from the request body (assumes JSON)
             new_data = request.get_json()
+            
+            # If no data is provided, return an error
             if not new_data:
                 log_event("No data provided for update", level="ERROR")
                 return {"error": "No data provided"}, 400
+            
+            # Update the critical services with the new data
             updated_services = CriticalServiceUpdater.update_critical_services(new_data)
+            
+            # Return the updated list of critical services
             return cast(List[Dict[str, Any]], updated_services), 200
         except Exception as e:
+            # Log any error that occurs while updating the critical services
             log_event(f"Error updating critical services: {str(e)}", level="ERROR")
+            
+            # Return error message with HTTP 500 status
             return {"error": str(e)}, 500
 
 
@@ -207,13 +252,21 @@ class CriticalServiceStatusListResource(Resource):
             JSON response with the status of critical services.
         """
         try:
+            # Log the event of fetching critical service statuses
             log_event("Fetching critical service statuses")
+            
+            # Retrieve the status of all critical services
             status = CriticalServiceStatusLister.get_criticalservice_status_list()
+            
+            # Return the status of critical services
             return status
         except Exception as e:
+            # Log any error that occurs while fetching the status
             log_event(
                 f"Error fetching critical service status: {str(e)}", level="ERROR"
             )
+            
+            # Return error message with HTTP 500 status
             return {"error": str(e)}, 500
 
 
@@ -237,17 +290,27 @@ class CriticalServiceStatusDescribeResource(Resource):
             JSON response with the service description or an error message.
         """
         try:
+            # Log the event of describing a specific critical service status
             log_event(f"Describing critical service status: {service_name}")
+            
+            # Fetch the critical service status using the CriticalServiceStatusDescriber utility
             service = CriticalServiceStatusDescriber.describe_service_status(
                 service_name
             )
+            
+            # If the service status does not exist, return a 404 error
             if not service:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return {"error": "Critical service not found"}, 404
+            
+            # Return the service status description
             return service, 200
         except Exception as e:
+            # Log any error that occurs while describing the service status
             log_event(
                 f"Error describing critical service status {service_name}: {str(e)}",
                 level="ERROR",
             )
+            
+            # Return error message with HTTP 500 status
             return {"error": str(e)}, 500
