@@ -22,28 +22,30 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 as base
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 AS base
 
 RUN apk add --upgrade --no-cache apk-tools && \
     apk update && \
     apk add --no-cache curl ca-certificates python3 py3-pip python3-dev build-base && \
     update-ca-certificates
 
-ADD requirements.txt constraints.txt /rrs/
-ENV VIRTUAL_ENV=/rrs/venv
+ADD requirements.txt constraints.txt /app/
+ENV VIRTUAL_ENV=/app/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 RUN python3 -m venv $VIRTUAL_ENV && \
     pip3 install --no-cache-dir -U pip -c constraints.txt && \
     pip3 install --no-cache-dir -U wheel -c constraints.txt && \
     pip3 install --no-cache-dir -r requirements.txt
 
-FROM base as build
-RUN mkdir -P /rrs/init /rrs/lib
-WORKDIR /rrs
+FROM base AS build
+
+WORKDIR /app
+
+ENV PYTHONPATH=/app/src
 
 # Copy rrs init sources
 EXPOSE 80
-COPY src/rrs/init /rrs/init
-COPY src/rrs/lib /rrs/lib
+COPY src/rrs/init /app/src/rrs/init
+COPY src/lib /app/src/lib
 
-CMD [ "python", "/rrs/init/init.py" ]
+CMD [ "python", "/app/src/rrs/init/init.py" ]
