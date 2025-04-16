@@ -31,8 +31,7 @@ and Ceph responses.
 
 import unittest
 from typing import Dict, List, Union, cast
-
-from src.api.app import app
+from flask import Flask
 from src.api.models.zone_describe import ZoneDescriber, NodeInfo as ModelNodeInfo
 from src.api.resources.ceph_zones import NodeInfo as ResourceNodeInfo
 from tests.tests_models.mock_data import (
@@ -48,7 +47,9 @@ class TestZoneDescribe(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up an application context before each test."""
-        self.app_context = app.app_context()
+        self.app = Flask(__name__)  # Create a real Flask app instance
+        self.app.config['TESTING'] = True
+        self.app_context = self.app.app_context()
         self.app_context.push()
 
     def tearDown(self) -> None:

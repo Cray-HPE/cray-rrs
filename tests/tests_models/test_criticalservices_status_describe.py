@@ -30,8 +30,7 @@ These tests validate the function's behavior when retrieving details of critical
 
 import unittest
 from typing import Any, Dict, cast
-
-from src.api.app import app
+from flask import Flask
 from src.api.models.criticalservice_status_describe import (
     CriticalServiceStatusDescriber,
 )
@@ -48,7 +47,9 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up an application context before each test."""
-        self.app_context = app.app_context()
+        self.app = Flask(__name__)  # Create a real Flask app instance
+        self.app.config['TESTING'] = True
+        self.app_context = self.app.app_context()
         self.app_context.push()
 
     def tearDown(self) -> None:

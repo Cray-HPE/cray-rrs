@@ -29,8 +29,7 @@ These tests validate the function's behavior when retrieving critical services.
 """
 
 import unittest
-
-from src.api.app import app
+from flask import Flask
 from src.api.models.criticalservice_status_list import CriticalServiceStatusLister
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
@@ -45,7 +44,9 @@ class TestCriticalServicesList(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up an application context before each test."""
-        self.app_context = app.app_context()
+        self.app = Flask(__name__)  # Create a real Flask app instance
+        self.app.config['TESTING'] = True
+        self.app_context = self.app.app_context()
         self.app_context.push()
 
     def tearDown(self) -> None:

@@ -30,9 +30,8 @@ These tests validate the update behavior of critical services in a ConfigMap.
 
 import unittest
 from typing import cast
-
+from flask import Flask
 from src.api.models.criticalservice_update import CriticalServiceUpdater
-from src.api.app import app
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,
@@ -48,7 +47,9 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
     def setUp(self) -> None:
         """Set up an application context before each test."""
-        self.app_context = app.app_context()
+        self.app = Flask(__name__)  # Create a real Flask app instance
+        self.app.config['TESTING'] = True
+        self.app_context = self.app.app_context()
         self.app_context.push()
 
     def tearDown(self) -> None:
