@@ -59,7 +59,7 @@ class CriticalServiceStatusLister:
             }  # Return empty namespace dictionary instead of unhashable set
         try:
             # Ensure the services are provided as a dictionary
-            if not isinstance(services, dict):  
+            if not isinstance(services, dict):
                 app.logger.error(
                     f"[{log_id}] Invalid format for services: {type(services)}"
                 )
@@ -70,7 +70,9 @@ class CriticalServiceStatusLister:
             for name, details in services.items():
                 namespace = details["namespace"]
                 if namespace not in result["namespace"]:
-                    result["namespace"][namespace] = []  # Create a list if the namespace is not yet added
+                    result["namespace"][
+                        namespace
+                    ] = []  # Create a list if the namespace is not yet added
                 result["namespace"][namespace].append(
                     {
                         "name": name,
@@ -103,11 +105,17 @@ class CriticalServiceStatusLister:
             app.logger.info(
                 f"[{log_id}] Fetching ConfigMap: {CM_NAME} from namespace: {CM_NAMESPACE}"
             )
-            cm_data = ConfigMapHelper.get_configmap(CM_NAMESPACE, CM_NAME)  # Fetch ConfigMap data
+            cm_data = ConfigMapHelper.get_configmap(
+                CM_NAMESPACE, CM_NAME
+            )  # Fetch ConfigMap data
             config_data = {}
             if CM_KEY in cm_data:
-                config_data = json.loads(cm_data[CM_KEY])  # Parse the JSON from the ConfigMap
-            services = config_data.get("critical-services", {})  # Get the 'critical-services' part
+                config_data = json.loads(
+                    cm_data[CM_KEY]
+                )  # Parse the JSON from the ConfigMap
+            services = config_data.get(
+                "critical-services", {}
+            )  # Get the 'critical-services' part
             # If no critical services are found, log and return an error response
             if not services:
                 app.logger.warning(
@@ -129,11 +137,15 @@ class CriticalServiceStatusLister:
             app.logger.error(
                 f"[{log_id}] Error while processing the ConfigMap: {(exc)}"
             )
-            return ({"error": str((exc))}), 500  # Return a 500 HTTP error if a processing error occurs
+            return (
+                {"error": str((exc))}
+            ), 500  # Return a 500 HTTP error if a processing error occurs
 
         except Exception as e:
             # Catch all other unexpected exceptions and log them
             app.logger.error(
                 f"[{log_id}] Unexpected error while fetching critical services: {(e)}"
             )
-            return ({"error": str((e))}), 500  # Return a 500 HTTP error for unexpected issues
+            return (
+                {"error": str((e))}
+            ), 500  # Return a 500 HTTP error for unexpected issues

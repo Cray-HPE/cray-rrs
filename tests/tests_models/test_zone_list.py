@@ -43,7 +43,7 @@ class TestZoneMapping(unittest.TestCase):
     def setUp(self) -> None:
         """Set up an application context before each test."""
         self.app = Flask(__name__)  # Create a real Flask app instance
-        self.app.config['TESTING'] = True
+        self.app.config["TESTING"] = True
         self.app_context = self.app.app_context()
         self.app_context.push()
 

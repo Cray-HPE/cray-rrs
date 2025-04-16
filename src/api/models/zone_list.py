@@ -42,6 +42,7 @@ class ZoneInfoDict(TypedDict, total=False):
         Information: Informational message about zones status
         error: Error message if an issue occurred during zone processing
     """
+
     Zones: List[Dict[str, Any]]
     Information: str
     error: str
@@ -67,7 +68,7 @@ class ZoneMapper:
                 "Zones": [],
                 "Information": "No zones (K8s topology and Ceph) configured",
             }
-        
+
         # If only one of the zones (K8s or Ceph) is a string, log the issue
         if isinstance(k8s_zones, str):
             app.logger.warning(f"[{log_id}] No K8s topology zones configured")

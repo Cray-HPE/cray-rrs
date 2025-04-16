@@ -39,10 +39,10 @@ app.logger.info("API server started at %s", start_timestamp_api)
 # Update ConfigMap with the server start timestamp for monitoring purposes
 with app.app_context():
     ConfigMapHelper.update_configmap_data(
-        "rack-resiliency", 
-        "rrs-mon-dynamic", 
-        None, 
-        "start_timestamp_api", 
+        "rack-resiliency",
+        "rrs-mon-dynamic",
+        None,
+        "start_timestamp_api",
         start_timestamp_api,
     )
 
@@ -55,20 +55,29 @@ except IOError:
 
 # Register health and version endpoints
 api.add_resource(Ready, "/healthz/ready")  # Readiness check
-api.add_resource(Live, "/healthz/live")    # Liveness check
-api.add_resource(Version, "/version")      # Version info endpoint
+api.add_resource(Live, "/healthz/live")  # Liveness check
+api.add_resource(Version, "/version")  # Version info endpoint
 
 # Register zone-related endpoints
-api.add_resource(ZoneListResource, "/zones")              # List all zones
+api.add_resource(ZoneListResource, "/zones")  # List all zones
 api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")  # Describe a specific zone
 
 # Register critical service-related endpoints
-api.add_resource(CriticalServiceListResource, "/criticalservices")  # List all critical services
-api.add_resource(CriticalServiceDescribeResource, "/criticalservices/<service_name>")  # Describe a specific service
-api.add_resource(CriticalServiceUpdateResource, "/criticalservices")  # Update critical service data
-api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")  # List statuses of critical services
 api.add_resource(
-    CriticalServiceStatusDescribeResource, "/criticalservices/status/<service_name>"  # Describe status of a specific service
+    CriticalServiceListResource, "/criticalservices"
+)  # List all critical services
+api.add_resource(
+    CriticalServiceDescribeResource, "/criticalservices/<service_name>"
+)  # Describe a specific service
+api.add_resource(
+    CriticalServiceUpdateResource, "/criticalservices"
+)  # Update critical service data
+api.add_resource(
+    CriticalServiceStatusListResource, "/criticalservices/status"
+)  # List statuses of critical services
+api.add_resource(
+    CriticalServiceStatusDescribeResource,
+    "/criticalservices/status/<service_name>",  # Describe status of a specific service
 )
 
 # Main entry point of the application

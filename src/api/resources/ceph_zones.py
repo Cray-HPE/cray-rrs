@@ -32,6 +32,7 @@ from src.lib.rrs_logging import get_log_id
 # TypedDict defining structure of an individual OSD entry
 class OsdInfo(TypedDict):
     """Information about a Ceph Object Storage Daemon (OSD)."""
+
     name: str
     status: str
 
@@ -39,6 +40,7 @@ class OsdInfo(TypedDict):
 # TypedDict defining structure of a Ceph node containing OSDs
 class NodeInfo(TypedDict):
     """Information about a Ceph storage node including its OSDs."""
+
     name: str
     status: str
     osds: List[OsdInfo]

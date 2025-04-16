@@ -64,7 +64,9 @@ class CriticalServicesLister:
 
         try:
             # Log the start of the process
-            app.logger.info(f"[{log_id}] Starting to fetch and format critical services.")
+            app.logger.info(
+                f"[{log_id}] Starting to fetch and format critical services."
+            )
 
             # Loop through the services and organize them by their namespace
             for name, details in services.items():
@@ -81,7 +83,9 @@ class CriticalServicesLister:
                 )
 
             # Log the successful completion of the service formatting process
-            app.logger.info(f"[{log_id}] Successfully fetched and formatted critical services.")
+            app.logger.info(
+                f"[{log_id}] Successfully fetched and formatted critical services."
+            )
 
         except (KeyError, TypeError, ValueError) as exc:
             # Log any errors that occur during the service formatting process

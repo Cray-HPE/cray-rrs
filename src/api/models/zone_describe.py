@@ -58,7 +58,7 @@ class ZoneDescriber:
         log_id: Optional[str] = None,
     ) -> ZoneInfoDict:
         """Internal method to get detailed information of a specific zone."""
-        
+
         # If no log_id is provided, generate one
         if log_id is None:
             log_id = get_log_id()
@@ -146,7 +146,7 @@ class ZoneDescriber:
     @staticmethod
     def describe_zone(zone_name: str) -> ZoneInfoDict:
         """Public method to describe a specific zone."""
-        
+
         # Generate a log ID for the request
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Request received to describe zone: {zone_name}")
