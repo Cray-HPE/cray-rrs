@@ -21,9 +21,9 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-RRS_API_CONTAINER_NAME ?= cray-rrs-api
-RRS_INIT_CONTAINER_NAME ?= cray-rrs-init
-RRS_RMS_CONTAINER_NAME ?= cray-rrs-rms
+RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
+RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
+RRS_RMS_CONTAINER_NAME ?= cray-rrs/cray-rrs-rms
 
 VERSION ?= $(shell cat .version)
 
