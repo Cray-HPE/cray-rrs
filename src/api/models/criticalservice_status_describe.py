@@ -23,6 +23,31 @@
 #
 """
 Model to describe the status of critical services.
+{
+  "Critical Service": {
+    "Name": "xyz-svc",
+    "Namespace": "abc-ns",
+    "Type": "Deployment",
+    "Status": "Configured/Partially Configured/Running",
+    "Balanced": "true/false",
+    "Configured Instances": <num>,
+    "Currently Running Instances": <num>,
+    "Pods": [
+      {
+        "Name": "xyz-svc-pod1",
+        "Status": "Running",
+        "Node": "node1",
+        "Zone": "rack2"
+      },
+      {
+        "Name": "xyz-svc-pod2",
+        "Status": "Running",
+        "Node": "node3",
+        "Zone": "rack1"
+      }
+    ]
+  }
+}
 """
 
 import json

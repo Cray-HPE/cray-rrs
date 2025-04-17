@@ -1,6 +1,6 @@
 # MIT License
 #
-# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -22,6 +22,34 @@
 #
 """
 Model to fetch and format critical services from a Kubernetes ConfigMap.
+{
+  "critical-services": {
+    "namespace": {
+      "ns-1": [
+        {
+          "name": "ns1-svc-1",
+          "type": "Deployment"
+          "status": "Configured",
+          "balanced": "true"
+        },
+        {
+          "name": "ns1-svc-2",
+          "type": "StatefulSet"
+          "status": "PartiallyConfigured",
+          "balanced": "true"
+        }
+      ],
+      "ns-2": [
+        {
+          "name": "ns2-svc-1",
+          "type": "StatefulSet"
+          "status": "NotConfigured",
+          "balanced": "true"
+        }
+      ]
+    }
+  }
+}
 """
 
 import json

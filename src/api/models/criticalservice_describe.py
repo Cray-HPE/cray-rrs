@@ -22,7 +22,16 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """
-Model to describe the critical service.
+Model to retrieve the details of desired criticalservice in following json format.
+{
+  "Critical Service": {
+    "Name": "xyz-service",
+    "Namespace": "abc-ns",
+    "Type": "Deployment/StatefulSet/DaemonSet",
+    "Configured Instances": <num>,
+    "Currently Running Instances": <num>
+  }
+}
 """
 
 import json
@@ -74,6 +83,12 @@ class CriticalServiceDescriber:
             result = CriticalServiceStatusDescriber.get_service_details(
                 services, service_name
             )
+
+            if "error" in result:
+                app.logger.warning(
+                    f"[{log_id}] Service '{service_name}' not found in ConfigMap."
+                )
+                return {"error": "Service not found"}, 404
 
             # Clean up the result by removing unnecessary internal fields
             del result["Critical Service"]["Pods"]

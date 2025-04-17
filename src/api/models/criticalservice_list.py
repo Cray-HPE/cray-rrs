@@ -23,7 +23,30 @@
 #
 
 """
-Model to fetch and format critical services from a Kubernetes ConfigMap.
+Model to retrive the criticalservices from Kubernetes ConfigMap in following format.
+{
+  "critical-services": {
+    "namespace": {
+      "ns-1": [
+        {
+          "name": "ns1-svc-1",
+          "type": "Deployment"
+        },
+        {
+          "name": "ns1-svc-2",
+          "type": "StatefulSet"
+        }
+      ],
+      "ns-2": [
+        {
+          "name": "ns2-svc-1",
+          "type": "StatefulSet"
+        }
+      ]
+    }
+  }
+}
+
 """
 
 import json

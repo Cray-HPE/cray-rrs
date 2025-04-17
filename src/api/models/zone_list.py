@@ -24,6 +24,27 @@
 """
 Model to handle and process Kubernetes and Ceph zones.
 Maps zone data from K8s and Ceph, and returns summarized information.
+{
+  "Zones": [
+    {
+      "Zone Name": "rack2",
+      "Kubernetes Topology Zone": {
+        "Management Master Nodes": [
+        "master2"
+        ],
+        "Management Worker Nodes": [
+          "worker3"
+        ]
+      },
+      "CEPH Zone": {
+        "Management Storage Nodes": [
+          "storage5",
+          "storage3"
+        ]
+      }
+    }
+  ]
+}
 """
 from typing import Dict, List, Any, Union, Optional, TypedDict, Set
 from flask import current_app as app

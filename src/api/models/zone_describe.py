@@ -21,7 +21,52 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-"""Model to describe the requested zone"""
+"""
+Model to describe the requested zone
+{
+  "Zone Name": "rack3",
+  "Management Masters": 1,
+  "Management Workers": 2,
+  "Management Storages": 1,
+  "Management Master": {
+    "Type": "Kubernetes Topology Zone",
+    "Nodes": [
+      {
+        "Name": "master1",
+        "Status": "Ready"
+      }
+    ]
+  },
+  "Management Worker": {
+    "Type": "Kubernetes Topology Zone",
+    "Nodes": [
+      {
+        "Name": "worker1",
+        "Status": "Ready"
+      },
+      {
+        "Name": "worker2",
+        "Status": "NotReady"
+      }
+    ]
+  },
+  "Management Storage": {
+    "Type": "CEPH Zone",
+    "Nodes": [
+      {
+        "Name": "storage1",
+        "Status": "Ready",
+        "OSDs": {
+          "up": [
+            "osd.1",
+            "osd.2",
+          ]
+        }
+      }
+    ]
+  }
+}
+"""
 
 from typing import Dict, List, Any, Optional, Union, TypedDict, cast
 
