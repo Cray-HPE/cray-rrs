@@ -21,20 +21,22 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
-RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
-RRS_RMS_CONTAINER_NAME ?= cray-rrs/cray-rrs-rms
 
+NAME ?=cray-rrs
 VERSION ?= $(shell cat .version)
-
-DOCKERFILE_API ?= Dockerfile.rrs.api
-DOCKERFILE_INIT ?= Dockerfile.rrs.init
-DOCKERFILE_RMS ?= Dockerfile.rrs.rms
 
 CHART_VERSION ?= $(VERSION)
 IMAGE ?= artifactory.algol60.net/csm-docker/stable/${NAME}
 
 CHARTDIR ?= kubernetes
+
+RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
+RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
+RRS_RMS_CONTAINER_NAME ?= cray-rrs/cray-rrs-rms
+
+DOCKERFILE_API ?= Dockerfile.rrs.api
+DOCKERFILE_INIT ?= Dockerfile.rrs.init
+DOCKERFILE_RMS ?= Dockerfile.rrs.rms
 
 CHART_METADATA_IMAGE ?= artifactory.algol60.net/csm-docker/stable/chart-metadata
 YQ_IMAGE ?= artifactory.algol60.net/docker.io/mikefarah/yq:4
@@ -48,8 +50,8 @@ else
 endif
 COMMA := ,
 
-#all : rrs_api_image rrs_init_image rrs_rms_image chart
-all : rrs_api_image rrs_init_image rrs_rms_image
+all : rrs_api_image rrs_init_image rrs_rms_image chart
+#all : rrs_api_image rrs_init_image rrs_rms_image
 
 rrs_api_image:
 	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${RRS_API_CONTAINER_NAME}:${VERSION}' .
