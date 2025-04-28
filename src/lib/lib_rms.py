@@ -191,11 +191,11 @@ class cephHelper:
         """Retrieves health status of CEPH and its services.
         Returns:
             bool: Boolean flag indicating whether the CEPH cluster is healthy."""
-        # ceph_status_cmd = f"ssh {HOST} 'ceph -s -f json'"
-        # ceph_services_cmd = f"ssh {HOST} 'ceph orch ps -f json'"
+        ceph_status_cmd = f"ssh {HOST} 'ceph -s -f json'"
+        ceph_services_cmd = f"ssh {HOST} 'ceph orch ps -f json'"
 
-        ceph_status_cmd = "ceph -s -f json"
-        ceph_services_cmd = "ceph orch ps -f json"
+        #ceph_status_cmd = "ceph -s -f json"
+        #ceph_services_cmd = "ceph orch ps -f json"
         ceph_services = json.loads(Helper.run_command(ceph_services_cmd))
         ceph_status = json.loads(Helper.run_command(ceph_status_cmd))
 
@@ -264,11 +264,11 @@ class cephHelper:
         Returns:
             tuple: JSONs containing the Ceph OSD tree and host details.
         """
-        # ceph_details_cmd = f"ssh {HOST} 'ceph osd tree -f json'"
-        # ceph_hosts_cmd = f"ssh {HOST} 'ceph orch host ls -f json'"
+        ceph_details_cmd = f"ssh {HOST} 'ceph osd tree -f json'"
+        ceph_hosts_cmd = f"ssh {HOST} 'ceph orch host ls -f json'"
 
-        ceph_details_cmd = "ceph osd tree -f json"
-        ceph_hosts_cmd = "ceph orch host ls -f json"
+        # ceph_details_cmd = "ceph osd tree -f json"
+        # ceph_hosts_cmd = "ceph orch host ls -f json"
 
         ceph_tree = json.loads(Helper.run_command(ceph_details_cmd))
         ceph_hosts = json.loads(Helper.run_command(ceph_hosts_cmd))

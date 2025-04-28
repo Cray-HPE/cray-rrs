@@ -50,8 +50,8 @@ class RMSStateManager:
         self.rms_state = ""
         self.dynamic_cm_data: Dict[str, Any] = {}
         self.namespace = "rack-resiliency"
-        self.dynamic_cm = "dynamic-sravani-test"
-        self.static_cm = "static-sravani-test"
+        self.dynamic_cm = "rrs-mon-dynamic"
+        self.static_cm = "rrs-mon-static"
 
     def set_state(self, new_state: str) -> None:
         """Thread-safe method to set the current RMS state."""
