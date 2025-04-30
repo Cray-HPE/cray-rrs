@@ -68,14 +68,14 @@ pipeline {
                     }
                 }
 
-                stage('Chart') {
-                    environment {
-                        IMAGE = "artifactory.algol60.net/csm-docker/${env.IS_STABLE ? "stable" : "unstable"}/${env.NAME}"
-                    }
-                    steps {
-                        sh "make chart"
-                    }
-                }
+                #stage('Chart') {
+                #    environment {
+                #        IMAGE = "artifactory.algol60.net/csm-docker/${env.IS_STABLE ? "stable" : "unstable"}/${env.NAME}"
+                #    }
+                #    steps {
+                #        sh "make chart"
+                #    }
+                #}
             }
         }
 
@@ -85,7 +85,7 @@ pipeline {
                     publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api")
                     publishCsmDockerImage(image: env.RRS_INIT_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.init")
                     publishCsmDockerImage(image: env.RRS_RMS_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.rms")
-                    publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
+                    #publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
                 }
             }
         }
