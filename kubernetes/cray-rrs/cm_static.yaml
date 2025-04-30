@@ -12,7 +12,7 @@ data:
   k8s_pre_monitoring_delay: "40"
   k8s_monitoring_polling_interval: "60"
   k8s_monitoring_total_time: "600"
-  ceph_pre_monitoring_delay: "40"
+  ceph_pre_monitoring_delay: "60"
   ceph_monitoring_polling_interval: "60"
   ceph_monitoring_total_time: "600"
   default_message_level: "debug"

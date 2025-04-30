@@ -40,21 +40,21 @@ spec:
       serviceAccountName: "cray-rrs-service"
       initContainers:
       - name: cray-rrs-init
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250416063115_c2c2a95
         #tag: latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         volumeMounts:
-          - name: rrs-static-conf
+          - name: rrs-mon-static-conf
             mountPath: /conf/rrs-mon-static-conf
             readOnly: true
-          - name: rrs-dynamic-conf
+          - name: rrs-mon-dynamic-conf
             mountPath: /conf/rrs-mon-dynamic-conf
             readOnly: false
       containers:
       - name: cray-rrs-rms
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-rms 
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-rms:1.0.0-20250416063115_c2c2a95
         #tag: latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8548
           name: http
@@ -78,9 +78,9 @@ spec:
           failureThreshold: 10
           successThreshold: 1
       - name: cray-rrs-api
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-api
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-api:1.0.0-20250416062015_4677f03
         #tag: latest
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         volumeMounts:
           - name: ssh-config
             mountPath: /etc/ssh
