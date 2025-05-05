@@ -21,32 +21,26 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
----
-apiVersion: v1
-kind: Service
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
 metadata:
-  name: cray-rrs-api
+  name: cray-rrs-vs
   namespace: rack-resiliency
 spec:
-  selector:
-    app: cray-rrs-api
-  ports:
-    - protocol: TCP
-      port: 85
-      targetPort: 50
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: cray-rrs-rms
-  namespace: rack-resiliency
-spec:
-  selector:
-    app: cray-rrs-rms
-  ports:
-    - protocol: TCP
-      port: 85
-      targetPort: 51
-  type: ClusterIP
----
+  gateways:
+  - services/services-gateway
+  - services/customer-admin-gateway
+  hosts:
+  - '*'
+  http:
+  - match:
+    - uri:
+        prefix: /apis/rrs
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: cray-rrs-api
+        port:
+          number: 8550

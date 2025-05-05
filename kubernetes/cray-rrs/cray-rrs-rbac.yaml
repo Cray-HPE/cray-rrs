@@ -26,32 +26,32 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ .Values.serviceAccountName }}
-  namespace: {{ .Values.namespace }}
-# This looks to be true by default (?). Can be removed.
+  name: cray-rrs-service
+  namespace: rack-resiliency
 automountServiceAccountToken: true
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ .Values.auth.clusterRole }}
+  name: cray-rrs-service
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments", "statefulsets", "daemonsets"]
   verbs: ["get", "list", "watch"]
 - apiGroups: [""]
   resources: ["nodes", "services", "pods", "configmaps"]
-  verbs: ["get", "list", "watch", "patch", "create", "delete", "update"]
+   verbs: ["get", "list", "watch", "patch", "create", "delete", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ .Values.auth.clusterRoleBinding }}
+  name: cray-rrs-service
 subjects:
 - kind: ServiceAccount
-  name: {{ .Values.auth.serviceAccount }}
-  namespace: {{ .Values.department }}
+  name: cray-rrs-service
+  namespace: rack-resiliency
 roleRef:
   kind: ClusterRole
-  name: {{ .Values.auth.clusterRole }}
+  name: cray-rrs-service
+  apiGroup: rbac.authorization.k8s.io
 ---
