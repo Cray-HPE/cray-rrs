@@ -35,6 +35,7 @@ import time
 import json
 import copy
 import threading
+from typing import List
 from flask import Flask, current_app as app
 import yaml
 from src.rrs.rms.rms_statemanager import RMSStateManager
@@ -213,22 +214,56 @@ class RMSMonitor:
         and logs any services that remain partially configured or imbalanced.
         """
         with self.app_arg.app_context():
-            app.logger.info("Starting k8s monitoring")
+            nodeMonitorGracePeriod = k8sHelper.getNodeMonitorGracePeriod()
+            if nodeMonitorGracePeriod:
+                sleep_time = nodeMonitorGracePeriod
+            else:
+                sleep_time = pre_delay
+            time.sleep(sleep_time)
+            app.logger.info(
+                f"Sleeping for {sleep_time} seconds before starting k8s monitoring"
+            )
             Helper.update_state_timestamp(
                 self.state_manager,
                 "k8s_monitoring",
                 "Started",
                 "start_timestamp_k8s_monitoring",
             )
-            nodeMonitorGracePeriod = k8sHelper.getNodeMonitorGracePeriod()
-            if nodeMonitorGracePeriod:
-                time.sleep(nodeMonitorGracePeriod)
-            else:
-                time.sleep(pre_delay)
             start = time.time()
+            latest_services_json = None
+            unrecovered_services: List[str] = []
             while time.time() - start < total_time:
+                app.logger.info("Checking k8s services")
                 # Retrieve and update critical services status
                 latest_services_json = update_critical_services(self.state_manager)
+
+                try:
+                    if latest_services_json:
+                        services_data = json.loads(latest_services_json)
+                        unrecovered_services = []
+
+                        for service, details in services_data[
+                            "critical-services"
+                        ].items():
+                            if (
+                                details["status"] == "PartiallyConfigured"
+                                or details["balanced"] == "false"
+                            ):
+                                unrecovered_services.append(service)
+                    else:
+                        app.logger.error(
+                            "Services JSON data is not available to process"
+                        )
+                        return
+                except (json.JSONDecodeError, KeyError) as e:
+                    app.logger.error(f"Error processing services data: {e}")
+
+                if not unrecovered_services:
+                    app.logger.info(
+                        f"Critical service became healthy after {time.time() - start} seconds. "
+                        "Breaking the k8s monitoring loop"
+                    )
+                    break
                 time.sleep(polling_interval)
 
             app.logger.info(
@@ -240,46 +275,36 @@ class RMSMonitor:
                 "Completed",
                 "end_timestamp_k8s_monitoring",
             )
-
-            if latest_services_json is None:
-                app.logger.error("No services JSON data available to process")
-                return
-
-            try:
-                services_data = json.loads(latest_services_json)
-                unrecovered_services = []
-
-                for service, details in services_data["critical-services"].items():
-                    if (
-                        details["status"] == "PartiallyConfigured"
-                        or details["balanced"] == "false"
-                    ):
-                        unrecovered_services.append(service)
-
-                if unrecovered_services:
-                    app.logger.error(
-                        f"Services {unrecovered_services} are still not recovered even after {total_time} seconds"
-                    )
-            except (json.JSONDecodeError, KeyError) as e:
-                app.logger.error(f"Error processing services data: {e}")
+            if unrecovered_services:
+                app.logger.error(
+                    f"Services {unrecovered_services} are still not recovered even after {total_time} seconds"
+                )
 
     def monitor_ceph(
         self, polling_interval: int, total_time: int, pre_delay: int
     ) -> None:
         """Monitor Ceph storage system status, including health and zone node details."""
         with self.app_arg.app_context():
-            app.logger.info("Starting CEPH monitoring")
+            app.logger.info(
+                f"Sleeping for {pre_delay} seconds before starting CEPH monitoring"
+            )
+            time.sleep(pre_delay)
             Helper.update_state_timestamp(
                 self.state_manager,
                 "ceph_monitoring",
                 "Started",
                 "start_timestamp_ceph_monitoring",
             )
-            time.sleep(pre_delay)
             start = time.time()
             while time.time() - start < total_time:
+                app.logger.info("Checking CEPH")
                 # Retrieve and update k8s/CEPH status and CEPH health
                 ceph_health_status = update_zone_status(self.state_manager)
+                if ceph_health_status:
+                    app.logger.info(
+                        f"CEPH became healthy after {time.time() - start} seconds. Breaking the CEPH monitoring loop"
+                    )
+                    break
                 time.sleep(polling_interval)
 
             Helper.update_state_timestamp(
@@ -291,20 +316,54 @@ class RMSMonitor:
             if ceph_health_status is False:
                 app.logger.error(f"CEPH is still unhealthy after {total_time} seconds")
 
+    def check_running_monitoring_instance(self, monitoring_total_time: int) -> bool:
+        """
+        Check if another monitoring instance is running
+        If it is, launch another instance only if it previous one passed 75% of its time
+        Args:
+            monitoring_total_time (int): Total monitoring time interval in seconds.
+        Returns:
+            bool:
+                - True if a new monitoring instance should be launched (75% time passed).
+                - False if a new instance should not be launched (less than 75% time passed).
+        """
+        dynamic_cm_data = ConfigMapHelper.get_configmap(
+            self.state_manager.namespace, self.state_manager.dynamic_cm
+        )
+        yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
+        if yaml_content:
+            dynamic_data = yaml.safe_load(yaml_content)
+            monitor_k8s_start_time = dynamic_data.get("timestamps", {}).get(
+                "start_timestamp_k8s_monitoring", None
+            )
+            if monitor_k8s_start_time:
+                monitor_k8s_start_time = float(monitor_k8s_start_time)
+                current_time = time.time()
+                elapsed_time = current_time - monitor_k8s_start_time
+
+                # Calculate percentage of interval completed
+                percentage_completed = (elapsed_time / monitoring_total_time) * 100
+                app.logger.info(
+                    "Elapsed time since last monitoring instance start: %.2f seconds (%.2f%% completed)",
+                    elapsed_time,
+                    percentage_completed,
+                )
+
+                return bool(percentage_completed >= 75.0)
+            app.logger.warning(
+                "start_timestamp_k8s_monitoring not found in ConfigMap. Cannot determine elapsed time"
+            )
+            return False
+
+        app.logger.error(
+            "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
+        )
+        return False
+
     def monitoring_loop(self) -> None:
         """Initiate monitoring of critical services and CEPH"""
         with self.app_arg.app_context():
-            if not self.state_manager.start_monitoring():
-                app.logger.warning(
-                    "Skipping launch of a new monitoring instance as a previous one is still active"
-                )
-                return  # Return early if the function is already running
-
-            app.logger.info("Monitoring critical services and zone status...")
-            state = "Monitoring"
-            self.state_manager.set_state(state)
-            Helper.update_state_timestamp(self.state_manager, "rms_state", state)
-            # Read the 'rrs-mon' configmap and parse the data
+            # Read the 'rrs-mon-static' configmap and parse the data
             static_cm_data = ConfigMapHelper.get_configmap(
                 self.state_manager.namespace, self.state_manager.static_cm
             )
@@ -318,8 +377,27 @@ class RMSMonitor:
             ceph_args = (
                 int(static_cm_data.get("ceph_monitoring_polling_interval", 60)),
                 int(static_cm_data.get("ceph_monitoring_total_time", 600)),
-                int(static_cm_data.get("ceph_pre_monitoring_delay", 40)),
+                int(static_cm_data.get("ceph_pre_monitoring_delay", 60)),
             )
+
+            if not self.state_manager.start_monitoring():
+                app.logger.info("Another monitoring instance is already running")
+                if not self.check_running_monitoring_instance(
+                    int(static_cm_data.get("k8s_monitoring_total_time", 600))
+                ):
+                    app.logger.warning(
+                        "Skipping launch of a new monitoring instance as a previous one is still active"
+                    )
+                    return
+                app.logger.info(
+                    "Launching new monitoring instance since "
+                    "the previous one passed more than 75%% of monitoring interval"
+                )
+
+            app.logger.info("Monitoring critical services and zone status...")
+            state = "Monitoring"
+            self.state_manager.set_state(state)
+            Helper.update_state_timestamp(self.state_manager, "rms_state", state)
 
             t1 = threading.Thread(target=self.monitor_k8s, args=k8s_args)
             t2 = threading.Thread(target=self.monitor_ceph, args=ceph_args)

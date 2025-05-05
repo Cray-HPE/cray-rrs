@@ -34,6 +34,7 @@ import json
 import re
 import subprocess
 import base64
+import time
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional, TypedDict
 import requests
@@ -179,6 +180,57 @@ class Helper:
         except Exception as err:
             _app.logger.error(f"Error collecting secret from Kubernetes: {err}")
             return None
+
+    @staticmethod
+    def get_sls_hms_data() -> Tuple[Optional[Dict[str, List[Dict[str, Any]]]], Optional[List[Dict[str, Any]]]]:
+        """
+        Fetch data from HSM and SLS services.
+        Returns:
+            Tuple[Optional[Dict], Optional[Dict]]:
+                - hsm_data (dict or None): Parsed HSM response.
+                - sls_data (dict or None): Parsed SLS response.
+        """
+        token = Helper.token_fetch()
+        hsm_url = "https://api-gw-service-nmn.local/apis/smd/hsm/v2/State/Components"
+        sls_url = "https://api-gw-service-nmn.local/apis/sls/v1/search/hardware"
+        params = {"type": "comptype_node"}
+        headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+        max_retries = 3
+        retry_delay = 2  # in seconds
+        hsm_data = None
+        sls_data = None
+
+        # Peform HSM fetch
+        for attempt in range(1, max_retries + 1):
+            try:
+                hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
+                hsm_response.raise_for_status()
+                hsm_data = hsm_response.json()
+                break  # Success, exit retry loop
+            except (requests.exceptions.RequestException, ValueError) as e:
+                _app.logger.error(f"Attempt {attempt}: Failed to fetch HSM data: {e}")
+                if attempt == max_retries:
+                    _app.logger.error("Max retries reached. Could not fetch HSM data")
+                    return None, None
+                time.sleep(retry_delay)
+
+        # Perform SLS fetch
+        for attempt in range(1, max_retries + 1):
+            try:
+                sls_response = requests.get(
+                    sls_url, headers=headers, params=params, timeout=10
+                )
+                sls_response.raise_for_status()
+                sls_data = sls_response.json()
+                break  # Success, exit retry loop
+            except (requests.exceptions.RequestException, ValueError) as e:
+                _app.logger.error(f"Attempt {attempt}: Failed to fetch SLS data: {e}")
+                if attempt == max_retries:
+                    _app.logger.error("Max retries reached. Could not fetch SLS data")
+                    return None, None
+                time.sleep(retry_delay)
+
+        return hsm_data, sls_data
 
 
 class cephHelper:

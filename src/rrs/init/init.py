@@ -39,7 +39,7 @@ from typing import Dict, List, Tuple, Any
 from flask import Flask
 import yaml
 from src.rrs.rms.rms_statemanager import RMSStateManager
-from src.lib.lib_rms import cephHelper, k8sHelper
+from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
 
 app = Flask(__name__)
@@ -56,6 +56,66 @@ app.logger.addHandler(file_handler)
 # logger = logging.getLogger(__name__)
 
 state_manager = RMSStateManager()
+
+
+def _check_failed_node(
+    pod_node: str, pod_zone: str, sls_data: List[Dict[str, Any]], filtered_data: List[Dict[str, Any]]
+) -> None:
+    for sls_entry in sls_data:
+        aliases = sls_entry["ExtraProperties"]["Aliases"][0]
+        if pod_node in aliases:
+            for component in filtered_data:
+                if sls_entry["Xname"] == component["ID"]:
+                    rack_id = component["ID"].split("c")[
+                        0
+                    ]  # Extract "x3000" from "x3000c0s1b75n75"
+                    comp_state = component["State"]
+                    if comp_state in ["Off"] and rack_id in pod_zone:
+                        app.logger.info(
+                            "Monitoring pod was previously running on the "
+                            "failed node %s under rack %s",
+                            pod_node,
+                            rack_id,
+                        )
+                return
+        return
+
+
+def check_pod_location() -> None:
+    """Checks if the monitoring pod was previously running on a failed node"""
+
+    app.logger.info("Checking if previous running RMS pod was on the failed node")
+    hsm_data, sls_data = Helper.get_sls_hms_data()
+    if not hsm_data or not sls_data:
+        app.logger.error("Failed to retrieve HSM or SLS data")
+        state_manager.set_state("internal_failure")
+        return
+
+    dynamic_cm_data = state_manager.get_dynamic_cm_data()
+    yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
+    if yaml_content is None:
+        app.logger.error("dynamic-data.yaml not found in the configmap")
+        state_manager.set_state("internal_failure")
+        return
+
+    dynamic_data = yaml.safe_load(yaml_content)
+    pod_zone = dynamic_data.get("rrs").get("zone")
+    pod_node = dynamic_data.get("rrs").get("node")
+    if not pod_zone or not pod_node:
+        app.logger.error(
+            "zone or node information of the pod is missing in dynamic data"
+        )
+        state_manager.set_state("internal_failure")
+        return
+
+    valid_subroles = {"Master", "Worker", "Storage"}
+    filtered_data = [
+        component
+        for component in hsm_data.get("Components", [])
+        if component.get("Role") == "Management"
+        and component.get("SubRole") in valid_subroles
+    ]
+    _check_failed_node(pod_node, pod_zone, sls_data, filtered_data)
 
 
 def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, Any]]:
@@ -166,15 +226,17 @@ def init() -> None:
         if init_timestamp:
             app.logger.debug("Init time already present in configmap")
             app.logger.info(
-                "Reinitializing the Rack Resiliency Service. "
-                "This could happen if previous RRS pod has terminated unexpectedly"
+                "Reinitializing the Rack Resiliency Service."
+                "This could happen if previous RRS pod has been terminated"
             )
-        if not rms_state:
-            state["rms_state"] = "Init"
-        else:
-            app.logger.debug("rms_state is already present in configmap")
-            app.logger.info("RMS is already in %s state", rms_state)
-        # check on condition here
+        if rms_state:
+            app.logger.info("RMS is in %s state. Resetting to init state", rms_state)
+            if rms_state == "Monitoring":
+                check_pod_location()
+                app.logger.info(
+                    "Since the previous monitoring session did not complete, it will be relaunched in the RMS container"
+                )
+        state["rms_state"] = "Init"
         timestamps["init_timestamp"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         ConfigMapHelper.update_configmap_data(
             state_manager.namespace,
@@ -218,6 +280,7 @@ def init() -> None:
         else:
             app.logger.info("Updating rms state to init_fail due to above failures")
             state["rms_state"] = "init_fail"
+            sys.exit(1)
         app.logger.debug(
             "Updating zone information, pod placement, state in rrs-dynamic configmap"
         )

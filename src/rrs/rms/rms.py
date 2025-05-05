@@ -77,15 +77,12 @@ def check_failure_type(component_xname: str) -> None:
     app.logger.info(
         "Checking failure type i.e., node or rack failure upon recieving SCN ..."
     )
-    token = Helper.token_fetch()
-    hsm_url = "https://api-gw-service-nmn.local/apis/smd/hsm/v2/State/Components"
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    hsm_data, _ = Helper.get_sls_hms_data()
+    if not hsm_data:
+        app.logger.error("Failed to retrieve HSM data")
+        state_manager.set_state("internal_failure")
+        return
     try:
-        # Make the GET request to hsm endpoint
-        hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
-        hsm_response.raise_for_status()
-        hsm_data = hsm_response.json()
-
         valid_subroles = {"Master", "Worker", "Storage"}
         filtered_data = [
             component
@@ -93,7 +90,7 @@ def check_failure_type(component_xname: str) -> None:
             if component.get("Role") == "Management"
             and component.get("SubRole") in valid_subroles
         ]
-
+        rack_id = ""
         for component in filtered_data:
             if component["ID"] == component_xname:
                 rack_id = component["ID"].split("c")[
@@ -123,30 +120,9 @@ def check_failure_type(component_xname: str) -> None:
                 "Not all the components present in the rack are down. It is only a NODE FAILURE"
             )
 
-        dynamic_cm_data = state_manager.get_dynamic_cm_data()
-        yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
-        if yaml_content is None:
-            app.logger.error("dynamic-data.yaml not found in the configmap")
-            state_manager.set_state("internal_failure")
-            return None
-        dynamic_data = yaml.safe_load(yaml_content)
-        pod_zone = dynamic_data.get("rrs").get("zone")
-        # pod_node = dynamic_data.get("rrs").get("node")
-        if rack_id in pod_zone:
-            print("Monitoring pod was on the failed rack")
-        return None
-        # implement this
-
-    except requests.exceptions.RequestException as e:
-        app.logger.error("Request failed: %s", e)
+    except (AttributeError, KeyError, IndexError, TypeError) as e:
+        app.logger.error("Error occurred while checking rack failure: %s", e)
         state_manager.set_state("internal_failure")
-        return None
-        # exit(1)
-    except ValueError as e:
-        app.logger.error("Failed to parse JSON: %s", e)
-        state_manager.set_state("internal_failure")
-        return None
-        # exit(1)
 
 
 @app.route("/scn", methods=["POST"])
@@ -169,7 +145,6 @@ def handleSCN() -> tuple[Response, int]:
                 jsonify({"error": "Missing 'Components' or 'State' in the request"}),
                 400,
             )
-
         if state == "Off":
             for component in components:
                 app.logger.info("Node %s is turned Off", component)
@@ -180,7 +155,6 @@ def handleSCN() -> tuple[Response, int]:
         elif state == "On":
             for component in components:
                 app.logger.info("Node %s is turned On", component)
-            # Handle discovery of nodes
             # Handle cleanup or other actions here if needed
 
         else:
@@ -202,35 +176,45 @@ def get_management_xnames() -> list[str] | None:
     token = Helper.token_fetch()
     hsm_url = "https://api-gw-service-nmn.local/apis/smd/hsm/v2/State/Components"
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    max_retries = 3
+    retry_delay = 2
+    hsm_response = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Make the GET request to hsm endpoint
+            hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
+            hsm_response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            app.logger.error(
+                "Attempt %s : Failed to get response from HSM: %s", attempt, e
+            )
+            if attempt == max_retries:
+                app.logger.error("Max retries reached. Cannot fetch response from HSM")
+                state_manager.set_state("internal_failure")
+                return None
+            time.sleep(retry_delay)
+
+    assert hsm_response is not None, "hsm_response should not be None here"
+
     try:
-        # Make the GET request to hsm endpoint
-        hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
-        hsm_response.raise_for_status()
         hsm_data = hsm_response.json()
-
-        # Filter components with the given role and subroles
-        valid_subroles = {"Master", "Worker", "Storage"}
-        filtered_data = [
-            component
-            for component in hsm_data.get("Components", [])
-            if component.get("Role") == "Management"
-            and component.get("SubRole") in valid_subroles
-        ]
-
-        management_xnames = {component["ID"] for component in filtered_data}
-        app.logger.info(list(management_xnames))
-        return list(management_xnames)
-
-    except requests.exceptions.RequestException as e:
-        app.logger.error("Request failed: %s", e)
-        state_manager.set_state("internal_failure")
-        return None
-        # exit(1)
     except ValueError as e:
         app.logger.error("Failed to parse JSON: %s", e)
         state_manager.set_state("internal_failure")
         return None
-        # exit(1)
+
+    # Filter components with the given role and subroles
+    valid_subroles = {"Master", "Worker", "Storage"}
+    filtered_data = [
+        component
+        for component in hsm_data.get("Components", [])
+        if component.get("Role") == "Management"
+        and component.get("SubRole") in valid_subroles
+    ]
+
+    management_xnames = {component["ID"] for component in filtered_data}
+    app.logger.info(list(management_xnames))
+    return list(management_xnames)
 
 
 def check_and_create_hmnfd_subscription() -> None:
@@ -245,6 +229,9 @@ def check_and_create_hmnfd_subscription() -> None:
     post_url = f"https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
 
     subscribing_components = get_management_xnames()
+    if not subscribing_components:
+        app.logger.error("Management xnames are empty or fetch failed")
+        return
     post_data = {
         "Components": subscribing_components,
         "Roles": ["Management"],
@@ -253,40 +240,72 @@ def check_and_create_hmnfd_subscription() -> None:
         # "Url": "https://api-gw-service-nmn.local/apis/rms/scn"
     }
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    max_retries = 3
+    retry_delay = 2
+    data = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            get_response = requests.get(get_url, headers=headers, timeout=10)
+            get_response.raise_for_status()
+            data = get_response.json()
+            break  # GET succeeded
+        except (requests.exceptions.RequestException, ValueError) as e:
+            app.logger.error(
+                "Attempt %s : Failed to fetch subscription list from hmnfd. Error: %s",
+                attempt,
+                e,
+            )
+            if attempt == max_retries:
+                app.logger.error("Max retries reached. Cannot fetch subscription list")
+                state_manager.set_state("internal_failure")
+            time.sleep(retry_delay)
 
-    try:
-        get_response = requests.get(get_url, headers=headers, timeout=10)
-        data = get_response.json()
+    # Check if rms exists in subscription
+    exists = False
+    if data:
         exists = any(
-            "rms" in subscription["Subscriber"]
-            for subscription in data["SubscriptionList"]
+            "rms" in subscription.get("Subscriber", "")
+            for subscription in data.get("SubscriptionList", [])
         )
 
-        if not exists:
-            app.logger.info(
-                "rms not present in the HMNFD subscription list, creating it ..."
-            )
-            post_response = requests.post(
-                post_url, json=post_data, headers=headers, timeout=10
-            )
-            post_response.raise_for_status()
-            app.logger.info("Successfully subscribed to hmnfd for SCN notifications")
-        else:
-            app.logger.info("rms is already present in the subscription list")
-    except requests.exceptions.RequestException as e:
-        # Handle request errors (e.g., network issues, timeouts, non-2xx status codes)
-        app.logger.error("Failed to make subscription request to hmnfd. Error: %s", e)
-        state_manager.set_state("internal_failure")
-        # exit(1)
-    except ValueError as e:
-        # Handle JSON parsing errors
-        app.logger.error("Failed to parse JSON response: %s", e)
-        state_manager.set_state("internal_failure")
-        # exit(1)
+    if not exists:
+        app.logger.info(
+            "rms not present in the HMNFD subscription list, creating it ..."
+        )
+
+        for attempt in range(1, max_retries + 1):
+            try:
+                post_response = requests.post(
+                    post_url, json=post_data, headers=headers, timeout=10
+                )
+                post_response.raise_for_status()
+                app.logger.info(
+                    "Successfully subscribed to hmnfd for SCN notifications"
+                )
+                break  # POST succeeded
+            except requests.exceptions.RequestException as e:
+                app.logger.error(
+                    "Attempt %s : Failed to create subscription to hmnfd. Error: %s",
+                    attempt,
+                    e,
+                )
+                if attempt == max_retries:
+                    app.logger.error(
+                        "Max retries reached. Cannot create subscription in hmnfd"
+                    )
+                    state_manager.set_state("internal_failure")
+                time.sleep(retry_delay)
+    else:
+        app.logger.info("rms is already present in the subscription list")
 
 
 def initial_check_and_update() -> bool:
-    """Perform needed initialization checks and update configmap"""
+    """
+    Perform needed initialization checks and updates configmap
+    Returns:
+        bool:
+            - True if unfinished monitoring instance was previously running
+    """
     is_monitoring = False
     dynamic_cm_data = ConfigMapHelper.get_configmap(
         state_manager.namespace, state_manager.dynamic_cm
@@ -309,7 +328,7 @@ def initial_check_and_update() -> bool:
                 is_monitoring = True
             elif rms_state_value == "Init_fail":
                 app.logger.error(
-                    "RMS is in 'init_fail' state indicating init container failed — not starting the RMS service"
+                    "RMS is in 'init_fail' state as init container failed — not starting the RMS service"
                 )
                 sys.exit(1)
             else:
@@ -345,11 +364,9 @@ def initial_check_and_update() -> bool:
     except ValueError as e:
         app.logger.error("Error during configuration check and update: %s", e)
         state_manager.set_state("internal_failure")
-        # exit(1)
     except Exception as e:
         app.logger.error("Unexpected error: %s", e)
         state_manager.set_state("internal_failure")
-        # exit(1)
     if is_monitoring:
         return True
     return False
@@ -376,16 +393,21 @@ if __name__ == "__main__":
                 "RMS is in 'Monitoring' state - starting monitoring loop to resume previous incomplete process"
             )
             threading.Thread(target=monitor.monitoring_loop).start()
-        time.sleep(600)
+        app.logger.info("Starting the main loop")
         while True:
-            rms_state = "Started"
-            state_manager.set_state(rms_state)
-            Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
-            app.logger.info("Starting the main loop")
-            check_and_create_hmnfd_subscription()
-            update_critical_services(state_manager, True)
-            update_zone_status(state_manager)
-            rms_state = "Waiting"
-            state_manager.set_state(rms_state)
-            Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
+            current_state = state_manager.get_state()
+            if current_state != "monitoring":
+                rms_state = "Waiting"
+                state_manager.set_state(rms_state)
+                Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
             time.sleep(600)
+            if current_state != "monitoring":
+                rms_state = "Started"
+                state_manager.set_state(rms_state)
+                Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
+                check_and_create_hmnfd_subscription()
+                update_critical_services(state_manager, True)
+                update_zone_status(state_manager)
+            else:
+                app.logger.info("Not running main loop as monitoring is running")
+                # Development for future scope
