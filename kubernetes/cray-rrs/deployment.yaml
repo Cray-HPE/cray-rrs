@@ -42,7 +42,8 @@ spec:
       - name: cray-rrs-init
         image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250416063115_c2c2a95
         #tag: latest
-        imagePullPolicy: IfNotPresent
+        #imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         volumeMounts:
           - name: rrs-mon-static-conf
             mountPath: /conf/rrs-mon-static-conf
@@ -55,6 +56,13 @@ spec:
         image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-rms:1.0.0-20250416063115_c2c2a95
         #tag: latest
         imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - name: ssh-config
+            mountPath: /etc/ssh
+            readOnly: true
+          - name: ssh-hostpath
+            mountPath: /root/.ssh
+            readOnly: true
         ports:
         - containerPort: 8551
           name: http
@@ -118,6 +126,10 @@ spec:
         configMap:
           name: rrs-mon-dynamic
       - name: ssh-config
+        hostPath:
+          path: /etc/ssh
+          type: Directory
       - name: ssh-hostpath
-      #  sshConfigPath: /etc/ssh
-      #  sshHpPath: /root/.ssh
+        hostPath:
+          path: /root/.ssh
+          type: Directory

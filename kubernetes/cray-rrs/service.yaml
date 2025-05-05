@@ -32,8 +32,8 @@ spec:
     app: cray-rrs-api
   ports:
     - protocol: TCP
-      port: 85
-      targetPort: 50
+      port: 8550
+      targetPort: http
   type: ClusterIP
 ---
 apiVersion: v1
@@ -46,7 +46,7 @@ spec:
     app: cray-rrs-rms
   ports:
     - protocol: TCP
-      port: 85
-      targetPort: 51
+      port: 8551
+      targetPort: http
   type: ClusterIP
 ---
