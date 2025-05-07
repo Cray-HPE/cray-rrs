@@ -45,7 +45,8 @@ ENV PYTHONPATH=/app/src
 
 # Copy rrs init sources
 EXPOSE 80
-COPY src/rrs/init /app/src/rrs/init
-COPY src/lib /app/src/lib
+#COPY src/rrs/init /app/src/rrs/init
+#COPY src/lib /app/src/lib
+COPY src/ /app/src/
 
 CMD [ "python", "/app/src/rrs/init/init.py" ]

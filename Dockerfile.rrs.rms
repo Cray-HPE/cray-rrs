@@ -45,7 +45,15 @@ ENV PYTHONPATH=/app/src
 
 # Copy rms sources
 EXPOSE 80
-COPY src/rrs/rms /app/src/rrs/rms
-COPY src/lib /app/src/lib
+#COPY src/rrs/rms /app/src/rrs/rms
+#COPY src/lib /app/src/lib
+COPY src/ /app/src/
 
-CMD [ "python", "/app/src/rrs/rms/rms.py" ]
+# Enable and start SSH service (consider security implications)
+RUN mkdir -p /var/run/sshd && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config && \
+    ssh-keygen -A
+
+#CMD [ "python", "/app/src/rrs/rms/rms.py" ]
+CMD /usr/sbin/sshd && python3 /app/src/rrs/rms/rms.py
