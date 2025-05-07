@@ -39,6 +39,10 @@ RUN python3 -m venv $VIRTUAL_ENV && \
     pip3 install --no-cache-dir -U wheel -c constraints.txt && \
     pip3 install --no-cache-dir -r requirements.txt
 
+# Install OpenSSH server
+RUN apt-get update && \
+    apt-get install openssh-server -y
+
 FROM base AS build
 
 ENV PYTHONPATH=/app/src
@@ -50,7 +54,7 @@ EXPOSE 80
 COPY src/ /app/src/
 
 # Enable and start SSH service (consider security implications)
-RUN mkdir -p /var/run/sshd /etc/ssh
+RUN mkdir -p /var/run/sshd
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN ssh-keygen -A
