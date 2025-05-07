@@ -50,7 +50,7 @@ EXPOSE 80
 COPY src/ /app/src/
 
 # Enable and start SSH service (consider security implications)
-RUN mkdir -p /var/run/sshd
+RUN mkdir -p /var/run/sshd /etc/ssh
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN ssh-keygen -A
