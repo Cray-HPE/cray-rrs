@@ -55,4 +55,5 @@ RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN ssh-keygen -A
 
-CMD [ "python", "/app/src/rrs/init/init.py" ]
+#CMD [ "python", "/app/src/rrs/init/init.py" ]
+CMD /usr/sbin/sshd && python3 /app/src/rrs/init/init.py
