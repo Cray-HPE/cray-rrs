@@ -28,7 +28,7 @@ WORKDIR /app
 
 RUN apk add --upgrade --no-cache apk-tools && \
     apk update && \
-    apk add --no-cache curl ca-certificates python3 py3-pip python3-dev build-base && \
+    apk add --no-cache curl ca-certificates python3 py3-pip openssh python3-dev build-base && \
     update-ca-certificates
 
 ADD requirements.txt constraints.txt /app/
@@ -38,10 +38,6 @@ RUN python3 -m venv $VIRTUAL_ENV && \
     pip3 install --no-cache-dir -U pip -c constraints.txt && \
     pip3 install --no-cache-dir -U wheel -c constraints.txt && \
     pip3 install --no-cache-dir -r requirements.txt
-
-# Install OpenSSH server
-RUN apt-get update && \
-    apt-get install openssh-server -y
 
 FROM base AS build
 
@@ -58,6 +54,7 @@ RUN mkdir -p /var/run/sshd
 RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN ssh-keygen -A
+
 
 #CMD [ "python", "/app/src/rrs/rms/rms.py" ]
 CMD /usr/sbin/sshd && python3 /app/src/rrs/rms/rms.py
