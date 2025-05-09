@@ -39,6 +39,13 @@ from src.lib.rrs_logging import get_log_id
 fallback_logger = logging.getLogger(__name__)
 
 def get_logger():
+    """
+    Returns an appropriate logger based on the execution context.
+    If running inside a Flask application context, returns the Flask app's logger (`current_app.logger`).
+    Otherwise, falls back to a standard Python logger using `logging.getLogger(__name__)`.
+    Returns:
+        logging.Logger: A logger instance appropriate for the current context.
+    """
     try:
         from flask import has_app_context, current_app
         if has_app_context():

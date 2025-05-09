@@ -40,7 +40,8 @@ disable=
     too-many-locals,
     fixme,
 	logging-fstring-interpolation,
-	W1203
+	W1203,
+	C0415
 
 [REPORTS]
 # Set the output format. Available formats are text, parseable, colorized, msvs
