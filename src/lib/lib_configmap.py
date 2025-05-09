@@ -41,6 +41,7 @@ fallback_logger = logging.getLogger(__name__)
 
 logger = app.logger if has_app_context() else fallback_logger
 
+
 class ConfigMapHelper:
     """
     Helper class for managing ConfigMaps in Kubernetes.
