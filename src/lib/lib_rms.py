@@ -36,6 +36,7 @@ import subprocess
 import base64
 import time
 import logging
+from logging import Logger
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional, TypedDict
 import requests
@@ -49,7 +50,7 @@ from src.rrs.rms.rms_statemanager import RMSStateManager
 fallback_logger = logging.getLogger(__name__)
 
 
-def get_logger():
+def get_logger() -> Logger:
     """
     Returns an appropriate logger based on the execution context.
     If running inside a Flask application context, returns the Flask app's logger (`current_app.logger`).

@@ -31,6 +31,7 @@ in Kubernetes to manage a lock mechanism for resources.
 import time
 import os
 import logging
+from logging import Logger
 from typing import Dict, Optional, Union
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
@@ -39,7 +40,7 @@ from src.lib.rrs_logging import get_log_id
 fallback_logger = logging.getLogger(__name__)
 
 
-def get_logger():
+def get_logger() -> Logger:
     """
     Returns an appropriate logger based on the execution context.
     If running inside a Flask application context, returns the Flask app's logger (`current_app.logger`).
