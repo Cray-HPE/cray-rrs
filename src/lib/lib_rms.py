@@ -35,10 +35,11 @@ import re
 import subprocess
 import base64
 import time
+import logging
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional, TypedDict
 import requests
-from flask import current_app as _app
+from flask import has_app_context, current_app as _app
 import yaml
 from kubernetes import client  # type: ignore
 from kubernetes.client.rest import ApiException
@@ -46,7 +47,8 @@ from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
 
-# logger = logging.getLogger(__name__)
+fallback_logger = logging.getLogger(__name__)
+logger = _app.logger if has_app_context() else fallback_logger
 
 HOST = "ncn-m001"
 
@@ -61,7 +63,7 @@ class Helper:
         """Helper function to run a command and return the result.
         Returns:
             str: result of the command run."""
-        _app.logger.debug(f"Running command: {command}")
+        logger.debug(f"Running command: {command}")
         try:
             result = subprocess.run(
                 command,
@@ -89,11 +91,11 @@ class Helper:
             if yaml_content is not None:
                 dynamic_data = yaml.safe_load(yaml_content)
                 if new_state:
-                    _app.logger.info(f"Updating state {state_field} to {new_state}")
+                    logger.info(f"Updating state {state_field} to {new_state}")
                     state = dynamic_data.get("state", {})
                     state[state_field] = new_state
                 if timestamp_field:
-                    _app.logger.info(f"Updating timestamp {timestamp_field}")
+                    logger.info(f"Updating timestamp {timestamp_field}")
                     timestamp = dynamic_data.get("timestamps", {})
                     timestamp[timestamp_field] = datetime.now().strftime(
                         "%Y-%m-%dT%H:%M:%SZ"
@@ -112,11 +114,11 @@ class Helper:
                 )
                 # app.logger.info(f"Updated rms_state in rrs-dynamic configmap from {rms_state} to {new_state}")
         except ValueError as e:
-            _app.logger.error(f"Error during configuration check and update: {e}")
+            logger.error(f"Error during configuration check and update: {e}")
             state_manager.set_state("internal_failure")
             # exit(1)
         except Exception as e:
-            _app.logger.error(f"Unexpected error: {e}")
+            logger.error(f"Unexpected error: {e}")
             state_manager.set_state("internal_failure")
             # exit(1)
 
@@ -138,13 +140,13 @@ class Helper:
                 name=configmap_name, namespace=namespace, body=body
             )
 
-            _app.logger.info(
+            logger.info(
                 f"Updated ConfigMap '{configmap_name}' with start_timestamp_api = {timestamp}"
             )
         except ApiException as e:
-            _app.logger.error(f"Failed to update ConfigMap: {e.reason}")
+            logger.error(f"Failed to update ConfigMap: {e.reason}")
         except Exception as e:
-            _app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
+            logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
 
     @staticmethod
     def token_fetch() -> Optional[str]:
@@ -172,13 +174,13 @@ class Helper:
             return token
 
         except requests.exceptions.RequestException as e:
-            _app.logger.error(f"Request failed: {e}")
+            logger.error(f"Request failed: {e}")
             return None
         except ValueError as e:
-            _app.logger.error(f"Failed to parse JSON: {e}")
+            logger.error(f"Failed to parse JSON: {e}")
             return None
         except Exception as err:
-            _app.logger.error(f"Error collecting secret from Kubernetes: {err}")
+            logger.error(f"Error collecting secret from Kubernetes: {err}")
             return None
 
     @staticmethod
@@ -208,9 +210,9 @@ class Helper:
                 hsm_data = hsm_response.json()
                 break  # Success, exit retry loop
             except (requests.exceptions.RequestException, ValueError) as e:
-                _app.logger.error(f"Attempt {attempt}: Failed to fetch HSM data: {e}")
+                logger.error(f"Attempt {attempt}: Failed to fetch HSM data: {e}")
                 if attempt == max_retries:
-                    _app.logger.error("Max retries reached. Could not fetch HSM data")
+                    logger.error("Max retries reached. Could not fetch HSM data")
                     return None, None
                 time.sleep(retry_delay)
 
@@ -224,9 +226,9 @@ class Helper:
                 sls_data = sls_response.json()
                 break  # Success, exit retry loop
             except (requests.exceptions.RequestException, ValueError) as e:
-                _app.logger.error(f"Attempt {attempt}: Failed to fetch SLS data: {e}")
+                logger.error(f"Attempt {attempt}: Failed to fetch SLS data: {e}")
                 if attempt == max_retries:
-                    _app.logger.error("Max retries reached. Could not fetch SLS data")
+                    logger.error("Max retries reached. Could not fetch SLS data")
                     return None, None
                 time.sleep(retry_delay)
 
@@ -255,7 +257,7 @@ class cephHelper:
 
         if "HEALTH_OK" not in health_status:
             ceph_healthy = False
-            _app.logger.warning(
+            logger.warning(
                 f"CEPH is not healthy with health status as {health_status}"
             )
             pg_degraded_message = (
@@ -272,35 +274,35 @@ class cephHelper:
                     "recovering_objects_per_sec" in pgmap
                     or "recovering_bytes_per_sec" in pgmap
                 ):
-                    _app.logger.info("CEPH recovery is in progress...")
+                    logger.info("CEPH recovery is in progress...")
                 else:
-                    _app.logger.warning(
+                    logger.warning(
                         "CEPH PGs are in degraded state, but recovery is not happening"
                     )
             else:
                 health_checks = ceph_status.get("health", {}).get("checks", {})
-                _app.logger.warning(
+                logger.warning(
                     f"Reason for CEPH unhealthy state are - {list(health_checks.keys())}"
                 )
         else:
-            _app.logger.info("CEPH is healthy")
+            logger.info("CEPH is healthy")
 
         failed_services = []
         for service in ceph_services:
             if service["status_desc"] != "running":
                 ceph_healthy = False
                 failed_services.append(service["service_name"])
-                _app.logger.warning(
+                logger.warning(
                     f"Service {service['service_name']} running on "
                     f"{service['hostname']} is in {service['status_desc']} state"
                 )
             else:
-                _app.logger.debug(
+                logger.debug(
                     f"Service {service['service_name']} running on "
                     f"{service['hostname']} is in {service['status_desc']} state"
                 )
         if failed_services:
-            _app.logger.warning(
+            logger.warning(
                 f"{len(failed_services)} out of {len(ceph_services)} ceph services are not running"
             )
 
@@ -377,7 +379,7 @@ class cephHelper:
                             node_status = "Ready"
                         else:
                             failed_hosts.append(host_node["name"])
-                            _app.logger.warning(
+                            logger.warning(
                                 f"Host {host_node['name']} is in - {node_status} state"
                             )
 
@@ -391,7 +393,7 @@ class cephHelper:
 
                 final_output[rack_name] = storage_nodes
         if failed_hosts:
-            _app.logger.warning(
+            logger.warning(
                 f"{len(failed_hosts)} out of {len(ceph_hosts)} ceph nodes are not healthy"
             )
 
@@ -440,7 +442,7 @@ class k8sHelper:
                         return int(nodeMonitorGracePeriod[:-1])  # Remove the 's' suffix
                     return int(nodeMonitorGracePeriod)
         else:
-            _app.logger.error("kube-controller-manager pod not found")
+            logger.error("kube-controller-manager pod not found")
         return None
 
     @staticmethod
@@ -526,7 +528,7 @@ class k8sHelper:
                 )
         if zone_mapping:
             return zone_mapping
-        _app.logger.error("No K8s topology zone present")
+        logger.error("No K8s topology zone present")
         return "No K8s topology zone present"
 
     @staticmethod
@@ -535,7 +537,7 @@ class k8sHelper:
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         nodes_data = k8sHelper.get_k8s_nodes_data()
-        # _app.logger.info(f"from fetch_all_pods - {nodes_data}")
+        # logger.info(f"from fetch_all_pods - {nodes_data}")
 
         # Handle error cases
         if isinstance(nodes_data, dict) and nodes_data.get("error"):
@@ -666,12 +668,12 @@ class criticalServicesHelper:
                     app.status.number_ready,
                     app.spec.selector.match_labels,
                 )
-            _app.logger.warning(f"Unsupported service type: {service_type}")
+            logger.warning(f"Unsupported service type: {service_type}")
             return None, None, None
         except client.exceptions.ApiException as e:
             match = re.search(r"Reason: (.*?)\n", str(e))
             error_message = match.group(1) if match else str(e)
-            _app.logger.error(
+            logger.error(
                 f"Error fetching {service_type} {service_name}: {error_message}"
             )
             return None, None, None
@@ -680,12 +682,12 @@ class criticalServicesHelper:
     def get_critical_services_status(services_data: Dict[str, Any]) -> Dict[str, Any]:
         """Update critical service info with status and balanced values"""
 
-        # _app.logger.info(f"In lib_rms get_critical_services_status, input data is - {services_data}")
+        # logger.info(f"In lib_rms get_critical_services_status, input data is - {services_data}")
         # Fetch all pods in one API call
         all_pods = k8sHelper.fetch_all_pods()
 
         critical_services = services_data.get("critical-services", {})
-        _app.logger.info(f"Number of critical services are - {len(critical_services)}")
+        logger.info(f"Number of critical services are - {len(critical_services)}")
         imbalanced_services: List[str] = []
 
         for service_name, service_info in critical_services.items():
@@ -710,12 +712,12 @@ class criticalServicesHelper:
                 if ready_replicas < desired_replicas:
                     imbalanced_services.append(service_name)
                     status = "PartiallyConfigured"
-                    _app.logger.warning(
+                    logger.warning(
                         f"{service_type} '{service_name}' in namespace '{service_namespace}' is not ready. "
                         f"Only {ready_replicas} replicas are ready out of {desired_replicas} desired replicas"
                     )
                 else:
-                    _app.logger.debug(
+                    logger.debug(
                         f"Desired replicas and ready replicas are matching for '{service_name}'"
                     )
 
@@ -742,7 +744,7 @@ class criticalServicesHelper:
             else:
                 service_info.update({"status": "Unconfigured", "balanced": "NA"})
         if imbalanced_services:
-            _app.logger.warning(
+            logger.warning(
                 f"List of imbalanced services are - {imbalanced_services}"
             )
         return services_data

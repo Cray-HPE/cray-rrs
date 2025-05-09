@@ -30,12 +30,16 @@ in Kubernetes to manage a lock mechanism for resources.
 
 import time
 import os
+import logging
 from typing import Dict, Optional, Union
-from flask import current_app as app
+from flask import has_app_context, current_app as app
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
 from src.lib.rrs_logging import get_log_id
 
+fallback_logger = logging.getLogger(__name__)
+
+logger = app.logger if has_app_context() else fallback_logger
 
 class ConfigMapHelper:
     """
@@ -62,7 +66,7 @@ class ConfigMapHelper:
             )
             v1.create_namespaced_config_map(namespace=namespace, body=config_map)
         except client.exceptions.ApiException as e:
-            app.logger.error("Error creating ConfigMap %s: %s", configmap_lock_name, e)
+            logger.error("Error creating ConfigMap %s: %s", configmap_lock_name, e)
 
     @staticmethod
     def acquire_lock(namespace: str, configmap_name: str) -> bool:
@@ -77,19 +81,19 @@ class ConfigMapHelper:
                     namespace=namespace, name=configmap_lock_name
                 )
                 # print(config_map)
-                app.logger.info(
+                logger.info(
                     "Lock is already acquired by some other resource. Retrying in 1 second..."
                 )
                 time.sleep(1)
             except client.exceptions.ApiException as e:
                 if e.status == 404:
-                    app.logger.debug(
+                    logger.debug(
                         "Config map %s is not present. Acquiring the lock",
                         configmap_lock_name,
                     )
                     ConfigMapHelper.create_configmap(namespace, configmap_lock_name)
                     return True  # Returning True as the lock is acquired
-                app.logger.error("Error checking for lock: %s", e)
+                logger.error("Error checking for lock: %s", e)
                 break  # Exit the loop in case of error
 
         return False  # Return False if lock could not be acquired
@@ -104,13 +108,13 @@ class ConfigMapHelper:
             v1.delete_namespaced_config_map(
                 name=configmap_lock_name, namespace=namespace
             )
-            app.logger.debug(
+            logger.debug(
                 "ConfigMap %s deleted successfully from namespace %s",
                 configmap_lock_name,
                 namespace,
             )
         except client.exceptions.ApiException as e:
-            app.logger.error("Error deleting ConfigMap %s: %s", configmap_lock_name, e)
+            logger.error("Error deleting ConfigMap %s: %s", configmap_lock_name, e)
 
     # pylint: disable=R0917
     @staticmethod
@@ -137,20 +141,20 @@ class ConfigMapHelper:
                 metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
             )
         except ApiException as e:
-            app.logger.error(f"Failed to update ConfigMap: {e.reason}")
+            logger.error(f"Failed to update ConfigMap: {e.reason}")
         except Exception as e:
-            app.logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
+            logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
 
         if ConfigMapHelper.acquire_lock(namespace, configmap_name):
             try:
                 # print("updating the configmap")
-                app.logger.info(
+                logger.info(
                     f"Updating ConfigMap {configmap_name} in namespace {namespace}"
                 )
                 v1.replace_namespaced_config_map(
                     name=configmap_name, namespace=namespace, body=configmap_body
                 )
-                app.logger.info(
+                logger.info(
                     f"ConfigMap {configmap_name} in namespace {namespace} updated successfully"
                 )
 
@@ -161,7 +165,7 @@ class ConfigMapHelper:
                         file_path, "w", encoding="utf-8"
                     ) as f:  # Specified encoding
                         f.write(new_data)
-                    app.logger.debug(
+                    logger.debug(
                         f"Mounted file {file_path} updated successfully inside the pod"
                     )
 
@@ -172,7 +176,7 @@ class ConfigMapHelper:
     def get_configmap(namespace: str, configmap_name: str) -> Dict[str, str]:
         """Fetch data from a Kubernetes ConfigMap."""
         log_id = get_log_id()
-        app.logger.info(
+        logger.info(
             f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
         )
 
@@ -185,10 +189,10 @@ class ConfigMapHelper:
             return config_map.data or {}  # Return empty dict if data is None
 
         except client.exceptions.ApiException as e:
-            app.logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
+            logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
             return {"error": f"API error: {str(e)}"}
         except Exception as e:
-            app.logger.exception(
+            logger.exception(
                 f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
             )
             return {"error": f"Unexpected error: {str(e)}"}
@@ -221,13 +225,13 @@ class ConfigMapHelper:
                 ) as file:  # Specified encoding
                     return file.read()
 
-            app.logger.error(
+            logger.error(
                 "File for key %s not found in the mount path %s", key, mount_path
             )
             return None
 
         except Exception as e:
-            app.logger.error(
+            logger.error(
                 "Error reading ConfigMap data from mount path %s: %s", mount_path, e
             )
             return None
