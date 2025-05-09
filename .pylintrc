@@ -38,7 +38,9 @@ disable=
     too-many-branches,
     too-many-return-statements,
     too-many-locals,
-    fixme
+    fixme,
+	logging-fstring-interpolation,
+	W1203
 
 [REPORTS]
 # Set the output format. Available formats are text, parseable, colorized, msvs
