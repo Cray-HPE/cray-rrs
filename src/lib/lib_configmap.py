@@ -35,7 +35,7 @@ from logging import Logger
 from typing import Dict, Optional, Union
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
-#from src.lib.rrs_logging import get_log_id
+# from src.lib.rrs_logging import get_log_id
 
 fallback_logger = logging.getLogger(__name__)
 
@@ -194,8 +194,8 @@ class ConfigMapHelper:
     @staticmethod
     def get_configmap(namespace: str, configmap_name: str) -> Dict[str, str]:
         """Fetch data from a Kubernetes ConfigMap."""
-        #log_id = get_log_id()
-        #logger.info(f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}")
+        # log_id = get_log_id()
+        # logger.info(f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}")
         logger.info(
             f"Fetching ConfigMap {configmap_name} from namespace {namespace}"
         )
@@ -208,11 +208,11 @@ class ConfigMapHelper:
             return config_map.data or {}  # Return empty dict if data is None
 
         except client.exceptions.ApiException as e:
-            #logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
+            # logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
             logger.error(f"API error fetching ConfigMap: {str(e)}")
             return {"error": f"API error: {str(e)}"}
         except Exception as e:
-            #logger.exception(f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}")
+            # logger.exception(f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}")
             logger.exception(
                 f"Unexpected error fetching ConfigMap: {str(e)}"
             )
