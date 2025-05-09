@@ -32,14 +32,22 @@ import time
 import os
 import logging
 from typing import Dict, Optional, Union
-from flask import has_app_context, current_app as app
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
 from src.lib.rrs_logging import get_log_id
 
 fallback_logger = logging.getLogger(__name__)
 
-logger = app.logger if has_app_context() else fallback_logger
+def get_logger():
+    try:
+        from flask import has_app_context, current_app
+        if has_app_context():
+            return current_app.logger
+    except ImportError:
+        pass  # Flask not installed or not in Flask app context
+    return fallback_logger
+
+logger = get_logger()
 
 
 class ConfigMapHelper:
