@@ -38,6 +38,7 @@ from src.lib.rrs_logging import get_log_id
 
 fallback_logger = logging.getLogger(__name__)
 
+
 def get_logger():
     """
     Returns an appropriate logger based on the execution context.
@@ -53,6 +54,7 @@ def get_logger():
     except ImportError:
         pass  # Flask not installed or not in Flask app context
     return fallback_logger
+
 
 logger = get_logger()
 
