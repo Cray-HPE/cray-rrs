@@ -9,8 +9,6 @@ click==8.1.8
 coverage==7.8.0
 dill==0.3.9
 durationpy==0.9
-Flask==3.1.0
-Flask-RESTful==0.3.10
 google-auth==2.38.0
 idna==3.10
 iniconfig==2.1.0

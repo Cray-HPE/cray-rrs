@@ -1,5 +1,3 @@
 -c constraints.txt
 
 kubernetes
-flask
-flask-restful

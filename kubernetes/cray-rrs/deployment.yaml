@@ -40,7 +40,7 @@ spec:
       serviceAccountName: "cray-rrs-service"
       containers:
       - name: cray-rrs-init
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250512084538_7a93452
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250512103149_025e8fb
         #tag: latest
         #imagePullPolicy: IfNotPresent
         imagePullPolicy: Always
