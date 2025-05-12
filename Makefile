@@ -50,7 +50,9 @@ else
 endif
 COMMA := ,
 
-all : rrs_api_image rrs_init_image rrs_rms_image
+#all : rrs_api_image rrs_init_image rrs_rms_image
+all : rrs_init_image
+
 
 rrs_api_image:
 	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${RRS_API_CONTAINER_NAME}:${VERSION}' .

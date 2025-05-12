@@ -45,9 +45,11 @@ ENV PYTHONPATH=/app/src
 
 # Copy rrs init sources
 EXPOSE 80
-#COPY src/rrs/init /app/src/rrs/init
-#COPY src/lib /app/src/lib
-COPY src/ /app/src/
+COPY src/__init__.py /app/src/
+COPY src/rrs/__init__.py /app/src/rrs/
+COPY src/rrs/init/ /app/src/rrs/init/
+COPY src/lib/ /app/src/lib/
+#COPY src/ /app/src/
 
 # Enable and start SSH service (consider security implications)
 RUN mkdir -p /var/run/sshd
