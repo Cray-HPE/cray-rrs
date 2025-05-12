@@ -82,9 +82,9 @@ pipeline {
         stage("Publish") {
             steps {
                 script {
-                    publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api")
+                    //publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api")
                     publishCsmDockerImage(image: env.RRS_INIT_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.init")
-                    publishCsmDockerImage(image: env.RRS_RMS_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.rms")
+                    //publishCsmDockerImage(image: env.RRS_RMS_IMAGE_NAME, tag: env.VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.rms")
                     // publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
                 }
             }
