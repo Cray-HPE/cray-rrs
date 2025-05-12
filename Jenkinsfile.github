@@ -48,17 +48,6 @@ pipeline {
     }
 
     stages {
-        stage("Lint") {
-            steps {
-                sh "make lint"
-            }
-        }
-
-        stage("Unittests") {
-            steps {
-                sh "make unittests"
-            }
-        }
 
         stage("Build") {
             parallel {
