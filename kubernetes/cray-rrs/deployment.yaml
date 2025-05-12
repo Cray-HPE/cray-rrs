@@ -38,9 +38,9 @@ spec:
         app: cray-rrs
     spec:
       serviceAccountName: "cray-rrs-service"
-      initContainers:
+      containers:
       - name: cray-rrs-init
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250512070717_2328901
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250512084538_7a93452
         #tag: latest
         #imagePullPolicy: IfNotPresent
         imagePullPolicy: Always
