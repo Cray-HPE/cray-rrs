@@ -31,9 +31,7 @@ These tests validate the function's behavior when retrieving details of critical
 import unittest
 from typing import Any, Dict, cast
 from flask import Flask
-from src.api.models.criticalservice_status_describe import (
-    CriticalServiceStatusDescriber,
-)
+from src.api.services.rrs_criticalservices import CriticalServicesStatus
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
@@ -62,7 +60,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The test checks if the service details contain the expected 'Name' and 'Type'.
         """
-        result = CriticalServiceStatusDescriber.get_service_details(
+        result = CriticalServicesStatus.get_service_details(
             MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
             "coredns",
             test=True,
@@ -82,7 +80,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating that the service doesn't exist.
         """
-        result = CriticalServiceStatusDescriber.get_service_details(
+        result = CriticalServicesStatus.get_service_details(
             MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service"
         )
         self.assertIn("error", result)
@@ -97,7 +95,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         # Cast the mock error response to the expected type
         error_response = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
 
-        result = CriticalServiceStatusDescriber.get_service_details(
+        result = CriticalServicesStatus.get_service_details(
             error_response, "coredns"
         )
         self.assertIn("error", result)

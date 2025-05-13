@@ -31,9 +31,7 @@ Validates retrieval of critical service details.
 import unittest
 from typing import Any, Dict, cast
 from flask import Flask
-from src.api.models.criticalservice_status_describe import (
-    CriticalServiceStatusDescriber,
-)
+from src.api.services.rrs_criticalservices import CriticalServicesStatus
 from tests.tests_models.mock_data import (
     MOCK_ERROR_CRT_SVC,
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
@@ -58,7 +56,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
     def test_describe_critical_service_success(self) -> None:
         """
-        Test that 'CriticalServiceStatusDescriber.get_service_details' returns correct details for an existing service.
+        Test that 'CriticalServicesStatus.get_service_details' returns correct details for an existing service.
 
         The test checks if the service details contain the expected 'Name' and 'Type'.
         """
@@ -67,7 +65,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
             Dict[str, Dict[str, Any]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
         )
 
-        result = CriticalServiceStatusDescriber.get_service_details(
+        result = CriticalServicesStatus.get_service_details(
             mock_data, "coredns", True
         )
         print(result)
@@ -88,7 +86,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
             Dict[str, Dict[str, Any]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
         )
 
-        result = CriticalServiceStatusDescriber.get_service_details(
+        result = CriticalServicesStatus.get_service_details(
             mock_data, "unknown-service", True
         )
         self.assertIn("error", result)
@@ -103,7 +101,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         # Cast the mock data to the expected type for the get_service_details function
         mock_data = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
 
-        result = CriticalServiceStatusDescriber.get_service_details(
+        result = CriticalServicesStatus.get_service_details(
             mock_data, "coredns", True
         )
         self.assertIn("error", result)

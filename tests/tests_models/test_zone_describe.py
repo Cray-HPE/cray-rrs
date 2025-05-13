@@ -32,8 +32,8 @@ and Ceph responses.
 import unittest
 from typing import Dict, List, Union, cast
 from flask import Flask
-from src.api.models.zone_describe import ZoneDescriber, NodeInfo as ModelNodeInfo
-from src.api.resources.ceph_zones import NodeInfo as ResourceNodeInfo
+from src.api.services.rrs_zones import ZoneService, NodeInfo as ModelNodeInfo
+from src.api.models.zones import NodeInfo as ResourceNodeInfo
 from tests.tests_models.mock_data import (
     MOCK_K8S_RESPONSE,
     MOCK_CEPH_RESPONSE,
@@ -71,7 +71,7 @@ class TestZoneDescribe(unittest.TestCase):
         CephNodeInfoType = Dict[str, List[Union[ModelNodeInfo, ResourceNodeInfo]]]
         ceph_response = cast(CephNodeInfoType, MOCK_CEPH_RESPONSE)
 
-        result = ZoneDescriber.get_zone_info("x3002", k8s_response, ceph_response)
+        result = ZoneService.get_zone_info("x3002", k8s_response, ceph_response)
         self.assertIn("Zone Name", result)
         self.assertEqual(result["Zone Name"], "x3002")
 
@@ -90,7 +90,7 @@ class TestZoneDescribe(unittest.TestCase):
         CephNodeInfoType = Dict[str, List[Union[ModelNodeInfo, ResourceNodeInfo]]]
         ceph_response = cast(CephNodeInfoType, MOCK_CEPH_RESPONSE)
 
-        result = ZoneDescriber.get_zone_info("zoneX", k8s_response, ceph_response)
+        result = ZoneService.get_zone_info("zoneX", k8s_response, ceph_response)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Zone not found")
 

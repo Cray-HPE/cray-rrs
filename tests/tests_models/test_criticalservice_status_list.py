@@ -30,7 +30,7 @@ These tests validate the function's behavior when retrieving critical services.
 
 import unittest
 from flask import Flask
-from src.api.models.criticalservice_status_list import CriticalServiceStatusLister
+from src.api.services.rrs_criticalservices import CriticalServicesStatus
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
     MOCK_ERROR_CRT_SVC,
@@ -55,10 +55,10 @@ class TestCriticalServicesList(unittest.TestCase):
 
     def test_list_critical_services_success(self) -> None:
         """
-        Test case to verify that 'get_critical_services' correctly retrieves critical services.
+        Test case to verify that 'fetch_critical_services' correctly retrieves critical services.
         """
         result = {
-            "critical-services": CriticalServiceStatusLister.get_critical_services_status(
+            "critical-services": CriticalServicesStatus.fetch_critical_services_status(
                 MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
             )
         }
@@ -79,7 +79,7 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         Test case for handling errors when fetching critical services.
         """
-        result = CriticalServiceStatusLister.get_critical_services_status(
+        result = CriticalServicesStatus.fetch_critical_services_status(
             MOCK_ERROR_CRT_SVC
         )
         self.assertIn("error", result)
@@ -90,7 +90,7 @@ class TestCriticalServicesList(unittest.TestCase):
         Test case for when no critical services are available.
         """
         result = {
-            "critical-services": CriticalServiceStatusLister.get_critical_services_status(
+            "critical-services": CriticalServicesStatus.fetch_critical_services_status(
                 {}
             )
         }

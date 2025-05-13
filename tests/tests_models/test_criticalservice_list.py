@@ -30,7 +30,7 @@ These tests validate the function's behavior when retrieving critical services.
 import unittest
 from typing import Any, Dict, cast
 from flask import Flask
-from src.api.models.criticalservice_list import CriticalServicesLister
+from src.api.services.rrs_criticalservices import CriticalServices
 
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE,
@@ -62,7 +62,7 @@ class TestCriticalServicesList(unittest.TestCase):
         and that at least one critical service is listed.
         """
         result = {
-            "critical-services": CriticalServicesLister.get_critical_services(
+            "critical-services": CriticalServices.get_critical_services(
                 MOCK_CRITICAL_SERVICES_RESPONSE
             )
         }
@@ -88,7 +88,7 @@ class TestCriticalServicesList(unittest.TestCase):
         # Cast the mock error response to the expected type
         error_response = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
 
-        result = CriticalServicesLister.get_critical_services(error_response)
+        result = CriticalServices.get_critical_services(error_response)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers")
 
@@ -98,7 +98,7 @@ class TestCriticalServicesList(unittest.TestCase):
 
         The function should return an empty namespace dictionary.
         """
-        result = {"critical-services": CriticalServicesLister.get_critical_services({})}
+        result = {"critical-services": CriticalServices.get_critical_services({})}
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertEqual(len(result["critical-services"]["namespace"]), 0)
