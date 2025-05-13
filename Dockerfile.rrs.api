@@ -53,13 +53,14 @@ COPY . /app/
 # -------- Final image to run the Flask app --------
 FROM base AS application
 
+COPY src/ /app/src/
+
 # Set Flask environment and app path
-ENV FLASK_APP=src/server/app.py
+ENV FLASK_APP=/app/src/api/app.py
 ENV PYTHONPATH=/app/src
 
 EXPOSE 80
-COPY .version /app/
-COPY src/ /app/src/
 
 # Final application entrypoint
 CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
+

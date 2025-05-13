@@ -58,6 +58,12 @@ def get_logger() -> Logger:
     Returns:
         logging.Logger: A logger instance appropriate for the current context.
     """
+    try:
+        from flask import has_app_context, current_app
+        if has_app_context():
+            return current_app.logger
+    except ImportError:
+        pass  # Flask not installed or not in Flask app context
     return fallback_logger
 
 

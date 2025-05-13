@@ -48,6 +48,12 @@ def get_logger() -> Logger:
     Returns:
         logging.Logger: A logger instance appropriate for the current context.
     """
+    try:
+        from flask import has_app_context, current_app
+        if has_app_context():
+            return current_app.logger
+    except ImportError:
+        pass  # Flask not installed or not in Flask app context
     return fallback_logger
 
 
@@ -145,7 +151,7 @@ class ConfigMapHelper:
             ConfigMapHelper.load_k8s_config()
             v1 = client.CoreV1Api()
             if configmap_data is None:
-                configmap_data = ConfigMapHelper.get_configmap(
+                configmap_data = ConfigMapHelper.read_configmap(
                     namespace, configmap_name
                 )
             configmap_data[key] = new_data
