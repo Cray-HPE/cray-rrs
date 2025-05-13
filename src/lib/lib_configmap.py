@@ -186,7 +186,7 @@ class ConfigMapHelper:
                 ConfigMapHelper.release_lock(namespace, configmap_name)
 
     @staticmethod
-    def get_configmap(namespace: str, configmap_name: str) -> Dict[str, str]:
+    def read_configmap(namespace: str, configmap_name: str) -> Dict[str, str]:
         """Fetch data from a Kubernetes ConfigMap."""
         # log_id = get_log_id()
         # logger.info(f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}")
