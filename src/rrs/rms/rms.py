@@ -307,7 +307,7 @@ def initial_check_and_update() -> bool:
             - True if unfinished monitoring instance was previously running
     """
     is_monitoring = False
-    dynamic_cm_data = ConfigMapHelper.get_configmap(
+    dynamic_cm_data = ConfigMapHelper.read_configmap(
         state_manager.namespace, state_manager.dynamic_cm
     )
     try:

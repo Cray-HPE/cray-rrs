@@ -28,7 +28,8 @@ The data is retrieved from a ConfigMap and returned as structured dictionaries.
 """
 
 from typing import Dict, List, Union, TypedDict, Any
-import yaml, os
+import os
+import yaml
 from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id

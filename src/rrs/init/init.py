@@ -154,7 +154,7 @@ def check_critical_services_and_timers() -> bool:
     Returns:
         bool: True if all required configurations are present, False otherwise.
     """
-    static_cm_data = ConfigMapHelper.get_configmap(
+    static_cm_data = ConfigMapHelper.read_configmap(
         state_manager.namespace, state_manager.static_cm
     )
     critical_svc = static_cm_data.get("critical-service-config.json", None)
@@ -195,7 +195,7 @@ def check_critical_services_and_timers() -> bool:
 
 def init() -> None:
     """Initialize the Rack Resiliency Service (RRS)."""
-    configmap_data = ConfigMapHelper.get_configmap(
+    configmap_data = ConfigMapHelper.read_configmap(
         state_manager.namespace, state_manager.dynamic_cm
     )
     try:

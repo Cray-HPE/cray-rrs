@@ -37,11 +37,12 @@ Usage:
     with Kubernetes ConfigMaps and formatting service data for API responses.
 """
 
-import json, os
-from typing import Dict, List, Tuple, Any, Union, Optional
+import json
+import os
+from typing import Dict, List, Any, Union, Optional
 from datetime import datetime
-from kubernetes import client  # type: ignore
 from flask import current_app as app
+from kubernetes import client  # type: ignore
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
@@ -304,12 +305,12 @@ class CriticalServices:
                 app.logger.error(
                     f"[{log_id}] Invalid JSON format in request: {json_err}"
                 )
-                return ({"error": "Invalid JSON format in services"})
+                return {"error": "Invalid JSON format in services"}
 
             # Check if 'critical-services' key is present in the parsed data
             if "critical-services" not in new_services:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
-                return ({"error": "Missing 'critical-services' in payload"})
+                return {"error": "Missing 'critical-services' in payload"}
 
             # Fetch the current ConfigMap data
             existing_data = CriticalServiceHelper.fetch_service_list(
@@ -328,7 +329,7 @@ class CriticalServices:
             app.logger.error(
                 f"[{log_id}] Unhandled error in update_critical_services: {e}"
             )
-            return ({"error": f"Unexpected error: {(e)}"})
+            return {"error": f"Unexpected error: {(e)}"}
 
 
 class CriticalServicesStatus:

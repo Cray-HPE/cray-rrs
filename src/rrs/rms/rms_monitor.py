@@ -128,7 +128,7 @@ def update_critical_services(
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         if reloading:
-            static_cm_data = ConfigMapHelper.get_configmap(
+            static_cm_data = ConfigMapHelper.read_configmap(
                 state_manager.namespace, state_manager.static_cm
             )
             app.logger.info(
@@ -327,7 +327,7 @@ class RMSMonitor:
                 - True if a new monitoring instance should be launched (75% time passed).
                 - False if a new instance should not be launched (less than 75% time passed).
         """
-        dynamic_cm_data = ConfigMapHelper.get_configmap(
+        dynamic_cm_data = ConfigMapHelper.read_configmap(
             self.state_manager.namespace, self.state_manager.dynamic_cm
         )
         yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
@@ -364,7 +364,7 @@ class RMSMonitor:
         """Initiate monitoring of critical services and CEPH"""
         with self.app_arg.app_context():
             # Read the 'rrs-mon-static' configmap and parse the data
-            static_cm_data = ConfigMapHelper.get_configmap(
+            static_cm_data = ConfigMapHelper.read_configmap(
                 self.state_manager.namespace, self.state_manager.static_cm
             )
 

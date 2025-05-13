@@ -56,13 +56,13 @@ class TestCriticalServicesList(unittest.TestCase):
 
     def test_list_critical_services_success(self) -> None:
         """
-        Test case to verify that 'CriticalServicesLister.get_critical_services' correctly retrieves critical services.
+        Test case to verify that 'CriticalServicesLister.fetch_critical_services' correctly retrieves critical services.
 
         The test ensures that the expected 'namespace' and 'kube-system' entries are present
         and that at least one critical service is listed.
         """
         result = {
-            "critical-services": CriticalServices.get_critical_services(
+            "critical-services": CriticalServices.fetch_critical_services(
                 MOCK_CRITICAL_SERVICES_RESPONSE
             )
         }
@@ -88,7 +88,7 @@ class TestCriticalServicesList(unittest.TestCase):
         # Cast the mock error response to the expected type
         error_response = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
 
-        result = CriticalServices.get_critical_services(error_response)
+        result = CriticalServices.fetch_critical_services(error_response)
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers")
 
@@ -98,7 +98,7 @@ class TestCriticalServicesList(unittest.TestCase):
 
         The function should return an empty namespace dictionary.
         """
-        result = {"critical-services": CriticalServices.get_critical_services({})}
+        result = {"critical-services": CriticalServices.fetch_critical_services({})}
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertEqual(len(result["critical-services"]["namespace"]), 0)

@@ -120,7 +120,7 @@ class CriticalServiceHelper:
         app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
         return result, running_pods
 
-    def _resolve_owner_kind(resource_type: str) -> str:
+    def _resolve_owner_kind(self, resource_type: str) -> str:
         """Check and return correct Kubernetes owner kind"""
         # Deployment creates ReplicaSet, so we map that accordingly
         return "ReplicaSet" if resource_type == "Deployment" else resource_type
@@ -138,7 +138,8 @@ class CriticalServiceHelper:
             cm_key (str): The key within the ConfigMap that contains the service list.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the service list if successful, or an error message if the operation fails.
+            Dict[str, Any]: A dictionary containing the service list if successful, 
+            or an error message if the operation fails.
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking
         try:

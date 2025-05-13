@@ -43,7 +43,8 @@ Usage:
 """
 
 import logging
-import datetime, os
+import datetime
+import os
 from flask import Flask
 from flask_restful import Api
 from src.api.models.healthz import Ready, Live
@@ -61,6 +62,20 @@ from src.lib.lib_configmap import ConfigMapHelper
 
 
 def create_app() -> Flask:
+    """
+    Initialize and configure the Flask API server for the Rack Resiliency Service (RRS).
+
+    This function performs the following steps:
+    - Creates the Flask application and Flask-RESTful API instance.
+    - Configures logging to stream container logs to stdout.
+    - Logs and updates the application start timestamp in a Kubernetes ConfigMap,
+      with up to 3 retry attempts on failure. If all retries fail, the application exits.
+    - Reads the version information from the /.version file (or defaults to "Unknown").
+    - Registers all API endpoints for health checks, version info, zones, and critical services.
+
+    Returns:
+        Flask: A fully configured Flask application instance ready to be run.
+    """
     app = Flask(__name__)
     api = Api(app)
 

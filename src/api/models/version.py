@@ -27,8 +27,8 @@ Rack Resiliency Service Version API
 
 from typing import Tuple, Dict, Any
 from flask import current_app as app
-from flask_restful import Resource
 from http import HTTPStatus
+from flask_restful import Resource
 from src.lib.rrs_logging import get_log_id
 
 

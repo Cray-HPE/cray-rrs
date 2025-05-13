@@ -43,8 +43,8 @@ Usage:
 
 from typing import Dict, List, Tuple, Any, Union, cast
 from flask import request
-from flask_restful import Resource
 from http import HTTPStatus
+from flask_restful import Resource
 from src.lib.rrs_logging import log_event
 from src.api.services.rrs_zones import ZoneService
 from src.api.services.rrs_criticalservices import (
