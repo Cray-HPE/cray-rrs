@@ -26,8 +26,8 @@ Kubernetes Health and Liveness functions
 """
 
 from typing import Dict, Tuple, Any
-from flask import current_app as app
 from http import HTTPStatus
+from flask import current_app as app
 from flask_restful import Resource
 from src.lib.rrs_logging import get_log_id
 

@@ -72,7 +72,7 @@ class RMSStateManager:
         """Thread-safe method to retrieve the dynamic ConfigMap data."""
         with self.lock:
             if not self.dynamic_cm_data:
-                self.dynamic_cm_data = ConfigMapHelper.get_configmap(
+                self.dynamic_cm_data = ConfigMapHelper.read_configmap(
                     self.namespace, self.dynamic_cm
                 )
             return self.dynamic_cm_data

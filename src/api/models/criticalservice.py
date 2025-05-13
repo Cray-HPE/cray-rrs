@@ -120,7 +120,8 @@ class CriticalServiceHelper:
         app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
         return result, running_pods
 
-    def _resolve_owner_kind(self, resource_type: str) -> str:
+    @staticmethod
+    def resolve_owner_kind(resource_type: str) -> str:
         """Check and return correct Kubernetes owner kind"""
         # Deployment creates ReplicaSet, so we map that accordingly
         return "ReplicaSet" if resource_type == "Deployment" else resource_type
