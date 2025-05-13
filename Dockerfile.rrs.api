@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright [2025] Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -24,14 +24,15 @@
 # Cray Rack Resiliency Service Dockerfile
 
 # Base stage for shared dependencies
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 AS base
+FROM alpine:3.21.3 AS base
 
 WORKDIR /app
 
 # Install dependencies
 RUN apk add --upgrade --no-cache apk-tools && \
     apk update && \
-    apk add --no-cache curl ca-certificates python3 py3-pip python3-dev build-base && \
+    apk add --no-cache curl ca-certificates python3 py3-pip && \
+    apk -U upgrade --no-cache && \
     update-ca-certificates
 
 # Set up virtualenv and install app requirements
@@ -43,23 +44,19 @@ RUN python3 -m venv $VIRTUAL_ENV && \
     pip3 install --no-cache-dir -U wheel -c constraints.txt && \
     pip3 install --no-cache-dir -r requirements.txt
 
-# Development and testing stage
-FROM base AS dev
-RUN pip3 install --no-cache-dir nox~=2025.2.9
+# Copy application source code
+COPY src/ /app/src/
 
-# Copy application source code and test files
-COPY . /app/
+# -------- Stage for testing --------
 
 # -------- Final image to run the Flask app --------
-FROM base AS application
+FROM base AS runtime
 
 # Set Flask environment and app path
-ENV FLASK_APP=src/server/app.py
+ENV FLASK_APP=src/api/app.py
 ENV PYTHONPATH=/app/src
 
 EXPOSE 80
-COPY .version /app/
-COPY src/ /app/src/
 
-# Final application entrypoint
+# Final runtime entrypoint
 CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]
