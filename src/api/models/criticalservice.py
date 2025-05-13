@@ -21,26 +21,19 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """
-critical_services.py
-
 This module provides helper functions for interacting with Kubernetes resources
 related to critical services. It includes utilities to fetch pod information,
 resolve ownership relationships, and retrieve configuration from ConfigMaps.
-These functions are essential for zone-aware monitoring and management of
-critical workloads in the Kubernetes cluster.
 
 Classes:
     - CriticalServiceHelper: Static methods to retrieve pods and ConfigMap data.
-
-Dependencies:
-    - Kubernetes Python client
-    - Flask (for logging via current_app)
 """
 
 from typing import Dict, Any, Tuple, List
+import json
 from flask import current_app as app
 from kubernetes import client  # type: ignore
-from src.api.resources.k8s_zones import K8sZoneService
+from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
 
@@ -52,7 +45,19 @@ class CriticalServiceHelper:
     def get_namespaced_pods(
         service_info: Dict[str, str], service_name: str
     ) -> Tuple[List[Dict[str, Any]], int]:
-        """Fetch the pods in a namespace and number of instances using Kube-config"""
+        """
+        Fetch the pods in a namespace and the number of instances using Kube-config.
+
+        Args:
+            service_info (Dict[str, str]): A dictionary containing service information: name, namespace and type,
+            service_name (str): The name of the service for which pods are being fetched.
+
+        Returns:
+            Tuple[List[Dict[str, Any]], int]:
+                - A list of dictionaries, where each dictionary contains details about a pod.
+                  Example: {"name": "pod-1", "status": "Running", "node": "node-1", "zone": "zone-1"}
+                - An integer representing the total number of pod instances running.
+        """
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching namespaced pods")
 
@@ -66,47 +71,31 @@ class CriticalServiceHelper:
         resource_type = service_info["type"]
 
         # Load K8s zone data
-        nodes_data = K8sZoneService.parse_k8s_zones()
+        nodes_data = ZoneTopologyService.fetch_k8s_zones()
         if isinstance(nodes_data, dict) and "error" in nodes_data:
             app.logger.error(
                 f"[{log_id}] Error fetching nodes data: {nodes_data['error']}"
             )
             return [{"error": nodes_data["error"]}], 0
 
-        # Build node to zone mapping - refactored to reduce nesting
-        node_zone_map = {}
-        if isinstance(nodes_data, dict):
-            for zone, node_types in nodes_data.items():
-                if not isinstance(node_types, dict):
-                    continue  # Skip if not a dictionary
-
-                for node_type in ["masters", "workers"]:
-                    node_list = node_types.get(node_type, [])
-                    if not isinstance(node_list, list):
-                        continue  # Skip if not a list
-
-                    for node in node_list:
-                        if isinstance(node, dict) and "name" in node:
-                            node_zone_map[node["name"]] = zone
-        else:
-            app.logger.error(f"Expected dictionary, got {type(nodes_data)}")
-            return [{"error": "Invalid data format"}], 0
+        # Build node to zone mapping
+        node_zone_map = {
+            node["name"]: zone
+            for zone, node_types in ZoneTopologyService.fetch_k8s_zones().items()
+            for node_type in ["masters", "workers"]
+            for node in node_types.get(node_type, [])
+        }
 
         try:
-            # Get all pods in the given namespace
-            pod_list = v1.list_namespaced_pod(namespace)
+            pod_list = v1.list_namespaced_pod(namespace, label_selector="rrflag")
         except client.exceptions.ApiException as e:
-            # Catch and log Kubernetes API errors
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
             return [{"error": f"Failed to fetch pods: {str(e)}"}], 0
 
-        running_pods = 0  # Counter for running pods
-        result: List[Dict[str, Any]] = []  # Final output list of pod details
-        zone_pod_count: Dict[str, int] = {}  # Optional: for tracking per-zone counts
+        running_pods = 0
+        result: List[Dict[str, Any]] = []
 
-        # Iterate through each pod returned by the API
         for pod in pod_list.items:
-            # Check if the pod is owned by the expected kind and name
             if pod.metadata.owner_references and any(
                 owner.kind == CriticalServiceHelper._resolve_owner_kind(resource_type)
                 and owner.name.startswith(service_name)
@@ -116,14 +105,9 @@ class CriticalServiceHelper:
                 if pod_status == "Running":
                     running_pods += 1
 
-                # Get node name and corresponding zone
                 node_name = pod.spec.node_name
                 zone = node_zone_map.get(node_name, "unknown")
 
-                # Update zone-wise pod count
-                zone_pod_count[zone] = zone_pod_count.get(zone, 0) + 1
-
-                # Append pod details to result
                 result.append(
                     {
                         "Name": pod.metadata.name,
@@ -133,12 +117,44 @@ class CriticalServiceHelper:
                     }
                 )
 
-        # Log number of running pods
         app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
         return result, running_pods
 
-    @staticmethod
     def _resolve_owner_kind(resource_type: str) -> str:
         """Check and return correct Kubernetes owner kind"""
         # Deployment creates ReplicaSet, so we map that accordingly
         return "ReplicaSet" if resource_type == "Deployment" else resource_type
+
+    @staticmethod
+    def fetch_service_list(
+        cm_name: str, cm_namespace: str, cm_key: str
+    ) -> Dict[str, Any]:
+        """
+        Fetch the list of services from a ConfigMap in the specified namespace.
+
+        Args:
+            cm_name (str): The name of the ConfigMap to fetch.
+            cm_namespace (str): The namespace where the ConfigMap is located.
+            cm_key (str): The key within the ConfigMap that contains the service list.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the service list if successful, or an error message if the operation fails.
+        """
+        log_id = get_log_id()  # Generate a unique log ID for tracking
+        try:
+            # Log the attempt to fetch service details
+            app.logger.info(f"[{log_id}] Fetching all services from confgMap.")
+
+            # Fetch the ConfigMap data containing critical service information
+            cm_data = ConfigMapHelper.read_configmap(cm_namespace, cm_name)
+            config_data = {}
+            if cm_key in cm_data:
+                config_data = json.loads(cm_data[cm_key])
+
+            # Retrieve the critical services from the configuration
+            services = config_data.get("critical-services", {})
+            return services
+
+        except Exception as e:
+            app.logger.error(f"[{log_id}] Error while fetching services: {(e)}")
+            return {"error": str((e))}

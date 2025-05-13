@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -22,15 +22,31 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """
-This is the entry point for the Rack Resiliency Service (RRS) application.
-It initializes and runs the API Server by creating an instance of the app.
-
-Usage:
-    Run this file to start the Rack Resiliency Service:
+Kubernetes Health and Liveness functions
 """
-from src.api.controllers.routes import create_app
 
-app = create_app()
+from typing import Dict, Tuple, Any
+from flask import current_app as app
+from flask_restful import Resource
+from http import HTTPStatus
+from src.lib.rrs_logging import get_log_id
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80, debug=True, threaded=True)
+
+class Ready(Resource):
+    """Return k8s readiness check"""
+
+    def get(self) -> Tuple[Dict[str, Any], int]:
+        """Return k8s readiness check"""
+        log_id = get_log_id()  # Get unique log ID for tracing the request
+        app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
+        return {}, HTTPStatus.OK.value  # Return empty body with HTTP 200 OK
+
+
+class Live(Resource):
+    """Return k8s liveness check"""
+
+    def get(self) -> Tuple[Dict[str, Any], int]:
+        """Return k8s liveness check"""
+        log_id = get_log_id()  # Get unique log ID for tracing the request
+        app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
+        return {}, HTTPStatus.OK.value  # Return empty body with HTTP 200 OK

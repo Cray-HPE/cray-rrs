@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -22,30 +22,33 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 """
-Kubernetes Health and Liveness functions
+Rack Resiliency Service Version API
 """
 
-from typing import Dict, Tuple, Any
+from typing import Tuple, Dict, Any
 from flask import current_app as app
 from flask_restful import Resource
+from http import HTTPStatus
 from src.lib.rrs_logging import get_log_id
 
 
-class Ready(Resource):
-    """Return k8s readiness check"""
+class Version(Resource):  # type: ignore[misc]
+    """Return RRS version information"""
 
     def get(self) -> Tuple[Dict[str, Any], int]:
-        """Return k8s readiness check"""
-        log_id = get_log_id()  # Get unique log ID for tracing the request
-        app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
-        return {}, 200  # Return empty body with HTTP 200 OK
+        """Return RRS version information"""
 
+        # Generate or fetch a unique log ID for traceability
+        log_id = get_log_id()
+        app.logger.info("%s ++ version.GET", log_id)
 
-class Live(Resource):
-    """Return k8s liveness check"""
+        # Construct the version response from Flask config
+        return_value = {
+            "version": app.config["VERSION"],
+        }
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
-        """Return k8s liveness check"""
-        log_id = get_log_id()  # Get unique log ID for tracing the request
-        app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
-        return {}, 200  # Return empty body with HTTP 200 OK
+        # Log the constructed response for debugging
+        app.logger.debug("%s Returning json response: %s", log_id, return_value)
+
+        # Return version info with HTTP 200 OK
+        return return_value, HTTPStatus.OK.value
