@@ -39,7 +39,7 @@ Usage:
 
 import json
 import os
-from typing import Dict, List, Any, Union, Optional
+from typing import Dict, List, Any, Union, Optional, Tuple, cast
 from datetime import datetime
 from flask import current_app as app
 from kubernetes import client  # type: ignore
@@ -47,8 +47,8 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
 
-CM_NAMESPACE = os.getenv("namespace")
-CM_KEY = os.getenv("key_criticalservice")
+CM_NAMESPACE = os.getenv("namespace", "")
+CM_KEY = os.getenv("key_criticalservice", "")
 
 
 class CriticalServices:
@@ -82,13 +82,14 @@ class CriticalServices:
                 service_type = details.get("type")
 
                 # If namespace is not already in the result, add it
-                if namespace not in result["namespace"]:
+                if namespace and namespace not in result["namespace"]:
                     result["namespace"][namespace] = []
 
                 # Append the service name and type under the respective namespace
-                result["namespace"][namespace].append(
-                    {"name": name, "type": service_type}
-                )
+                if namespace:
+                    result["namespace"][namespace].append(
+                        {"name": name, "type": service_type or ""}
+                    )
 
             # Log the successful completion of the service formatting process
             app.logger.info(
@@ -102,7 +103,7 @@ class CriticalServices:
             app.logger.error(
                 f"[{log_id}] Error occurred while processing services: {str(exc)}"
             )
-            return {"error": str(str(exc))}
+            return {"error": str(exc)}
 
     @staticmethod
     def get_critical_service_list() -> Dict[str, Any]:
@@ -114,7 +115,7 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID to track this request
         try:
-            CM_NAME = os.getenv("static_cm_name")
+            CM_NAME = os.getenv("static_cm_name", "")
             # Log the start of the fetching process
             app.logger.info(f"[{log_id}] Fetching critical services from ConfigMap.")
             # Fetch the ConfigMap data
@@ -138,7 +139,7 @@ class CriticalServices:
                 f"[{log_id}] Error while fetching critical services from ConfigMap: {str(exc)}"
             )
             # Return an error response with status code 500
-            return {"error": str(str(exc))}
+            return {"error": str(exc)}
 
     @staticmethod
     def describe_service(
@@ -155,7 +156,7 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID to track this request
         try:
-            CM_NAME = os.getenv("dynamic_cm_name")
+            CM_NAME = os.getenv("dynamic_cm_name", "")
             # Log the start of the process to retrieve service details
             app.logger.info(
                 f"[{log_id}] Attempting to retrieve details for service: {service_name}"
@@ -211,17 +212,17 @@ class CriticalServices:
                 f"{error_message}"
             )
             # Return an error response with status code 500
-            return {"error": str(error_message)}
+            return {"error": error_message}
 
     @staticmethod
     def update_configmap(
-        new_data: str, existing_data: Dict[str, Any], test: bool = False
+        new_data: Dict[str, Any], existing_data: Dict[str, Any], test: bool = False
     ) -> Dict[str, Any]:
         """
         Update the ConfigMap with new critical services.
 
         Args:
-            new_data: JSON string containing new critical services
+            new_data: Dictionary containing new critical services
             existing_data: Dictionary containing existing critical services
             test: Whether this is a test run (don't update ConfigMap if True)
 
@@ -230,7 +231,7 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
-            CM_NAME = os.getenv("static_cm_name")
+            CM_NAME = os.getenv("static_cm_name", "")
             # Extract existing critical services and the new critical services
             existing_services = existing_data
             new_services = new_data["critical-services"]
@@ -247,14 +248,13 @@ class CriticalServices:
             new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
             if not test:  # Only update ConfigMap if not in test mode
                 ConfigMapHelper.update_configmap_data(
-                    CM_NAMESPACE, CM_NAME, None, CM_KEY, new_cm_data, ""
+                    CM_NAMESPACE, CM_NAME, CM_KEY, new_cm_data, ""
                 )
                 app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
                 # Update the timestamp of the last update in the ConfigMap
                 ConfigMapHelper.update_configmap_data(
                     CM_NAMESPACE,
                     CM_NAME,
-                    None,
                     "last_updated_timestamp",
                     datetime.utcnow().isoformat() + "Z",
                     "",
@@ -275,8 +275,8 @@ class CriticalServices:
             }
 
         except Exception as e:
-            app.logger.error(f"[{log_id}] Unexpected error: {(e)}")
-            return {"error": f"Unexpected error: {(e)}"}
+            app.logger.error(f"[{log_id}] Unexpected error: {str(e)}")
+            return {"error": f"Unexpected error: {str(e)}"}
 
     @staticmethod
     def update_critical_services(
@@ -293,10 +293,10 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
-            CM_NAME = os.getenv("static_cm_name")
+            CM_NAME = os.getenv("static_cm_name", "")
             if "error" in new_data:
                 app.logger.error(f"[{log_id}] Error in new data: {new_data}")
-                return new_data  # type: ignore
+                return new_data
 
             # Try parsing the JSON string from the 'from_file' key
             try:
@@ -327,9 +327,9 @@ class CriticalServices:
         # Handle any exceptions and return error responses
         except Exception as e:
             app.logger.error(
-                f"[{log_id}] Unhandled error in update_critical_services: {e}"
+                f"[{log_id}] Unhandled error in update_critical_services: {str(e)}"
             )
-            return {"error": f"Unexpected error: {(e)}"}
+            return {"error": f"Unexpected error: {str(e)}"}
 
 
 class CriticalServicesStatus:
@@ -337,7 +337,7 @@ class CriticalServicesStatus:
 
     @staticmethod
     def fetch_critical_services_status(
-        services: Union[Dict[str, Any], str],
+        services: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Fetch and format critical services grouped by namespace in the required structure.
 
@@ -378,7 +378,7 @@ class CriticalServicesStatus:
         """
         log_id = get_log_id()  # Generate a unique log ID for logging
         try:
-            CM_NAME = os.getenv("dynamic_cm_name")
+            CM_NAME = os.getenv("dynamic_cm_name", "")
             app.logger.info(
                 f"[{log_id}] Fetching ConfigMap: {CM_NAME} from namespace: {CM_NAMESPACE}"
             )
@@ -396,9 +396,7 @@ class CriticalServicesStatus:
                 app.logger.warning(
                     f"[{log_id}] No 'critical-services' found in the ConfigMap"
                 )
-                return (
-                    {"error": "'critical-services' not found in the ConfigMap"}
-                )
+                return {"error": "'critical-services' not found in the ConfigMap"}
 
             # Return the critical services grouped by namespace
             return {
@@ -409,16 +407,16 @@ class CriticalServicesStatus:
         except (KeyError, TypeError, ValueError) as exc:
             # Catch known exceptions related to invalid data or missing keys
             app.logger.error(
-                f"[{log_id}] Error while processing the ConfigMap: {(exc)}"
+                f"[{log_id}] Error while processing the ConfigMap: {str(exc)}"
             )
-            return ({"error": str((exc))})
+            return {"error": str(exc)}
 
         except Exception as e:
             # Catch all other unexpected exceptions and log them
             app.logger.error(
-                f"[{log_id}] Unexpected error while fetching critical services: {(e)}"
+                f"[{log_id}] Unexpected error while fetching critical services: {str(e)}"
             )
-            return ({"error": str((e))})
+            return {"error": str(e)}
 
     @staticmethod
     def get_service_details(
@@ -503,16 +501,16 @@ class CriticalServicesStatus:
         except client.exceptions.ApiException as api_exc:
             app.logger.error(
                 f"[{log_id}] API exception occurred while retrieving service '{service_name}': "
-                f"{(api_exc)}"
+                f"{str(api_exc)}"
             )
-            return {"error": str((api_exc))}
+            return {"error": str(api_exc)}
 
         # Catch-all for unexpected errors
         except Exception as e:
             app.logger.error(
-                f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {(e)}"
+                f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {str(e)}"
             )
-            return {"error": str((e))}
+            return {"error": str(e)}
 
     @staticmethod
     def describe_service_status(service_name: str) -> Dict[str, Any]:
@@ -527,7 +525,7 @@ class CriticalServicesStatus:
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking
         try:
-            CM_NAME = os.getenv("dynamic_cm_name")
+            CM_NAME = os.getenv("dynamic_cm_name", "")
             # Log the attempt to fetch service details
             app.logger.info(
                 f"[{log_id}] Fetching details for service '{service_name}'."
@@ -548,6 +546,6 @@ class CriticalServicesStatus:
         # Catch all exceptions during the process of fetching service details
         except Exception as e:
             app.logger.error(
-                f"[{log_id}] Error while fetching details for service '{service_name}': {(e)}"
+                f"[{log_id}] Error while fetching details for service '{service_name}': {str(e)}"
             )
-            return {"error": str((e))}
+            return {"error": str(e)}
