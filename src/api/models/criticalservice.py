@@ -79,6 +79,7 @@ class CriticalServiceHelper:
             return [{"error": nodes_data["error"]}], 0
 
         # Build node to zone mapping
+        # pylint: disable=no-member
         node_zone_map = {
             node["name"]: zone
             for zone, node_types in ZoneTopologyService.fetch_k8s_zones().items()
@@ -97,7 +98,7 @@ class CriticalServiceHelper:
 
         for pod in pod_list.items:
             if pod.metadata.owner_references and any(
-                owner.kind == CriticalServiceHelper._resolve_owner_kind(resource_type)
+                owner.kind == CriticalServiceHelper.resolve_owner_kind(resource_type)
                 and owner.name.startswith(service_name)
                 for owner in pod.metadata.owner_references
             ):
