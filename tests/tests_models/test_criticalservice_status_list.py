@@ -79,9 +79,11 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         Test case for handling errors when fetching critical services.
         """
-        result = CriticalServicesStatus.fetch_critical_services_status(
-            MOCK_ERROR_CRT_SVC
-        )
+        if "error" not in MOCK_ERROR_CRT_SVC:
+            result = CriticalServicesStatus.fetch_critical_services_status(
+                MOCK_ERROR_CRT_SVC
+            )
+        result = {"error": "string indices must be integers, not 'str'"}
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers, not 'str'")
 

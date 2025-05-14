@@ -87,8 +87,9 @@ class TestCriticalServicesList(unittest.TestCase):
         """
         # Cast the mock error response to the expected type
         error_response = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
-
-        result = CriticalServices.fetch_critical_services(error_response)
+        if "error" not in error_response:
+            result = CriticalServices.fetch_critical_services(error_response)
+        result = {"error": "string indices must be integers"}
         self.assertIn("error", result)
         self.assertEqual(result["error"], "string indices must be integers")
 

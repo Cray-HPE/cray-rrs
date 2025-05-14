@@ -29,6 +29,7 @@ These tests validate the update behavior of critical services in a ConfigMap.
 """
 
 import unittest
+import json
 from typing import cast
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
@@ -49,6 +50,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         """Set up an application context before each test."""
         self.app = Flask(__name__)  # Create a real Flask app instance
         self.app.config["TESTING"] = True
+        self.app.logger.setLevel("INFO")
         self.app_context = self.app.app_context()
         self.app_context.push()
 
@@ -62,9 +64,9 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         Ensures that the response indicates a successful update and lists added services.
         """
-        resp = {"critical-services": MOCK_CRITICAL_SERVICES_RESPONSE}
+        resp = MOCK_CRITICAL_SERVICES_RESPONSE
         result = CriticalServices.update_configmap(
-            MOCK_CRITICAL_SERVICES_UPDATE_FILE, resp, True
+            json.loads(MOCK_CRITICAL_SERVICES_UPDATE_FILE), resp, True
         )
 
         self.assertEqual(result["Update"], "Successful")
@@ -77,9 +79,9 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         Ensures that the response correctly indicates no new additions.
         """
-        resp = {"critical-services": MOCK_CRITICAL_SERVICES_RESPONSE}
+        resp = MOCK_CRITICAL_SERVICES_UPDATE_FILE
         result = CriticalServices.update_configmap(
-            MOCK_ALREADY_EXISTING_FILE, resp, True
+            json.loads(MOCK_ALREADY_EXISTING_FILE), resp, True
         )
 
         self.assertEqual(result["Update"], "Services Already Exist")

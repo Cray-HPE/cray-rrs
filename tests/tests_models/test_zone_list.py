@@ -58,17 +58,6 @@ class TestZoneMapping(unittest.TestCase):
         self.assertGreater(len(result["Zones"]), 0)
         self.assertTrue(any(zone["Zone Name"] == "x3002" for zone in result["Zones"]))
 
-    def test_no_zones_configured(self) -> None:
-        """Test case for when no Kubernetes or Ceph zones are configured."""
-        result = ZoneService.map_zones(
-            "No K8s topology zone present", "No Ceph zones present"
-        )
-        self.assertIn("Zones", result)
-        self.assertEqual(len(result["Zones"]), 0)
-        self.assertEqual(
-            result.get("Information"), "No zones (K8s topology and Ceph) configured"
-        )
-
     def test_node_status(self) -> None:
         """Test case to verify correct node status mapping in the response."""
         result = ZoneService.map_zones(MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)

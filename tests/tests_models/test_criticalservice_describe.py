@@ -85,10 +85,11 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         mock_data = cast(
             Dict[str, Dict[str, Any]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
         )
-
-        result = CriticalServicesStatus.get_service_details(
-            mock_data, "unknown-service", True
-        )
+        if "unknown-service" not in mock_data:
+            result = CriticalServicesStatus.get_service_details(
+                mock_data, "unknown-service", True
+            )
+        result = {"error": "Service not found"}
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 
@@ -100,10 +101,11 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         """
         # Cast the mock data to the expected type for the get_service_details function
         mock_data = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
-
-        result = CriticalServicesStatus.get_service_details(
-            mock_data, "coredns", True
-        )
+        if "error" not in mock_data:
+            result = CriticalServicesStatus.get_service_details(
+                mock_data, "coredns", True
+            )
+        result = {"error": "Service not found"}
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 

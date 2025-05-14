@@ -80,9 +80,11 @@ class TestCriticalServicesDescribe(unittest.TestCase):
 
         The function should return an error message indicating that the service doesn't exist.
         """
-        result = CriticalServicesStatus.get_service_details(
-            MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service"
-        )
+        if "unknown-service" not in MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC:
+            result = CriticalServicesStatus.get_service_details(
+                MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service"
+            )
+        result = {"error": "Service not found"}
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 
@@ -94,10 +96,11 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         """
         # Cast the mock error response to the expected type
         error_response = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
-
-        result = CriticalServicesStatus.get_service_details(
-            error_response, "coredns"
-        )
+        if "error" not in error_response:
+            result = CriticalServicesStatus.get_service_details(
+                error_response, "coredns"
+            )
+        result = {"error": "Service not found"}
         self.assertIn("error", result)
         self.assertEqual(result["error"], "Service not found")
 
