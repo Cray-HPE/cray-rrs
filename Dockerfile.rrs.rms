@@ -41,7 +41,7 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 
 FROM base AS build
 
-ENV PYTHONPATH=/app/src
+ENV PYTHONPATH=/app
 
 # Copy rms sources
 EXPOSE 80
@@ -57,4 +57,4 @@ RUN ssh-keygen -A
 
 
 #CMD [ "python", "/app/src/rrs/rms/rms.py" ]
-CMD /usr/sbin/sshd && python3 /app/src/rrs/rms/rms.py
+CMD /usr/sbin/sshd && python3 -m src.rrs.rms.rms

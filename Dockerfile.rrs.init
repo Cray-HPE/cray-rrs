@@ -43,12 +43,7 @@ FROM base AS build
 
 # Copy rrs init sources
 EXPOSE 80
-COPY src/__init__.py /app/src/
-COPY src/rrs/__init__.py /app/src/rrs/
-COPY src/rrs/init/ /app/src/rrs/init/
-COPY src/lib/__init__.py /app/src/lib/
-COPY src/lib/lib_configmap.py /app/src/lib/
-COPY src/lib/lib_rms.py /app/src/lib/
+COPY src/ /app/src/
 
 ENV PYTHONPATH=/app
 
