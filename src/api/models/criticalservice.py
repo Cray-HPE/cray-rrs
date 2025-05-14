@@ -140,7 +140,7 @@ class CriticalServiceHelper:
             cm_key (str): The key within the ConfigMap that contains the service list.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the service list if successful, 
+            Dict[str, Any]: A dictionary containing the service list if successful,
             or an error message if the operation fails.
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking
