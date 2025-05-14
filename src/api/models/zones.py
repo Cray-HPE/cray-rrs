@@ -72,7 +72,7 @@ class ZoneTopologyService:
     """
 
     @staticmethod
-    def fetch_ceph_zones() -> ResultType:
+    def fetch_ceph_zones() -> Union[ResultType, ErrorDict]:
         """
         Extracts Ceph zone details from the ConfigMap.
 

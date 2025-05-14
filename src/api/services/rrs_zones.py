@@ -32,11 +32,10 @@ Key functionalities:
 - Provide detailed zone descriptions including node names, status, and OSD mapping.
 """
 
-from typing import Dict, List, Any, Union, Optional, TypedDict, Tuple, cast
+from typing import Dict, List, Any, Union, Optional, TypedDict, Tuple
 from flask import current_app as app
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
-from src.api.models.zones import NodeInfo as CephNodeInfo
 from src.api.models.zones import ResultType
 
 ZoneInfoDict = Dict[str, Any]
@@ -176,7 +175,7 @@ class ZoneService:
     def get_zone_info(
         zone_name: str,
         k8s_zones: Dict[str, Dict[str, List[NodeInfo]]],
-        ceph_zones: Dict[str, List[Union[NodeInfo, CephNodeInfo]]],
+        ceph_zones: Dict[str, Any],
     ) -> ZoneInfoDict:
         """
         Retrieves detailed information for a specific zone.

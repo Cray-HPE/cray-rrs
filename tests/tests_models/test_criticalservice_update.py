@@ -80,7 +80,9 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         Ensures that the response correctly indicates no new additions.
         """
         result = CriticalServices.update_configmap(
-            json.loads(MOCK_ALREADY_EXISTING_FILE), MOCK_CRITICAL_SERVICES_RESPONSE, True
+            json.loads(MOCK_ALREADY_EXISTING_FILE),
+            MOCK_CRITICAL_SERVICES_RESPONSE,
+            True,
         )
         self.app.logger.info(result)
         self.assertEqual(result["Update"], "Services Already Exist")

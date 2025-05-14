@@ -35,6 +35,7 @@ from logging import Logger
 from typing import Dict, Optional, Union
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
+
 # from src.lib.rrs_logging import get_log_id
 
 fallback_logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ def get_logger() -> Logger:
     """
     try:
         from flask import has_app_context, current_app
+
         if has_app_context():
             return current_app.logger
     except ImportError:
@@ -196,9 +198,7 @@ class ConfigMapHelper:
         """Fetch data from a Kubernetes ConfigMap."""
         # log_id = get_log_id()
         # logger.info(f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}")
-        logger.info(
-            f"Fetching ConfigMap {configmap_name} from namespace {namespace}"
-        )
+        logger.info(f"Fetching ConfigMap {configmap_name} from namespace {namespace}")
         try:
             ConfigMapHelper.load_k8s_config()
             v1 = client.CoreV1Api()
@@ -213,9 +213,7 @@ class ConfigMapHelper:
             return {"error": f"API error: {str(e)}"}
         except Exception as e:
             # logger.exception(f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}")
-            logger.exception(
-                f"Unexpected error fetching ConfigMap: {str(e)}"
-            )
+            logger.exception(f"Unexpected error fetching ConfigMap: {str(e)}")
             return {"error": f"Unexpected error: {str(e)}"}
 
     @staticmethod

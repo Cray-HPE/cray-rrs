@@ -65,9 +65,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
             Dict[str, Dict[str, Any]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
         )
 
-        result = CriticalServicesStatus.get_service_details(
-            mock_data, "coredns", True
-        )
+        result = CriticalServicesStatus.get_service_details(mock_data, "coredns", True)
         print(result)
         self.assertIn("Critical Service", result)
         self.assertIn("Name", result["Critical Service"])

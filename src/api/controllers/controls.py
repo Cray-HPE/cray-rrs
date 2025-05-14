@@ -193,7 +193,9 @@ class CriticalServiceDescribeResource(Resource):
             # If the service is not found, return a 404 error
             if not result:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
-                return {"error": "Critical service not found"}, HTTPStatus.NOT_FOUND.value
+                return {
+                    "error": "Critical service not found"
+                }, HTTPStatus.NOT_FOUND.value
 
             # Return the service description
             return result, HTTPStatus.OK.value
@@ -311,7 +313,9 @@ class CriticalServiceStatusDescribeResource(Resource):
             # If the service status does not exist, return a 404 error
             if not service:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
-                return {"error": "Critical service not found"}, HTTPStatus.NOT_FOUND.value
+                return {
+                    "error": "Critical service not found"
+                }, HTTPStatus.NOT_FOUND.value
 
             # Return the service status description
             return service, HTTPStatus.OK.value

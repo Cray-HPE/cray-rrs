@@ -60,6 +60,7 @@ def get_logger() -> Logger:
     """
     try:
         from flask import has_app_context, current_app
+
         if has_app_context():
             return current_app.logger
     except ImportError:
@@ -203,7 +204,9 @@ class Helper:
             return None
 
     @staticmethod
-    def get_sls_hms_data() -> Tuple[Optional[Dict[str, List[Dict[str, Any]]]], Optional[List[Dict[str, Any]]]]:
+    def get_sls_hms_data() -> (
+        Tuple[Optional[Dict[str, List[Dict[str, Any]]]], Optional[List[Dict[str, Any]]]]
+    ):
         """
         Fetch data from HSM and SLS services.
         Returns:
@@ -276,9 +279,7 @@ class cephHelper:
 
         if "HEALTH_OK" not in health_status:
             ceph_healthy = False
-            logger.warning(
-                f"CEPH is not healthy with health status as {health_status}"
-            )
+            logger.warning(f"CEPH is not healthy with health status as {health_status}")
             pg_degraded_message = (
                 ceph_status.get("health", {})
                 .get("checks", {})
@@ -763,7 +764,5 @@ class criticalServicesHelper:
             else:
                 service_info.update({"status": "Unconfigured", "balanced": "NA"})
         if imbalanced_services:
-            logger.warning(
-                f"List of imbalanced services are - {imbalanced_services}"
-            )
+            logger.warning(f"List of imbalanced services are - {imbalanced_services}")
         return services_data

@@ -176,9 +176,7 @@ class CriticalServices:
 
             # In case of error throw it
             if "error" in data:
-                app.logger.warning(
-                    f"[{log_id}] Error encountered in result: {data}"
-                )
+                app.logger.warning(f"[{log_id}] Error encountered in result: {data}")
                 return data
 
             # Pick up the relevant internal fields
