@@ -40,10 +40,21 @@ spec:
       serviceAccountName: "cray-rrs-service"
       initContainers:
       - name: cray-rrs-init
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250416063115_c2c2a95
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init:1.0.0-20250514193421_cf72e6a
         #tag: latest
         #imagePullPolicy: IfNotPresent
         imagePullPolicy: Always
+        env: 
+          - name: static_cm_name
+            value: "rrs-mon-static"
+          - name: dynamic_cm_name
+            value: "rrs-mon-dynamic"
+          - name: namespace
+            value: "rack-resiliency"
+          - name: key_criticalservice
+            value: "critical-service-config.json"
+          - name: key_zones
+            value: "dynamic-data.yaml"
         volumeMounts:
           - name: rrs-mon-static-conf
             mountPath: /conf/rrs-mon-static-conf
@@ -53,9 +64,20 @@ spec:
             readOnly: false
       containers:
       - name: cray-rrs-rms
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-rms:1.0.0-20250416063115_c2c2a95
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-rms:1.0.0-20250514193421_cf72e6a
         #tag: latest
         imagePullPolicy: IfNotPresent
+        env:
+          - name: static_cm_name
+            value: "rrs-mon-static"
+          - name: dynamic_cm_name
+            value: "rrs-mon-dynamic"
+          - name: namespace
+            value: "rack-resiliency"
+          - name: key_criticalservice
+            value: "critical-service-config.json"
+          - name: key_zones
+            value: "dynamic-data.yaml"
         volumeMounts:
           - name: ssh-config
             mountPath: /etc/ssh
@@ -86,9 +108,20 @@ spec:
           failureThreshold: 10
           successThreshold: 1
       - name: cray-rrs-api
-        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-api:1.0.0-20250416062015_4677f03
+        image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-api:1.0.0-20250514193421_cf72e6a
         #tag: latest
         imagePullPolicy: IfNotPresent
+        env:
+          - name: static_cm_name
+            value: "rrs-mon-static"
+          - name: dynamic_cm_name
+            value: "rrs-mon-dynamic"
+          - name: namespace
+            value: "rack-resiliency"
+          - name: key_criticalservice
+            value: "critical-service-config.json"
+          - name: key_zones
+            value: "dynamic-data.yaml"
         volumeMounts:
           - name: ssh-config
             mountPath: /etc/ssh
