@@ -30,7 +30,7 @@ These tests validate the update behavior of critical services in a ConfigMap.
 
 import unittest
 import json
-from typing import cast
+from typing import cast, Dict, Any
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
 from tests.tests_models.mock_data import (
@@ -79,11 +79,10 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         Ensures that the response correctly indicates no new additions.
         """
-        resp = MOCK_CRITICAL_SERVICES_UPDATE_FILE
         result = CriticalServices.update_configmap(
-            json.loads(MOCK_ALREADY_EXISTING_FILE), resp, True
+            json.loads(MOCK_ALREADY_EXISTING_FILE), MOCK_CRITICAL_SERVICES_RESPONSE, True
         )
-
+        self.app.logger.info(result)
         self.assertEqual(result["Update"], "Services Already Exist")
         self.assertEqual(result["Already Existing Services"], ["kube-proxy"])
 
@@ -94,7 +93,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         Ensures that an error key is present in the response.
         """
         # Convert the dict to a string as expected by the update_configmap method
-        error_data = cast(str, MOCK_ERROR_CRT_SVC)
+        error_data = cast(Dict[str, Any], MOCK_ERROR_CRT_SVC)
 
         result = CriticalServices.update_configmap(
             error_data, MOCK_CRITICAL_SERVICES_RESPONSE, True

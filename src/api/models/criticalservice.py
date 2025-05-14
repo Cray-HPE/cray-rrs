@@ -29,7 +29,7 @@ Classes:
     - CriticalServiceHelper: Static methods to retrieve pods and ConfigMap data.
 """
 
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Union
 import json
 from flask import current_app as app
 from kubernetes import client  # type: ignore
@@ -130,7 +130,7 @@ class CriticalServiceHelper:
     @staticmethod
     def fetch_service_list(
         cm_name: str, cm_namespace: str, cm_key: str
-    ) -> Dict[str, Any]:
+    ) -> Union[Dict[str, Any], Any]:
         """
         Fetch the list of services from a ConfigMap in the specified namespace.
 

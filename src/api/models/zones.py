@@ -34,9 +34,9 @@ from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 
-CM_NAMESPACE = os.getenv("namespace")
-CM_KEY = os.getenv("key_zones")
-CM_NAME = os.getenv("dynamic_cm_name")
+CM_NAMESPACE: str = os.getenv("namespace", "")
+CM_KEY: str = os.getenv("key_zones", "")
+CM_NAME: str = os.getenv("dynamic_cm_name", "")
 
 
 class OsdInfo(TypedDict):
@@ -156,8 +156,8 @@ class ZoneTopologyService:
                 return zone_mapping
 
             app.logger.warning(f"[{log_id}] No Kubernetes zones present.")
-            return {"error": "No Kubernetes zones present"}
+            return {"error": {"reason": "No Kubernetes zones present"}}
 
         except Exception as e:
             app.logger.exception(f"[{log_id}] Failed to parse Kubernetes zone details")
-            return {"error": f"Unexpected error occurred: {str(e)}"}
+            return {"error": {"reason": f"Unexpected error occurred: {str(e)}"}}

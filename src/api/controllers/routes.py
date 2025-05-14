@@ -90,8 +90,8 @@ def create_app() -> Flask:
     # Timestamp logging
     start_timestamp_api = datetime.datetime.utcnow().isoformat() + "Z"
     app.logger.info("API server started at %s", start_timestamp_api)
-    CM_NAME = os.getenv("dynamic_cm_name")
-    CM_NAMESPACE = os.getenv("namespace")
+    CM_NAME: str = os.getenv("dynamic_cm_name", "")
+    CM_NAMESPACE: str = os.getenv("namespace", "")
     with app.app_context():
         ConfigMapHelper.update_configmap_data(
             CM_NAMESPACE,
