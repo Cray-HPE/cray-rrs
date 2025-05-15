@@ -242,7 +242,7 @@ class Helper:
         for attempt in range(1, max_retries + 1):
             try:
                 sls_response = requests.get(
-                    sls_url, headers=headers, params=params, timeout=10, verify = False
+                    sls_url, headers=headers, params=params, timeout=10, verify=False
                 )
                 sls_response.raise_for_status()
                 sls_data = sls_response.json()
