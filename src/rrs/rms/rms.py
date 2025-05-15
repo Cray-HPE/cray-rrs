@@ -182,7 +182,7 @@ def get_management_xnames() -> list[str] | None:
     for attempt in range(1, max_retries + 1):
         try:
             # Make the GET request to hsm endpoint
-            hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
+            hsm_response = requests.get(hsm_url, headers=headers, timeout=10, verify = False)
             hsm_response.raise_for_status()
         except requests.exceptions.RequestException as e:
             app.logger.error(
@@ -236,8 +236,8 @@ def check_and_create_hmnfd_subscription() -> None:
         "Components": subscribing_components,
         "Roles": ["Management"],
         "States": ["Ready", "on", "off", "empty", "unknown", "populated"],
-        "Url": "http://10.102.193.27:3000/scn",
-        # "Url": "https://api-gw-service-nmn.local/apis/rms/scn"
+        #"Url": "http://10.102.193.27:3000/scn",
+        "Url": "https://api-gw-service-nmn.local/apis/rms/scn"
     }
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     max_retries = 3
@@ -245,7 +245,7 @@ def check_and_create_hmnfd_subscription() -> None:
     data = None
     for attempt in range(1, max_retries + 1):
         try:
-            get_response = requests.get(get_url, headers=headers, timeout=10)
+            get_response = requests.get(get_url, headers=headers, timeout=10, verify = False)
             get_response.raise_for_status()
             data = get_response.json()
             break  # GET succeeded
@@ -276,7 +276,7 @@ def check_and_create_hmnfd_subscription() -> None:
         for attempt in range(1, max_retries + 1):
             try:
                 post_response = requests.post(
-                    post_url, json=post_data, headers=headers, timeout=10
+                    post_url, json=post_data, headers=headers, timeout=10, verify = False
                 )
                 post_response.raise_for_status()
                 app.logger.info(
@@ -377,7 +377,7 @@ def run_flask() -> None:
     app.logger.info(
         "Running flask on 3000 port on localhost to recieve notifications from HMNFD"
     )
-    app.run(host="0.0.0.0", port=3000, threaded=True, debug=False, use_reloader=False)
+    app.run(host="0.0.0.0", port=8551, threaded=True, debug=False)
 
 
 if __name__ == "__main__":

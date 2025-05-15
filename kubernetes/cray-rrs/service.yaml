@@ -29,11 +29,12 @@ metadata:
   namespace: rack-resiliency
 spec:
   selector:
-    app: cray-rrs-api
+    app: cray-rrs
   ports:
-    - protocol: TCP
+    - name: http-api
+      protocol: TCP
       port: 8550
-      targetPort: http
+      targetPort: http-api
   type: ClusterIP
 ---
 apiVersion: v1
@@ -43,10 +44,11 @@ metadata:
   namespace: rack-resiliency
 spec:
   selector:
-    app: cray-rrs-rms
+    app: cray-rrs
   ports:
-    - protocol: TCP
+    - name: http-rms
+      protocol: TCP
       port: 8551
-      targetPort: http
+      targetPort: http-rms
   type: ClusterIP
 ---

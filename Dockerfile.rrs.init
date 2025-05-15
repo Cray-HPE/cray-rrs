@@ -42,7 +42,6 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 FROM base AS build
 
 # Copy rrs init sources
-EXPOSE 80
 COPY src/ /app/src/
 
 ENV PYTHONPATH=/app

@@ -51,17 +51,13 @@ spec:
             value: "rrs-mon-dynamic"
           - name: namespace
             value: "rack-resiliency"
-          - name: key_criticalservice
-            value: "critical-service-config.json"
-          - name: key_zones
-            value: "dynamic-data.yaml"
         volumeMounts:
-          - name: rrs-mon-static-conf
-            mountPath: /conf/rrs-mon-static-conf
+          - name: ssh-config
+            mountPath: /etc/ssh
             readOnly: true
-          - name: rrs-mon-dynamic-conf
-            mountPath: /conf/rrs-mon-dynamic-conf
-            readOnly: false
+          - name: ssh-hostpath
+            mountPath: /root/.ssh
+            readOnly: true
       containers:
       - name: cray-rrs-rms
         image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-rms:1.0.0-20250514193421_cf72e6a
@@ -87,26 +83,26 @@ spec:
             readOnly: true
         ports:
         - containerPort: 8551
-          name: http
+          name: http-rms
           protocol: TCP
-        livenessProbe:
-          httpGet:
-            path: /healthz/live
-            port: http
-          initialDelaySeconds: 5
-          periodSeconds: 180
-          timeoutSeconds: 90
-          failureThreshold: 5
-          successThreshold: 1
-        readinessProbe:
-          httpGet:
-            path: /healthz/ready
-            port: http
-          initialDelaySeconds: 5
-          periodSeconds: 90
-          timeoutSeconds: 90
-          failureThreshold: 10
-          successThreshold: 1
+        #livenessProbe:
+        #  httpGet:
+        #    path: /healthz/live
+        #    port: http-rms
+        #  initialDelaySeconds: 5
+        #  periodSeconds: 180
+        #  timeoutSeconds: 90
+        #  failureThreshold: 5
+        #  successThreshold: 1
+        #readinessProbe:
+        #  httpGet:
+        #    path: /healthz/ready
+        #    port: http-rms
+        #  initialDelaySeconds: 5
+        #  periodSeconds: 90
+        #  timeoutSeconds: 90
+        #  failureThreshold: 10
+        #  successThreshold: 1
       - name: cray-rrs-api
         image: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-api:1.0.0-20250514193421_cf72e6a
         #tag: latest
@@ -131,12 +127,12 @@ spec:
             readOnly: true
         ports:
         - containerPort: 8550
-          name: http
+          name: http-api
           protocol: TCP
         livenessProbe:
           httpGet:
             path: /healthz/live
-            port: http
+            port: http-api
           initialDelaySeconds: 5
           periodSeconds: 180
           timeoutSeconds: 90
@@ -145,19 +141,13 @@ spec:
         readinessProbe:
           httpGet:
             path: /healthz/ready
-            port: http
+            port: http-api
           initialDelaySeconds: 5
           periodSeconds: 90
           timeoutSeconds: 90
           failureThreshold: 10
           successThreshold: 1
       volumes:
-      - name: rrs-mon-static-conf
-        configMap:
-          name: rrs-mon-static
-      - name: rrs-mon-dynamic-conf
-        configMap:
-          name: rrs-mon-dynamic
       - name: ssh-config
         hostPath:
           path: /etc/ssh

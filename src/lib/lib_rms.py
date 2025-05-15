@@ -188,7 +188,7 @@ class Helper:
                 "client_id": "admin-client",
                 "client_secret": f"{client_secret}",
             }
-            response = requests.post(keycloak_url, data=data, timeout=10)
+            response = requests.post(keycloak_url, data=data, timeout=10, verify=False)
             token_data = response.json()
             token: Optional[str] = token_data.get("access_token")
             return token
@@ -227,7 +227,7 @@ class Helper:
         # Peform HSM fetch
         for attempt in range(1, max_retries + 1):
             try:
-                hsm_response = requests.get(hsm_url, headers=headers, timeout=10)
+                hsm_response = requests.get(hsm_url, headers=headers, timeout=10, verify=False)
                 hsm_response.raise_for_status()
                 hsm_data = hsm_response.json()
                 break  # Success, exit retry loop
@@ -242,7 +242,7 @@ class Helper:
         for attempt in range(1, max_retries + 1):
             try:
                 sls_response = requests.get(
-                    sls_url, headers=headers, params=params, timeout=10
+                    sls_url, headers=headers, params=params, timeout=10, verify = False
                 )
                 sls_response.raise_for_status()
                 sls_data = sls_response.json()
@@ -436,7 +436,7 @@ class k8sHelper:
         v1 = client.CoreV1Api()
         pod_name = os.getenv("HOSTNAME")
         pod = v1.read_namespaced_pod(name=pod_name, namespace="rack-resiliency")
-        node_name: str = str(pod.spec.nodeName) if pod.spec.nodeName else ""
+        node_name: str = str(pod.spec.node_name) if pod.spec.node_name else ""
         return node_name
 
     @staticmethod

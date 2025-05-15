@@ -42,9 +42,10 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 FROM base AS build
 
 ENV PYTHONPATH=/app
+ENV FLASK_APP=""
 
 # Copy rms sources
-EXPOSE 80
+EXPOSE 8551
 #COPY src/rrs/rms /app/src/rrs/rms
 #COPY src/lib /app/src/lib
 COPY src/ /app/src/
