@@ -56,9 +56,5 @@ RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN ssh-keygen -A
 
-# Configure SSH client for outgoing connections
-RUN mkdir -p /root/.ssh && \
-    echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n" > /root/.ssh/config
-
 #CMD [ "python", "/app/src/rrs/rms/rms.py" ]
 CMD /usr/sbin/sshd && python3 -m src.rrs.rms.rms
