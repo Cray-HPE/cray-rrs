@@ -407,20 +407,18 @@ def run_flask() -> None:
 
 
 if __name__ == "__main__":
-    """
-    Main entry point for the RMS service.
+    # Main entry point for the RMS service.
+    # This block performs the following steps within the Flask application context:
+    
+    # 1. Performs initial checks and also determine whether a monitoring loop needs to be resumed.
+    # 2. If RMS was previously in a 'Monitoring' state, resumes the monitoring loop in the background.
+    # 3. Starts the Flask application server in a separate thread.
+    # 4. Ensures HMNFD subscriptions are in place.
+    # 5. Periodically updates critical service and zone status if monitoring is not actively running.
+    # 6. Continuously manages RMS state transitions (`Waiting`, `Started`, `Monitoring`) based on current activity.
 
-    This block performs the following steps within the Flask application context:
-
-    1. Performs initial checks and also determine whether a monitoring loop needs to be resumed.
-    2. If RMS was previously in a 'Monitoring' state, resumes the monitoring loop in the background.
-    3. Starts the Flask application server in a separate thread.
-    4. Ensures HMNFD subscriptions are in place.
-    5. Periodically updates critical service and zone status if monitoring is not actively running.
-    6. Continuously manages RMS state transitions (`Waiting`, `Started`, `Monitoring`) based on current activity.
-
-    The loop runs indefinitely - checking HMNFD subscription, critical services and CEPH status every 600 seconds.
-    """
+    #The loop runs indefinitely - checking HMNFD subscription, critical services and CEPH status every 600 seconds.
+    
     with app.app_context():
         if not NAMESPACE or not DYNAMIC_CM or not STATIC_CM:
             app.logger.error(

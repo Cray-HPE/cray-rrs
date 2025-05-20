@@ -97,7 +97,7 @@ class Helper:
                     check=True,
                 )
                 return result.stdout
-            except subprocess.CalledProcessError as e:
+            except subprocess.CalledProcessError:
                 logger.exception("Trying next host as command %s errored out on host %s", command, host)
         logger.exception(f"All hosts failed for command: {command}")
         return result
