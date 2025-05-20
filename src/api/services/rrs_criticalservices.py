@@ -246,17 +246,16 @@ class CriticalServices:
             new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
             if not test:  # Only update ConfigMap if not in test mode
                 ConfigMapHelper.update_configmap_data(
-                    CM_NAMESPACE, CM_NAME, None, CM_KEY, new_cm_data, ""
+                    None, CM_KEY, new_cm_data, CM_NAMESPACE, CM_NAME
                 )
                 app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
                 # Update the timestamp of the last update in the ConfigMap
                 ConfigMapHelper.update_configmap_data(
-                    CM_NAMESPACE,
-                    CM_NAME,
                     None,
                     "last_updated_timestamp",
                     datetime.utcnow().isoformat() + "Z",
-                    "",
+                    CM_NAMESPACE,
+                    CM_NAME,
                 )
             # Log the event using app.logger
             app.logger.info(

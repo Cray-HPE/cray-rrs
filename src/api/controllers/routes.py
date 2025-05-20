@@ -43,8 +43,8 @@ Usage:
 """
 
 import logging
-import datetime
-import os
+import requests
+import sys
 from flask import Flask
 from flask_restful import Api
 from src.api.models.healthz import Ready, Live
@@ -58,7 +58,7 @@ from src.api.controllers.controls import (
     CriticalServiceStatusListResource,
     CriticalServiceStatusDescribeResource,
 )
-from src.lib.lib_configmap import ConfigMapHelper
+from src.lib.lib_rms import Helper
 
 
 def create_app() -> Flask:
@@ -68,8 +68,7 @@ def create_app() -> Flask:
     This function performs the following steps:
     - Creates the Flask application and Flask-RESTful API instance.
     - Configures logging to stream container logs to stdout.
-    - Logs and updates the application start timestamp in a Kubernetes ConfigMap,
-      with up to 3 retry attempts on failure. If all retries fail, the application exits.
+    - Calls an internal service endpoint to update the API start timestamp.
     - Reads the version information from the /.version file (or defaults to "Unknown").
     - Registers all API endpoints for health checks, version info, zones, and critical services.
 
@@ -81,26 +80,46 @@ def create_app() -> Flask:
 
     # Logging setup
     app.logger.setLevel(logging.INFO)
-    file_handler = logging.FileHandler("app.log")
-    file_handler.setLevel(logging.INFO)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.INFO)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(formatter)
-    app.logger.addHandler(file_handler)
+    stream_handler.setFormatter(formatter)
+    app.logger.addHandler(stream_handler)
 
-    # Timestamp logging
-    start_timestamp_api = datetime.datetime.utcnow().isoformat() + "Z"
-    app.logger.info("API server started at %s", start_timestamp_api)
-    CM_NAME: str = os.getenv("dynamic_cm_name", "")
-    CM_NAMESPACE: str = os.getenv("namespace", "")
+    # Timestamp logging via API call
     with app.app_context():
-        ConfigMapHelper.update_configmap_data(
-            CM_NAMESPACE,
-            CM_NAME,
-            None,
-            "start_timestamp_api",
-            start_timestamp_api,
-        )
+        app.logger.info("Update API start timestamp")
+        ts_url = "https://api-gw-service-nmn.local/apis/rms/api-ts"
 
+        try:
+            token = Helper.token_fetch()
+            headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+
+            max_retries = 3
+            success = False
+            for attempt in range(max_retries):
+                try:
+                    response = requests.get(ts_url, headers=headers, timeout=5)
+                    if response.status_code == 200:
+                        app.logger.info(f"Response: {response.text.strip()}")
+                        success = True
+                        break
+                    else:
+                        app.logger.warning(
+                            f"Attempt {attempt + 1} failed: Status {response.status_code} - {response.text.strip()}"
+                        )
+                except requests.RequestException as e:
+                    app.logger.warning(f"Attempt {attempt + 1} request exception: {e}")
+
+            if not success:
+                app.logger.error(
+                    "Failed to update API timestamp after all retries. Exiting."
+                )
+                sys.exit(1)
+
+        except Exception as e:
+            app.logger.exception("Token fetch or /api-ts call setup failed. Exiting.")
+            sys.exit(1)
     # Version reading
     try:
         with open("/app/.version", encoding="utf-8") as version_file:
