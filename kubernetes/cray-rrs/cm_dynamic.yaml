@@ -45,11 +45,10 @@ data:
       k8s_monitoring: ""
       ceph_monitoring: ""
       rms_state: ""
-    last_updated_by:
-      name: ""
-    rrs:
+    cray_rrs_pod:
       zone: ""
       node: ""
+      rack: ""
     zone:
       k8s_zones: ""
       ceph_zones: ""

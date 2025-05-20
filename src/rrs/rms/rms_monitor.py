@@ -32,6 +32,7 @@ K8s and Ceph monitoring loops in separate threads.
 """
 
 import time
+import sys
 import json
 import copy
 import threading
@@ -41,8 +42,7 @@ import yaml
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
-
-# logger = logging.getlogger()
+from src.lib.rrs_constants import *
 
 
 def update_zone_status(state_manager: RMSStateManager) -> bool | None:
@@ -52,64 +52,52 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
     Args:
         state_manager (RMSStateManager): An instance of the RMS state manager used
         to fetch and update dynamic configmap data safely.
-
     Returns:
         bool | None: True if Ceph is healthy, False if unhealthy, or None if an error occurs.
     """
     app.logger.info("Getting latest status for zones and nodes")
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
-        yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
+        yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
         if yaml_content is None:
-            app.logger.error("dynamic-data.yaml not found in the configmap")
-            state_manager.set_state("internal_failure")
-            return None
+            app.logger.error(f"{DYNAMIC_DATA_KEY} not found in the configmap")
+            sys.exit(1)
         dynamic_data = yaml.safe_load(yaml_content)
         zone_info = dynamic_data.get("zone")
-        k8s_info = zone_info.get("k8s_zones_with_nodes")
+        k8s_info = zone_info.get("k8s_zones")
         k8s_info_old = copy.deepcopy(k8s_info)
 
         for _, nodes in k8s_info.items():
             for node in nodes:
-                node["Status"] = k8sHelper.get_node_status(node["name"])
+                node["Status"] = k8sHelper.get_node_status(node["name"], None)
 
-        zone_info["k8s_zones_with_nodes"] = k8s_info
+        zone_info["k8s_zones"] = k8s_info
+        ceph_info_old = zone_info.get("ceph_zones")
+        ceph_info, ceph_healthy_status = cephHelper.get_ceph_status()
+        zone_info["ceph_zones"] = ceph_info
 
-        ceph_info_old = zone_info.get("ceph_zones_with_nodes")
-        updated_ceph_data, ceph_healthy_status = cephHelper.get_ceph_status()
-        zone_info["ceph_zones_with_nodes"] = updated_ceph_data
+        if k8s_info_old != k8s_info or ceph_info_old != ceph_info:
+            app.logger.info(f"Updating zone information in {DYNAMIC_CM} configmap")
 
-        if k8s_info_old != k8s_info or ceph_info_old != updated_ceph_data:
-            app.logger.info("Updating zone information in rrs-dynamic configmap")
-
-            dynamic_cm_data["dynamic-data.yaml"] = yaml.dump(
+            dynamic_cm_data[DYNAMIC_DATA_KEY] = yaml.dump(
                 dynamic_data, default_flow_style=False
             )
             state_manager.set_dynamic_cm_data(dynamic_cm_data)
             ConfigMapHelper.update_configmap_data(
-                state_manager.namespace,
-                state_manager.dynamic_cm,
                 dynamic_cm_data,
-                "dynamic-data.yaml",
-                dynamic_cm_data["dynamic-data.yaml"],
+                DYNAMIC_DATA_KEY,
+                dynamic_cm_data[DYNAMIC_DATA_KEY],
             )
-        # return k8s_info, updated_ceph_data, ceph_healthy_status
         return ceph_healthy_status
 
     except KeyError as e:
         app.logger.error(f"Key error occurred: {e}")
-        app.logger.error(
-            "Ensure that 'zone' and 'k8s_zones_with_nodes' keys are present in the dynamic configmap data."
-        )
-        state_manager.set_state("internal_failure")
         return None
     except yaml.YAMLError as e:
         app.logger.error(f"YAML error occurred: {e}")
-        state_manager.set_state("internal_failure")
         return None
     except Exception as e:
         app.logger.error(f"An unexpected error occurred: {e}")
-        state_manager.set_state("internal_failure")
         return None
 
 
@@ -128,30 +116,19 @@ def update_critical_services(
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
         if reloading:
-            static_cm_data = ConfigMapHelper.read_configmap(
-                state_manager.namespace, state_manager.static_cm
-            )
+            static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
             app.logger.info(
                 "Retrieving critical services information from rrs-static configmap"
             )
-            json_content = static_cm_data.get("critical-service-config.json", None)
-            if json_content is None:
-                app.logger.error(
-                    "critical-service-config.json not found in the configmap"
-                )
-                state_manager.set_state("internal_failure")
-                return None
+            json_content = static_cm_data.get(CRITICAL_SERVICE_KEY, None)
         else:
             app.logger.info(
                 "Retrieving critical services information from rrs-dynamic configmap"
             )
-            json_content = dynamic_cm_data.get("critical-service-config.json", None)
-            if json_content is None:
-                app.logger.error(
-                    "critical-service-config.json not found in the configmap"
-                )
-                state_manager.set_state("internal_failure")
-                return None
+            json_content = dynamic_cm_data.get(CRITICAL_SERVICE_KEY, None)
+        if json_content is None:
+            app.logger.error(f"{CRITICAL_SERVICE_KEY} not found in the configmap")
+            sys.exit(1)
 
         services_data = json.loads(json_content)
         updated_services = criticalServicesHelper.get_critical_services_status(
@@ -159,33 +136,28 @@ def update_critical_services(
         )
         services_json = json.dumps(updated_services, indent=2)
         app.logger.info(services_json)
-        if services_json != dynamic_cm_data.get("critical-service-config.json", None):
+        if services_json != dynamic_cm_data.get(CRITICAL_SERVICE_KEY, None):
             app.logger.debug(
                 "critical services are modified. Updating dynamic configmap with latest information"
             )
-            dynamic_cm_data["critical-service-config.json"] = services_json
+            dynamic_cm_data[CRITICAL_SERVICE_KEY] = services_json
             state_manager.set_dynamic_cm_data(dynamic_cm_data)
             ConfigMapHelper.update_configmap_data(
-                state_manager.namespace,
-                state_manager.dynamic_cm,
                 dynamic_cm_data,
-                "critical-service-config.json",
+                CRITICAL_SERVICE_KEY,
                 services_json,
             )
         return services_json
     except json.JSONDecodeError:
-        app.logger.error("Failed to decode critical-service-config.json from configmap")
-        state_manager.set_state("internal_failure")
+        app.logger.error(f"Failed to decode {CRITICAL_SERVICE_KEY} from configmap")
         return None
     except KeyError as e:
         app.logger.error(
             f"KeyError occurred: {str(e)} - Check if the configmap contains the expected keys"
         )
-        state_manager.set_state("internal_failure")
         return None
     except Exception as e:
         app.logger.error(f"An unexpected error occurred: {str(e)}")
-        state_manager.set_state("internal_failure")
         return None
 
 
@@ -209,7 +181,7 @@ class RMSMonitor:
         self, polling_interval: int, total_time: int, pre_delay: int
     ) -> None:
         """
-        Monitor Kubernetes cluster status, focusing on critical service readiness and balance.
+        Monitor Kubernetes node status, critical service readiness and balance.
         This function updates the k8s monitoring state, polls service status at intervals,
         and logs any services that remain partially configured or imbalanced.
         """
@@ -221,7 +193,7 @@ class RMSMonitor:
                 sleep_time = pre_delay
             time.sleep(sleep_time)
             app.logger.info(
-                f"Sleeping for {sleep_time} seconds before starting k8s monitoring"
+                f"Waiting for {sleep_time} seconds before starting k8s monitoring"
             )
             Helper.update_state_timestamp(
                 self.state_manager,
@@ -232,6 +204,7 @@ class RMSMonitor:
             start = time.time()
             latest_services_json = None
             unrecovered_services: List[str] = []
+            unconfigured_services: List[str] = []
             while time.time() - start < total_time:
                 app.logger.info("Checking k8s services")
                 # Retrieve and update critical services status
@@ -241,6 +214,7 @@ class RMSMonitor:
                     if latest_services_json:
                         services_data = json.loads(latest_services_json)
                         unrecovered_services = []
+                        unconfigured_services = []
 
                         for service, details in services_data[
                             "critical-services"
@@ -250,25 +224,25 @@ class RMSMonitor:
                                 or details["balanced"] == "false"
                             ):
                                 unrecovered_services.append(service)
+                            elif details["status"] == "Unconfigured":
+                                unconfigured_services.append(service)
                     else:
-                        app.logger.error(
+                        app.logger.critical(
                             "Services JSON data is not available to process"
                         )
-                        return
+                        sys.exit(1)
                 except (json.JSONDecodeError, KeyError) as e:
                     app.logger.error(f"Error processing services data: {e}")
 
                 if not unrecovered_services:
                     app.logger.info(
-                        f"Critical service became healthy after {time.time() - start} seconds. "
-                        "Breaking the k8s monitoring loop"
+                        f"Critical services became healthy after {time.time() - start} seconds. "
+                        "Completing k8s monitoring"
                     )
                     break
                 time.sleep(polling_interval)
 
-            app.logger.info(
-                f"Ending the k8s monitoring loop after {total_time} seconds"
-            )
+            app.logger.info(f"Ending k8s monitoring after {total_time} seconds")
             Helper.update_state_timestamp(
                 self.state_manager,
                 "k8s_monitoring",
@@ -277,7 +251,11 @@ class RMSMonitor:
             )
             if unrecovered_services:
                 app.logger.error(
-                    f"Services {unrecovered_services} are still not recovered even after {total_time} seconds"
+                    f"Services {unrecovered_services} are still not fully configured even after {total_time} seconds"
+                )
+            if unconfigured_services:
+                app.logger.error(
+                    f"Services {unconfigured_services} are not at all configured even after {total_time} seconds"
                 )
 
     def monitor_ceph(
@@ -286,7 +264,7 @@ class RMSMonitor:
         """Monitor Ceph storage system status, including health and zone node details."""
         with self.app_arg.app_context():
             app.logger.info(
-                f"Sleeping for {pre_delay} seconds before starting CEPH monitoring"
+                f"Waiting for {pre_delay} seconds before starting CEPH monitoring"
             )
             time.sleep(pre_delay)
             Helper.update_state_timestamp(
@@ -296,13 +274,14 @@ class RMSMonitor:
                 "start_timestamp_ceph_monitoring",
             )
             start = time.time()
+            ceph_health_status = False
             while time.time() - start < total_time:
                 app.logger.info("Checking CEPH")
                 # Retrieve and update k8s/CEPH status and CEPH health
                 ceph_health_status = update_zone_status(self.state_manager)
                 if ceph_health_status:
                     app.logger.info(
-                        f"CEPH became healthy after {time.time() - start} seconds. Breaking the CEPH monitoring loop"
+                        f"CEPH became healthy after {time.time() - start} seconds. Ending CEPH monitoring"
                     )
                     break
                 time.sleep(polling_interval)
@@ -316,7 +295,9 @@ class RMSMonitor:
             if ceph_health_status is False:
                 app.logger.error(f"CEPH is still unhealthy after {total_time} seconds")
 
-    def check_running_monitoring_instance(self, monitoring_total_time: int) -> bool:
+    def check_previous_monitoring_instance_status(
+        self, monitoring_total_time: int
+    ) -> bool:
         """
         Check if another monitoring instance is running
         If it is, launch another instance only if it previous one passed 75% of its time
@@ -327,88 +308,126 @@ class RMSMonitor:
                 - True if a new monitoring instance should be launched (75% time passed).
                 - False if a new instance should not be launched (less than 75% time passed).
         """
-        dynamic_cm_data = ConfigMapHelper.read_configmap(
-            self.state_manager.namespace, self.state_manager.dynamic_cm
-        )
-        yaml_content = dynamic_cm_data.get("dynamic-data.yaml", None)
-        if yaml_content:
+        try:
+            dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+            yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
+            if not yaml_content:
+                app.logger.error(
+                    f"No content found under {DYNAMIC_DATA_KEY} in rrs-mon-dynamic configmap"
+                )
+                sys.exit(1)
             dynamic_data = yaml.safe_load(yaml_content)
             monitor_k8s_start_time = dynamic_data.get("timestamps", {}).get(
                 "start_timestamp_k8s_monitoring", None
             )
             if monitor_k8s_start_time:
-                monitor_k8s_start_time = float(monitor_k8s_start_time)
-                current_time = time.time()
-                elapsed_time = current_time - monitor_k8s_start_time
-
-                # Calculate percentage of interval completed
-                percentage_completed = (elapsed_time / monitoring_total_time) * 100
-                app.logger.info(
-                    "Elapsed time since last monitoring instance start: %.2f seconds (%.2f%% completed)",
-                    elapsed_time,
-                    percentage_completed,
+                app.logger.error(
+                    "start_timestamp_k8s_monitoring not found in ConfigMap. Cannot determine elapsed time"
                 )
+                sys.exit(1)
+            monitor_k8s_start_time = float(monitor_k8s_start_time)
+            current_time = time.time()
+            elapsed_time = current_time - monitor_k8s_start_time
 
-                return bool(percentage_completed >= 75.0)
-            app.logger.warning(
-                "start_timestamp_k8s_monitoring not found in ConfigMap. Cannot determine elapsed time"
+            # Calculate percentage of interval completed
+            percentage_completed = (elapsed_time / monitoring_total_time) * 100
+            app.logger.debug(
+                "Elapsed time since last monitoring instance start: %.2f seconds (%.2f%% completed)",
+                elapsed_time,
+                percentage_completed,
+            )
+            return bool(percentage_completed >= 75.0)
+        except Exception as e:
+            app.logger.exception(
+                "Error occurred while checking previous monitoring instance status"
             )
             return False
-
-        app.logger.error(
-            "No content found under dynamic-data.yaml in rrs-mon-dynamic configmap"
-        )
-        return False
 
     def monitoring_loop(self) -> None:
         """Initiate monitoring of critical services and CEPH"""
         with self.app_arg.app_context():
-            # Read the 'rrs-mon-static' configmap and parse the data
-            static_cm_data = ConfigMapHelper.read_configmap(
-                self.state_manager.namespace, self.state_manager.static_cm
-            )
+            try:
+                # Read the 'rrs-mon-static' configmap and parse the data
+                static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
 
-            k8s_args = (
-                int(static_cm_data.get("k8s_monitoring_polling_interval", 60)),
-                int(static_cm_data.get("k8s_monitoring_total_time", 600)),
-                int(static_cm_data.get("k8s_pre_monitoring_delay", 40)),
-            )
-
-            ceph_args = (
-                int(static_cm_data.get("ceph_monitoring_polling_interval", 60)),
-                int(static_cm_data.get("ceph_monitoring_total_time", 600)),
-                int(static_cm_data.get("ceph_pre_monitoring_delay", 60)),
-            )
-
-            if not self.state_manager.start_monitoring():
-                app.logger.info("Another monitoring instance is already running")
-                if not self.check_running_monitoring_instance(
-                    int(static_cm_data.get("k8s_monitoring_total_time", 600))
-                ):
-                    app.logger.warning(
-                        "Skipping launch of a new monitoring instance as a previous one is still active"
-                    )
-                    return
-                app.logger.info(
-                    "Launching new monitoring instance since "
-                    "the previous one passed more than 75%% of monitoring interval"
+                k8s_args = (
+                    int(
+                        static_cm_data.get(
+                            "k8s_monitoring_polling_interval",
+                            DEFAULT_K8S_MONITORING_POLLING_INTERVAL,
+                        )
+                    ),
+                    int(
+                        static_cm_data.get(
+                            "k8s_monitoring_total_time",
+                            DEFAULT_K8S_MONITORING_TOTAL_TIME,
+                        )
+                    ),
+                    int(
+                        static_cm_data.get(
+                            "k8s_pre_monitoring_delay", DEFAULT_K8S_PRE_MONITORING_DELAY
+                        )
+                    ),
                 )
 
-            app.logger.info("Monitoring critical services and zone status...")
-            state = "Monitoring"
-            self.state_manager.set_state(state)
-            Helper.update_state_timestamp(self.state_manager, "rms_state", state)
+                ceph_args = (
+                    int(
+                        static_cm_data.get(
+                            "ceph_monitoring_polling_interval",
+                            DEFAULT_CEPH_MONITORING_POLLING_INTERVAL,
+                        )
+                    ),
+                    int(
+                        static_cm_data.get(
+                            "ceph_monitoring_total_time",
+                            DEFAULT_CEPH_MONITORING_TOTAL_TIME,
+                        )
+                    ),
+                    int(
+                        static_cm_data.get(
+                            "ceph_pre_monitoring_delay",
+                            DEFAULT_CEPH_PRE_MONITORING_DELAY,
+                        )
+                    ),
+                )
 
-            t1 = threading.Thread(target=self.monitor_k8s, args=k8s_args)
-            t2 = threading.Thread(target=self.monitor_ceph, args=ceph_args)
+                if not self.state_manager.start_monitoring():
+                    app.logger.info("Another monitoring instance is already running")
+                    if not self.check_previous_monitoring_instance_status(
+                        int(static_cm_data.get("k8s_monitoring_total_time", 600))
+                    ):
+                        app.logger.warning(
+                            "Skipping launch of a new monitoring instance as a previous one is still active"
+                        )
+                        return
+                    app.logger.info(
+                        "Launching new monitoring instance since "
+                        "the previous one passed more than 75%% of monitoring interval"
+                    )
 
-            t1.start()
-            t2.start()
+                app.logger.info("Monitoring critical services and zone status...")
+                state = "Monitoring"
+                self.state_manager.set_state(state)
+                Helper.update_state_timestamp(self.state_manager, "rms_state", state)
 
-            t1.join()
-            t2.join()
+                t1 = threading.Thread(
+                    target=self.monitor_k8s, args=k8s_args, daemon=True
+                )
+                t2 = threading.Thread(
+                    target=self.monitor_ceph, args=ceph_args, daemon=True
+                )
 
-            app.logger.info("Monitoring complete")
-            self.state_manager.stop_monitoring()
-            self.state_manager.set_state("Started")
-            Helper.update_state_timestamp(self.state_manager, "rms_state", "Started")
+                t1.start()
+                t2.start()
+
+                t1.join()
+                t2.join()
+
+                app.logger.info("Monitoring complete")
+                self.state_manager.stop_monitoring()
+                self.state_manager.set_state("Started")
+                Helper.update_state_timestamp(
+                    self.state_manager, "rms_state", "Started"
+                )
+            except Exception as e:
+                app.logger.exception("Unexpected error occurred during monitoring loop")

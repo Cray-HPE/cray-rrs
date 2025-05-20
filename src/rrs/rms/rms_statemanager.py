@@ -29,12 +29,10 @@ This module defines the RMSStateManager class, which handles the synchronization
 management of state transitions for the Rack Resiliency Service (RRS) monitoring logic.
 """
 
-import logging
 import threading
 from typing import Dict, Any
 from src.lib.lib_configmap import ConfigMapHelper
-
-logger = logging.getLogger()
+from src.lib.rrs_constants import *
 
 
 class RMSStateManager:
@@ -49,9 +47,6 @@ class RMSStateManager:
         self.monitor_running = False
         self.rms_state = ""
         self.dynamic_cm_data: Dict[str, Any] = {}
-        self.namespace = "rack-resiliency"
-        self.dynamic_cm = "rrs-mon-dynamic"
-        self.static_cm = "rrs-mon-static"
 
     def set_state(self, new_state: str) -> None:
         """Thread-safe method to set the current RMS state."""
@@ -73,7 +68,7 @@ class RMSStateManager:
         with self.lock:
             if not self.dynamic_cm_data:
                 self.dynamic_cm_data = ConfigMapHelper.read_configmap(
-                    self.namespace, self.dynamic_cm
+                    NAMESPACE, DYNAMIC_CM
                 )
             return self.dynamic_cm_data
 
