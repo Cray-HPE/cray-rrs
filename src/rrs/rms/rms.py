@@ -38,8 +38,8 @@ import sys
 import time
 import logging
 from datetime import datetime
-import yaml
 from typing import List, Tuple
+import yaml
 from flask import Flask, request, jsonify, Response
 import requests
 from src.rrs.rms.rms_statemanager import RMSStateManager
@@ -146,7 +146,7 @@ def update_api_timestamp() -> Tuple[str, int]:
             state_manager, timestamp_field="start_timestamp_api"
         )
         return "API timestamp updated successfully", 200
-    except Exception as e:
+    except Exception:
         app.logger.exception("Failed to update API timestamp")
         return "Failed to update API timestamp", 500
 
@@ -169,29 +169,29 @@ def handleSCN() -> Tuple[Response, int]:
 
         # Extract components and state
         components = notification_json.get("Components", [])
-        state = notification_json.get("State", "")
+        comp_state = notification_json.get("State", "")
 
-        if not components or not state:
+        if not components or not comp_state:
             app.logger.error("Missing 'Components' or 'State' in the request")
             return (
                 jsonify({"error": "Missing 'Components' or 'State' in the request"}),
                 400,
             )
-        if state == "Off":
+        if comp_state == "Off":
             state_manager.set_state("Fail_notified")
             Helper.update_state_timestamp(state_manager, "rms_state", "Fail_notified")
             check_failure_type(components)
             # Start monitoring services in a new thread
             threading.Thread(target=monitor.monitoring_loop, daemon=True).start()
 
-        elif state == "On":
+        elif comp_state == "On":
             for component in components:
                 app.logger.info("Node %s is turned On", component)
             # Handle cleanup or other actions here if needed
 
         else:
             app.logger.warning(
-                "Unexpected state '%s' received for %s.", state, components
+                "Unexpected state '%s' received for %s.", comp_state, components
             )
 
         return jsonify({"message": "POST call received"}), 200
@@ -209,7 +209,7 @@ def get_management_xnames() -> list[str] | None:
     hsm_data, _ = Helper.get_sls_hsm_data(True, False)
     if not hsm_data:
         app.logger.error("Failed to retrieve HSM data")
-        return
+        return None
     try:
         # Filter components with the given role and subroles
         valid_subroles = ["Master", "Worker", "Storage"]
@@ -224,7 +224,7 @@ def get_management_xnames() -> list[str] | None:
         return list(management_xnames)
     except (KeyError, TypeError, AttributeError) as e:
         app.logger.exception(
-            "Error occurred while filtering management xnames from HSM data"
+            "Error occurred while filtering management xnames from HSM data - %s", str(e)
         )
         state_manager.set_state("internal_failure")
         Helper.update_state_timestamp(state_manager, "rms_state", "internal_failure")
@@ -239,7 +239,7 @@ def check_and_create_hmnfd_subscription() -> None:
     yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
     if yaml_content is None:
         app.logger.error(f"{DYNAMIC_DATA_KEY} not found in the configmap")
-        return None
+        return
     dynamic_data = yaml.safe_load(yaml_content)
     subscriber_node = dynamic_data.get("cray_rrs_pod").get("rack")
     agent_name = "rms"
@@ -406,21 +406,21 @@ def run_flask() -> None:
     app.run(host="0.0.0.0", port=8551, threaded=True, debug=False)
 
 
-"""
-Main entry point for the RMS service.
-
-This block performs the following steps within the Flask application context:
-
-1. Performs initial checks and also determine whether a monitoring loop needs to be resumed.
-2. If RMS was previously in a 'Monitoring' state, resumes the monitoring loop in the background.
-3. Starts the Flask application server in a separate thread.
-4. Ensures HMNFD subscriptions are in place.
-5. Periodically updates critical service and zone status if monitoring is not actively running.
-6. Continuously manages RMS state transitions (`Waiting`, `Started`, `Monitoring`) based on current activity.
-
-The loop runs indefinitely - checking HMNFD subscription, critical services and CEPH status every 600 seconds.
-"""
 if __name__ == "__main__":
+    """
+    Main entry point for the RMS service.
+
+    This block performs the following steps within the Flask application context:
+
+    1. Performs initial checks and also determine whether a monitoring loop needs to be resumed.
+    2. If RMS was previously in a 'Monitoring' state, resumes the monitoring loop in the background.
+    3. Starts the Flask application server in a separate thread.
+    4. Ensures HMNFD subscriptions are in place.
+    5. Periodically updates critical service and zone status if monitoring is not actively running.
+    6. Continuously manages RMS state transitions (`Waiting`, `Started`, `Monitoring`) based on current activity.
+
+    The loop runs indefinitely - checking HMNFD subscription, critical services and CEPH status every 600 seconds.
+    """
     with app.app_context():
         if not NAMESPACE or not DYNAMIC_CM or not STATIC_CM:
             app.logger.error(
@@ -441,8 +441,7 @@ if __name__ == "__main__":
         update_zone_status(state_manager)
         app.logger.info("Starting the main loop")
         while True:
-            state = state_manager.get_state()
-            if state != "monitoring":
+            if state_manager.get_state() != "monitoring":
                 rms_state = "Waiting"
                 state_manager.set_state(rms_state)
                 Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
@@ -456,6 +455,6 @@ if __name__ == "__main__":
                 update_critical_services(state_manager, True)
                 update_zone_status(state_manager)
             else:
-                time.sleep(600)
                 app.logger.info("Not running main loop as monitoring is running")
+                time.sleep(600)
                 # Development for future scope

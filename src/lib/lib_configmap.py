@@ -173,9 +173,8 @@ class ConfigMapHelper:
                     )
             except Exception as e:
                 logger.exception(
-                    "Unexpected error while releasing lock %s: %s",
+                    "Unexpected error while releasing lock %s",
                     configmap_lock_name,
-                    str(e),
                 )
                 break
 
@@ -239,7 +238,7 @@ class ConfigMapHelper:
                     f"Failed to update ConfigMap {configmap_name} in namespace {namespace}"
                 )
         except Exception as e:
-            logger.exception(f"Unhandled exception in update_configmap_data: {str(e)}")
+            logger.exception("Unhandled exception in update_configmap_data")
 
     @staticmethod
     def read_configmap(
@@ -276,10 +275,10 @@ class ConfigMapHelper:
             return data
 
         except client.exceptions.ApiException as e:
-            logger.error(f"[{log_id}] API error fetching ConfigMap: {str(e)}")
+            logger.exception(f"[{log_id}] API error fetching ConfigMap")
             return {"error": f"API error: {str(e)}"}
         except Exception as e:
             logger.exception(
-                f"[{log_id}] Unexpected error fetching ConfigMap: {str(e)}"
+                f"[{log_id}] Unexpected error fetching ConfigMap"
             )
             return {"error": f"Unexpected error: {str(e)}"}

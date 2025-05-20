@@ -40,7 +40,7 @@ import yaml
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from lib.rrs_constants import *
+from src.lib.rrs_constants import *
 
 logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)

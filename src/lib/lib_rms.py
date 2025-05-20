@@ -98,7 +98,7 @@ class Helper:
                 )
                 return result.stdout
             except subprocess.CalledProcessError as e:
-                logger.exception(f"Trying next host as command %s errored out on host %s with : %s", command, host, e.stderr)
+                logger.exception("Trying next host as command %s errored out on host %s", command, host)
         logger.exception(f"All hosts failed for command: {command}")
         return result
 
@@ -265,19 +265,30 @@ class Helper:
 
     @staticmethod
     def get_rack_name_for_node(node_name: str) -> Optional[str]:
+        """
+        Retrieve the rack (Xname) associated with a given node name.
+        Args:
+            node_name (str): The logical or alias name of the node to search for.
+        Returns:
+            Optional[str]: The rack Xname (e.g., "x3000") if found, otherwise None.        
+        """
         try:
             logger.debug("Retrieving rack name for a particular node")
             _, sls_data = Helper.get_sls_hsm_data()
             if not sls_data:
                 logger.error("Failed to retrieve SLS data")
-                return
+                return None
             for item in sls_data:
                 aliases = item.get("ExtraProperties", {}).get("Aliases", [])
                 if node_name in aliases:
-                    return item.get("Xname")
+                    rack_xname = item.get("Xname")
+                    logger.debug("Found rack xname '%s' for node '%s'", rack_xname, node_name)
+                    return rack_xname
+            logger.warning("No matching xname found for node: %s", node_name)
             return None
         except Exception as e:
-            logger.exception("Unexpected error occurred during pod location check: %s", e)
+            logger.exception("Unexpected error occurred during pod location check: %s", str(e))
+            return None
 
     @staticmethod
     def check_failed_node(
@@ -297,7 +308,7 @@ class Helper:
             None
         """
         try:
-            # Retrieve the state of the node that previously hosted the RRS pod. 
+            # Retrieve the state of the node that previously hosted the RRS pod.
             # Log a message if the node is powered off
             for sls_entry in sls_data:
                 aliases = sls_entry["ExtraProperties"]["Aliases"][0]
@@ -318,7 +329,7 @@ class Helper:
                         return
                 return
         except Exception as e:
-            logger.exception("Error while checking if pod was on a failed node: %s", e)
+            logger.exception("Error while checking if pod was on a failed node: %s", str(e))
 
 
 class cephHelper:
@@ -362,13 +373,13 @@ class cephHelper:
                 )
             return ceph_healthy
         except json.JSONDecodeError:
-            logger.exception("Invalid JSON output received from Ceph command.")           
+            logger.exception("Invalid JSON output received from Ceph command")
         except ValueError as e:
-            logger.error("Command execution error: %s", e)
+            logger.exception("Command execution error: %s", str(e))
         except Exception as e:
-            logger.exception("Unexpected error during CEPH health check: %s", e)
+            logger.exception("Unexpected error during CEPH health check: %s", str(e))
         # Ensure a boolean is always returned
-        return ceph_healthy 
+        return ceph_healthy
 
     @staticmethod
     def check_ceph_health() -> bool:
@@ -416,8 +427,8 @@ class cephHelper:
                         f"Reason for CEPH unhealthy state are - {list(health_checks.keys())}"
                     )
             else:
-                # This case probably would not be happening in case of monitoring as 
-                # CEPH would not be healthy until and unless the node comes back up 
+                # This case probably would not be happening in case of monitoring as
+                # CEPH would not be healthy until and unless the node comes back up
                 logger.info("CEPH is healthy")
                 ceph_healthy = True
 
@@ -429,7 +440,7 @@ class cephHelper:
         except Exception as e:
             logger.exception("Unexpected error during CEPH health check: %s", e)
         # Ensure a boolean is always returned
-        return ceph_healthy 
+        return ceph_healthy
 
     @staticmethod
     def fetch_ceph_data() -> Tuple[Dict[str, Any], Dict[str, Any]]:
@@ -454,7 +465,7 @@ class cephHelper:
             logger.debug("CEPH Host List Output: %s", ceph_hosts)
 
             return ceph_tree, ceph_hosts
-        
+
         except json.JSONDecodeError as e:
             logger.error("Failed to decode JSON from CEPH output: %s", e)
         except ValueError as e:
@@ -660,7 +671,7 @@ class k8sHelper:
             return "Unknown"
         except Exception as e:
             logger.exception("Error while checking status for node %s: %s", node_name, e)
-            return "Unknown"    
+            return "Unknown"
 
     @staticmethod
     def get_k8s_nodes_data() -> (
@@ -677,14 +688,14 @@ class k8sHelper:
             nodes = k8sHelper.get_k8s_nodes()
             if not nodes or not isinstance(nodes, list):
                 logger.debug("Failed to retrieve k8s nodes")
-                return None 
+                return None
 
             zone_mapping: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
 
             for node in nodes:
                 if not isinstance(node, V1Node):
                     continue
-                
+
                 node_name = node.metadata.name
                 node_status = k8sHelper.get_node_status(node_name, nodes)
                 node_zone = node.metadata.labels.get("topology.kubernetes.io/zone")
@@ -940,7 +951,7 @@ class criticalServicesHelper:
                         unconfigured_services.append(service_name)
                         service_info.update({"status": "Unconfigured", "balanced": "NA"})
                         continue
-                    elif ready_replicas < desired_replicas:
+                    if ready_replicas < desired_replicas:
                         imbalanced_services.append(service_name)
                         status = "PartiallyConfigured"
                         logger.warning(

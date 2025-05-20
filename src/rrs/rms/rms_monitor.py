@@ -337,7 +337,7 @@ class RMSMonitor:
                 percentage_completed,
             )
             return bool(percentage_completed >= 75.0)
-        except Exception as e:
+        except Exception:
             app.logger.exception(
                 "Error occurred while checking previous monitoring instance status"
             )
@@ -429,5 +429,5 @@ class RMSMonitor:
                 Helper.update_state_timestamp(
                     self.state_manager, "rms_state", "Started"
                 )
-            except Exception as e:
+            except Exception:
                 app.logger.exception("Unexpected error occurred during monitoring loop")
