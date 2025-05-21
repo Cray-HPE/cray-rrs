@@ -1,0 +1,95 @@
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.name }}
+  namespace: {{ .Values.department }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.name }}
+    spec:
+      serviceAccountName: {{ .Values.auth.serviceAccount }}
+      containers:
+      - name: {{ .Values.name }}
+        image: {{ .Values.image.repository }}: {{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.service.port }}
+          name: http
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            port: 9000
+            path: /healthz/live
+          initialDelaySeconds: 5
+          periodSeconds: 180
+          timeoutSeconds: 90
+          failureThreshold: 5
+          successThreshold: 1
+        readinessProbe:
+          httpGet:
+            port: 9000
+            path: /healthz/ready
+          initialDelaySeconds: 5
+          periodSeconds: 90
+          timeoutSeconds: 90
+          failureThreshold: 10
+          successThreshold: 1
+        volumeMounts:
+        - name: ceph-config
+          mountPath: /etc/ceph
+          readOnly: true
+        - name: critical-svc
+          mountPath: /etc/config
+          subPath: critical-service-config.json
+          readOnly: false
+        - name: ssh-config
+          mountPath: /etc/ssh
+          readOnly: true
+        - name: ssh-hp
+          mountPath: /root/.ssh
+          readOnly: true
+      volumes:
+      - name: ssh-config
+        hostPath:
+          path: {{ .Values.volumes.sshConfigPath }}
+          type: Directory
+      - name: ssh-hp
+        hostPath:
+          path: {{ .Values.volumes.sshHpPath }}
+          type: Directory
+      - name: ceph-config
+        configMap:
+          name: {{ .Values.volumes.cephConfigName }}
+      - name: critical-svc
+        configMap:
+          name: {{ .Values.volumes.criticalSvcConfigName }}

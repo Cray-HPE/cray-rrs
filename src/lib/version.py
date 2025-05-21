@@ -21,17 +21,34 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+"""
+Rack Resiliency Service Version API
+"""
+
+from typing import Tuple, Dict, Any
+from http import HTTPStatus
+from flask import current_app as app
+from flask_restful import Resource
+from src.lib.rrs_logging import get_log_id
+
+
+class Version(Resource):  # type: ignore[misc]
+    """Return RRS version information"""
+
+    def get(self) -> Tuple[Dict[str, Any], int]:
+        """Return RRS version information"""
+
+        # Generate or fetch a unique log ID for traceability
+        log_id = get_log_id()
+        app.logger.info("%s ++ version.GET", log_id)
+
+        # Construct the version response from Flask config
+        return_value = {
+            "version": app.config["VERSION"],
+        }
+
+        # Log the constructed response for debugging
+        app.logger.debug("%s Returning json response: %s", log_id, return_value)
+
+        # Return version info with HTTP 200 OK
+        return return_value, HTTPStatus.OK.value

@@ -21,17 +21,16 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+"""
+This is the entry point for the Rack Resiliency Service (RRS) application.
+It initializes and runs the API Server by creating an instance of the app.
+
+Usage:
+    Run this file to start the Rack Resiliency Service:
+"""
+from src.api.controllers.routes import create_app
+
+app = create_app()
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8550, debug=True, threaded=True)

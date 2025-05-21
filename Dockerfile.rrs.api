@@ -1,0 +1,66 @@
+#
+# MIT License
+#
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# Cray Rack Resiliency Service Dockerfile
+
+# Base stage for shared dependencies
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 AS base
+
+WORKDIR /app
+
+# Install dependencies
+RUN apk add --upgrade --no-cache apk-tools && \
+    apk update && \
+    apk add --no-cache curl ca-certificates python3 py3-pip python3-dev build-base && \
+    update-ca-certificates
+
+# Set up virtualenv and install app requirements
+ADD requirements.txt constraints.txt /app/
+ENV VIRTUAL_ENV=/app/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN python3 -m venv $VIRTUAL_ENV && \
+    pip3 install --no-cache-dir -U pip -c constraints.txt && \
+    pip3 install --no-cache-dir -U wheel -c constraints.txt && \
+    pip3 install --no-cache-dir -r requirements.txt
+
+# Development and testing stage
+FROM base AS dev
+RUN pip3 install --no-cache-dir nox~=2025.2.9
+
+# Copy application source code and test files
+COPY . /app/
+
+# -------- Final image to run the Flask app --------
+FROM base AS application
+
+COPY src/ /app/src/
+
+# Set Flask environment and app path
+ENV FLASK_APP=/app/src/api/app.py
+ENV PYTHONPATH=/app/src
+
+EXPOSE 8550
+
+# Final application entrypoint
+CMD ["flask", "run", "--host=0.0.0.0", "--port=8550"]
+

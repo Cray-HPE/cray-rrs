@@ -21,17 +21,3 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main

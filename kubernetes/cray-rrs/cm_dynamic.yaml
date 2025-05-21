@@ -21,17 +21,35 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rrs-mon-dynamic
+  namespace: rack-resiliency
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    type: rr-services 
+data:
+  dynamic-data.yaml: |-
+    timestamps:
+      init_timestamp: ''
+      start_timestamp_rms: '' 
+      start_timestamp_api: ''
+      last_update_timestamp: ''
+      start_timestamp_k8s_monitoring: ''
+      end_timestamp_k8s_monitoring: ''
+      start_timestamp_ceph_monitoring: ''
+      end_timestamp_ceph_monitoring: ''
+    state:
+      k8s_monitoring: ''
+      ceph_monitoring: ''
+      rms_state: ''
+    cray_rrs_pod:
+      zone: ''
+      node: ''
+      rack: ''
+    zone:
+      k8s_zones: ''
+      ceph_zones: ''
+  critical-service-config.json: ""

@@ -21,17 +21,29 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+"""
+constants being used by cray-rrs service
+"""
+
+import os
+
+
+MAX_RETRIES: int = 3
+RETRY_DELAY: int = 2
+REQUESTS_TIMEOUT: int = 10
+SECRET_NAME: str = "admin-client-auth"
+SECRET_DEFAULT_NAMESPACE: str = "default"
+SECRET_DATA_KEY: str = "client-secret"
+CRITICAL_SERVICE_KEY: str = "critical-service-config.json"
+DYNAMIC_DATA_KEY: str = "dynamic-data.yaml"
+NAMESPACE = os.getenv("namespace", "")
+DYNAMIC_CM = os.getenv("dynamic_cm_name", "")
+STATIC_CM = os.getenv("static_cm_name", "")
+HOSTS = ["ncn-m001", "ncn-m002", "ncn-m003"]
+
+DEFAULT_K8S_MONITORING_POLLING_INTERVAL = 60
+DEFAULT_K8S_MONITORING_TOTAL_TIME = 600
+DEFAULT_K8S_PRE_MONITORING_DELAY = 40
+DEFAULT_CEPH_MONITORING_POLLING_INTERVAL = 60
+DEFAULT_CEPH_MONITORING_TOTAL_TIME = 600
+DEFAULT_CEPH_PRE_MONITORING_DELAY = 60

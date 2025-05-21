@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -21,17 +21,28 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+from setuptools import setup, find_packages
+
+with open("LICENSE") as license_file:
+    LICENSE = license_file.read()
+
+with open("requirements.txt") as reqs_file:
+    REQUIRMENTS = reqs_file.readlines()[1:]
+
+with open(".version") as vers_file:
+    VERSION = vers_file.read().strip()
+
+setup(
+    name="rrs",
+    author="Cray Inc.",
+    author_email="arka.pramanik@hpe.com, keshav.varshney@hpe.com",
+    url="http://hpe.com",
+    description="RRS Rack Resiliency Service",
+    long_description="RRS Rack Resiliency Service",
+    version=VERSION,
+    package_data={"": ["../api/openapi.yaml"]},
+    packages=find_packages(),
+    license=LICENSE,
+    include_package_data=True,
+    install_requires=REQUIRMENTS,
+)

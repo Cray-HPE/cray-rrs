@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -21,17 +21,32 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+"""
+Kubernetes Health and Liveness functions
+"""
+
+from typing import Dict, Tuple, Any
+from http import HTTPStatus
+from flask import current_app as app
+from flask_restful import Resource
+from src.lib.rrs_logging import get_log_id
+
+
+class Ready(Resource):
+    """Return k8s readiness check"""
+
+    def get(self) -> Tuple[Dict[str, Any], int]:
+        """Return k8s readiness check"""
+        log_id = get_log_id()  # Get unique log ID for tracing the request
+        app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
+        return {}, HTTPStatus.OK.value  # Return empty body with HTTP 200 OK
+
+
+class Live(Resource):
+    """Return k8s liveness check"""
+
+    def get(self) -> Tuple[Dict[str, Any], int]:
+        """Return k8s liveness check"""
+        log_id = get_log_id()  # Get unique log ID for tracing the request
+        app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
+        return {}, HTTPStatus.OK.value  # Return empty body with HTTP 200 OK

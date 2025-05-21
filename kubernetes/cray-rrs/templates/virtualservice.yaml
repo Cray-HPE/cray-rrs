@@ -21,17 +21,26 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ .Values.virulaservice.name }}
+  namespace: {{ .Values.department }}
+spec:
+  gateways:
+  - services/services-gateway
+  - services/customer-admin-gateway
+  hosts:
+  - '*'
+  http:
+  - match:
+    - uri:
+        prefix: {{ .Values.virulaservice.prefix }}
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: {{ .Values.service.name }}
+        port:
+          number: {{ .Values.service.port }}

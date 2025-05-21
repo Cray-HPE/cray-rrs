@@ -21,17 +21,20 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+
+apiVersion: v2
+name: cray-rrs
+version: 1.0.0
+description: Kubernetes resources for cray-rrs
+keywords:
+  - cray-rrs
+home: https://github.com/Cray-HPE/cray-rrs
+dependencies:
+- name: cray-service
+  version: ^12.0.0
+  repository: https://artifactory.algol60.net/artifactory/csm-helm-charts/
+maintainers:
+  - name: ravikanth-nalla-hpe
+  - name: keshav-06-hpe
+  - name: arka-pramanik-hpe
+appVersion: 1.0.0

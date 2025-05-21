@@ -21,17 +21,34 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-name: Backport Command
- 
-on:
-  issue_comment:
-    types:
-      - created
- 
-jobs:
-  backport-command:
-    # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
-    if: github.event.issue.pull_request
-    steps:
-      - uses: Cray-HPE/backport-command-action@main
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cray-rrs-api
+  namespace: rack-resiliency
+spec:
+  selector:
+    app: cray-rrs
+  ports:
+    - name: http-api
+      protocol: TCP
+      port: 8550
+      targetPort: http-api
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cray-rrs-rms
+  namespace: rack-resiliency
+spec:
+  selector:
+    app: cray-rrs
+  ports:
+    - name: http-rms
+      protocol: TCP
+      port: 8551
+      targetPort: http-rms
+  type: ClusterIP
+---
