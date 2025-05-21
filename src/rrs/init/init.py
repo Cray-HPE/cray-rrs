@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 state_manager = RMSStateManager()
 
 
-def check_previous_rrs_pod_node_status(pod_node, pod_zone) -> None:
+def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
     """
     Checks if the monitoring pod was previously running on a failed node
     Args:

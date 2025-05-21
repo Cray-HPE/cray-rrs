@@ -31,7 +31,8 @@ in Kubernetes to manage a lock mechanism for resources.
 import time
 import sys
 import logging
-from typing import Dict, Union
+from logging import Logger
+from typing import Dict, Union, cast
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
 from src.lib.rrs_constants import *
@@ -41,7 +42,7 @@ from src.lib.rrs_logging import get_log_id
 logger = logging.getLogger(__name__)
 
 
-def set_logger(custom_logger) -> None:
+def set_logger(custom_logger: Logger) -> None:
     """
     Sets a custom logger to be used globally within the module.
     This allows external modules (e.g., Flask apps) to inject their own logger instance,
@@ -259,7 +260,7 @@ class ConfigMapHelper:
             config_map = v1.read_namespaced_config_map(
                 name=configmap_name, namespace=namespace
             )
-            data = config_map.data
+            data = cast(Dict[str, str], config_map.data)
             if not data or not isinstance(data, dict):
                 logger.error(
                     f"Data is missing in configmap {configmap_name} or not in expected format (dict)"

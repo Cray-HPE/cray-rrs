@@ -36,6 +36,7 @@ import sys
 import json
 import copy
 import threading
+from logging import Logger
 from typing import List, Optional
 from flask import Flask, current_app as app
 import yaml
@@ -50,7 +51,7 @@ from src.lib.rrs_constants import *
 logger = None
 
 
-def set_logger(custom_logger) -> None:
+def set_logger(custom_logger: Logger) -> None:
     """
     Sets a custom logger to be used globally within this module and propagates
     it to dependent modules for consistent logging across the system.

@@ -36,6 +36,7 @@ import subprocess
 import base64
 import time
 import logging
+from logging import Logger
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional, TypedDict
 import requests
@@ -51,7 +52,7 @@ from src.lib.rrs_constants import *
 logger = logging.getLogger(__name__)
 
 
-def set_logger(custom_logger) -> None:
+def set_logger(custom_logger: Logger) -> None:
     """
     Sets a custom logger to be used globally within the module.
     This allows external modules (e.g., Flask apps) to inject their own logger instance,
@@ -77,13 +78,12 @@ class Helper:
             str: The output from the successful execution of the command,
                         or empty string if the command fails on all hosts.
         """
-        result = ""
         for host in HOSTS:
             try:
                 logger.debug(f"Running command: {command} on host {host}")
-                command = command.format(host=host)
-                result = subprocess.run(
-                    command,
+                formatted_command  = command.format(host=host)
+                result: subprocess.CompletedProcess[str]  = subprocess.run(
+                    formatted_command ,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
@@ -94,7 +94,7 @@ class Helper:
             except subprocess.CalledProcessError:
                 logger.exception("Trying next host as command %s errored out on host %s", command, host)
         logger.exception(f"All hosts failed for command: {command}")
-        return result
+        return ""
 
     @staticmethod
     def update_state_timestamp(
