@@ -81,9 +81,9 @@ class Helper:
         for host in HOSTS:
             try:
                 logger.debug(f"Running command: {command} on host {host}")
-                formatted_command  = command.format(host=host)
-                result: subprocess.CompletedProcess[str]  = subprocess.run(
-                    formatted_command ,
+                formatted_command = command.format(host=host)
+                result: subprocess.CompletedProcess[str] = subprocess.run(
+                    formatted_command,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     universal_newlines=True,
