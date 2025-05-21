@@ -64,7 +64,7 @@ def set_logger(custom_logger: Logger) -> None:
     lib_configmap.set_logger(custom_logger)
 
 
-def update_zone_status(state_manager: RMSStateManager) -> Optional[bool]:
+def update_zone_status(state_manager: RMSStateManager) -> bool:
     """
     Update the zone information in the dynamic ConfigMap with the latest
     Kubernetes node statuses and Ceph health status.
@@ -72,7 +72,7 @@ def update_zone_status(state_manager: RMSStateManager) -> Optional[bool]:
         state_manager (RMSStateManager): An instance of the RMS state manager used
         to fetch and update dynamic configmap data safely.
     Returns:
-        Optional[bool]: True if Ceph is healthy, False if unhealthy, or None if an error occurs.
+        bool: True if Ceph is healthy, False if unhealthy or if an error occurs.
     """
     app.logger.info("Getting latest status for zones and nodes")
     try:
@@ -113,13 +113,13 @@ def update_zone_status(state_manager: RMSStateManager) -> Optional[bool]:
 
     except KeyError as e:
         app.logger.error(f"Key error occurred: {e}")
-        return None
+        return False
     except yaml.YAMLError as e:
         app.logger.error(f"YAML error occurred: {e}")
-        return None
+        return False
     except Exception as e:
         app.logger.error(f"An unexpected error occurred: {e}")
-        return None
+        return False
 
 
 def update_critical_services(
