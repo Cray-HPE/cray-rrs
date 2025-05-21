@@ -42,9 +42,9 @@ Usage:
     Import and call `create_app` to initialize the Flask application with the defined routes
 """
 
+import sys
 import logging
 import requests
-import sys
 from flask import Flask
 from flask_restful import Api
 from src.api.models.healthz import Ready, Live
@@ -104,10 +104,6 @@ def create_app() -> Flask:
                         app.logger.info(f"Response: {response.text.strip()}")
                         success = True
                         break
-                    else:
-                        app.logger.warning(
-                            f"Attempt {attempt + 1} failed: Status {response.status_code} - {response.text.strip()}"
-                        )
                 except requests.RequestException as e:
                     app.logger.warning(f"Attempt {attempt + 1} request exception: {e}")
 
@@ -118,7 +114,7 @@ def create_app() -> Flask:
                 sys.exit(1)
 
         except Exception as e:
-            app.logger.exception("Token fetch or /api-ts call setup failed. Exiting.")
+            app.logger.exception(f"Error {str(e)} occured. Exiting...")
             sys.exit(1)
     # Version reading
     try:
