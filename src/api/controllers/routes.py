@@ -45,6 +45,7 @@ Usage:
 import sys
 import logging
 import requests
+from http import HTTPStatus
 from flask import Flask
 from flask_restful import Api
 from src.api.models.healthz import Ready, Live
@@ -59,7 +60,7 @@ from src.api.controllers.controls import (
     CriticalServiceStatusDescribeResource,
 )
 from src.lib.lib_rms import Helper
-from src.lib.rrs_constants import MAX_RETRIES
+from src.lib.rrs_constants import *
 
 
 def create_app() -> Flask:
@@ -99,8 +100,8 @@ def create_app() -> Flask:
             success = False
             for attempt in range(MAX_RETRIES):
                 try:
-                    response = requests.get(ts_url, headers=headers, timeout=5)
-                    if response.status_code == 200:
+                    response = requests.post(ts_url, headers=headers, timeout=REQUESTS_TIMEOUT)
+                    if response.status_code == HTTPStatus.OK.value:
                         app.logger.info(f"Response: {response.text.strip()}")
                         success = True
                         break

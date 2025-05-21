@@ -38,10 +38,14 @@ import sys
 import time
 import logging
 from datetime import datetime
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import yaml
+from http import HTTPStatus
 from flask import Flask, request, jsonify, Response
 import requests
+from src.lib import lib_rms
+from src.lib import lib_configmap
+from src.rrs.rms import rms_monitor
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
@@ -56,13 +60,16 @@ app = Flask(__name__)
 
 # Logging setup
 app.logger.setLevel(logging.INFO)
-file_handler = logging.FileHandler("app.log")
-file_handler.setLevel(logging.INFO)
-formatter = logging.Formatter(
-    "%(asctime)s - %(levelname)s - %(threadName)s - %(message)s"
-)
-file_handler.setFormatter(formatter)
-app.logger.addHandler(file_handler)
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+stream_handler.setFormatter(formatter)
+app.logger.addHandler(stream_handler)
+
+with app.app_context():
+    lib_rms.set_logger(app.logger)
+    lib_configmap.set_logger(app.logger)
+    rms_monitor.set_logger(app.logger)
 
 state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager, app)
@@ -133,7 +140,7 @@ def check_failure_type(components: List[str]) -> None:
         Helper.update_state_timestamp(state_manager, "rms_state", "internal_failure")
 
 
-@app.route("/api-ts", methods=["GET"])
+@app.route("/api-ts", methods=["POST"])
 def update_api_timestamp() -> Tuple[str, int]:
     """
     Endpoint to update the API server start timestamp in dynamic configmap.
@@ -145,10 +152,10 @@ def update_api_timestamp() -> Tuple[str, int]:
         Helper.update_state_timestamp(
             state_manager, timestamp_field="start_timestamp_api"
         )
-        return "API timestamp updated successfully", 200
+        return "API timestamp updated successfully", HTTPStatus.OK.value
     except Exception:
         app.logger.exception("Failed to update API timestamp")
-        return "Failed to update API timestamp", 500
+        return "Failed to update API timestamp", HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @app.route("/scn", methods=["POST"])
@@ -175,7 +182,7 @@ def handleSCN() -> Tuple[Response, int]:
             app.logger.error("Missing 'Components' or 'State' in the request")
             return (
                 jsonify({"error": "Missing 'Components' or 'State' in the request"}),
-                400,
+                HTTPStatus.BAD_REQUEST,
             )
         if comp_state == "Off":
             state_manager.set_state("Fail_notified")
@@ -194,16 +201,16 @@ def handleSCN() -> Tuple[Response, int]:
                 "Unexpected state '%s' received for %s.", comp_state, components
             )
 
-        return jsonify({"message": "POST call received"}), 200
+        return jsonify({"message": "POST call received"}), HTTPStatus.OK.value
 
     except Exception as e:
         app.logger.error("Error processing the request: %s", e)
         state_manager.set_state("internal_failure")
         Helper.update_state_timestamp(state_manager, "rms_state", "internal_failure")
-        return jsonify({"error": "Internal server error."}), 500
+        return jsonify({"error": "Internal server error."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-def get_management_xnames() -> list[str] | None:
+def get_management_xnames() -> Optional[List[str]]:
     """Get xnames for all the management nodes from HSM"""
     app.logger.debug("Getting xnames for all the management nodes from HSM ...")
     hsm_data, _ = Helper.get_sls_hsm_data(True, False)
@@ -417,7 +424,7 @@ if __name__ == "__main__":
     # 5. Periodically updates critical service and zone status if monitoring is not actively running.
     # 6. Continuously manages RMS state transitions (`Waiting`, `Started`, `Monitoring`) based on current activity.
 
-    #The loop runs indefinitely - checking HMNFD subscription, critical services and CEPH status every 600 seconds.
+    # The loop runs indefinitely - checking HMNFD subscription, critical services and CEPH status every 600 seconds.
 
     with app.app_context():
         if not NAMESPACE or not DYNAMIC_CM or not STATIC_CM:

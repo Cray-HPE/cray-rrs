@@ -30,7 +30,7 @@ management of state transitions for the Rack Resiliency Service (RRS) monitoring
 """
 
 import threading
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import *
 
@@ -63,7 +63,7 @@ class RMSStateManager:
         with self.lock:
             self.dynamic_cm_data = data
 
-    def get_dynamic_cm_data(self) -> Dict[str, str] | Any:
+    def get_dynamic_cm_data(self) -> Union[Dict[str, str], Any]:
         """Thread-safe method to retrieve the dynamic ConfigMap data."""
         with self.lock:
             if not self.dynamic_cm_data:

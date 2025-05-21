@@ -39,25 +39,19 @@ from src.lib.rrs_constants import *
 from src.lib.rrs_logging import get_log_id
 
 
-def get_logger() -> Logger:
+logger = logging.getLogger(__name__)
+
+
+def set_logger(custom_logger) -> None:
     """
-    Returns an appropriate logger based on the execution context.
-    If running inside a Flask application context, returns the Flask app's logger (`current_logger`).
-    Otherwise, falls back to a standard Python logger using `logging.getLogger(__name__)`.
-    Returns:
-        logging.Logger: A logger instance appropriate for the current context.
+    Sets a custom logger to be used globally within the module.
+    This allows external modules (e.g., Flask apps) to inject their own logger instance,
+    enabling unified logging across different parts of the application.
+    Args:
+        custom_logger (logging.Logger): A configured logger instance to override the default python logger.
     """
-    try:
-        from flask import has_app_context, current_app
-
-        if has_app_context():
-            return current_app.logger
-    except ImportError:
-        pass  # Flask not installed or not in Flask app context
-    return logging.getLogger(__name__)
-
-
-logger = get_logger()
+    global logger
+    logger = custom_logger
 
 
 class ConfigMapHelper:
@@ -197,9 +191,9 @@ class ConfigMapHelper:
             new_data (str):
                 The new string value to assign to the specified key.
             namespace (str, optional):
-                The namespace where the ConfigMap resides. Defaults to the value of the 'namespace' environment variable.
+                The namespace where the ConfigMap resides. Defaults to value of the 'namespace' environment variable
             configmap_name (str, optional):
-                The name of the ConfigMap to update. Defaults to the value of the 'dynamic_cm_name' environment variable.
+                The name of the ConfigMap to update. Defaults to value of the 'dynamic_cm_name' environment variable
         Returns:
             None
         """

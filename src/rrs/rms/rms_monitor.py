@@ -36,16 +36,31 @@ import sys
 import json
 import copy
 import threading
-from typing import List
+from typing import List, Optional
 from flask import Flask, current_app as app
 import yaml
+from src.lib import lib_rms
+from src.lib import lib_configmap
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import *
 
 
-def update_zone_status(state_manager: RMSStateManager) -> bool | None:
+def set_logger(custom_logger) -> None:
+    """
+    Sets a custom logger to be used globally within this module and propagates
+    it to dependent modules for consistent logging across the system.
+    Args:
+        custom_logger (logging.Logger): A configured logger instance to override the default.
+    """
+    global logger
+    logger = custom_logger
+    lib_rms.set_logger(custom_logger)
+    lib_configmap.set_logger(custom_logger)
+
+
+def update_zone_status(state_manager: RMSStateManager) -> Optional[bool]:
     """
     Update the zone information in the dynamic ConfigMap with the latest
     Kubernetes node statuses and Ceph health status.
@@ -53,7 +68,7 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
         state_manager (RMSStateManager): An instance of the RMS state manager used
         to fetch and update dynamic configmap data safely.
     Returns:
-        bool | None: True if Ceph is healthy, False if unhealthy, or None if an error occurs.
+        Optional[bool]: True if Ceph is healthy, False if unhealthy, or None if an error occurs.
     """
     app.logger.info("Getting latest status for zones and nodes")
     try:
@@ -88,6 +103,8 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
                 DYNAMIC_DATA_KEY,
                 dynamic_cm_data[DYNAMIC_DATA_KEY],
             )
+        else:
+            app.logger.info("No change in k8s or CEPH status and distribution. Nothing to do")
         return ceph_healthy_status
 
     except KeyError as e:
@@ -103,14 +120,14 @@ def update_zone_status(state_manager: RMSStateManager) -> bool | None:
 
 def update_critical_services(
     state_manager: RMSStateManager, reloading: bool = False
-) -> str | None:
+) -> Optional[str]:
     """
     Update critical service status and configuration in the dynamic ConfigMap.
     Args:
         state_manager (RMSStateManager): State manager instance used to access and modify configmaps.
         reloading (bool, optional): If True, fetches the config from the static configmap instead of dynamic.
     Returns:
-        str | None: A JSON-formatted string of the updated critical service configuration if successful,
+        Optional[str]: A JSON-formatted string of the updated critical service configuration if successful,
         or None in case of failure
     """
     try:

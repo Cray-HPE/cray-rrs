@@ -49,24 +49,19 @@ from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.rrs_constants import *
 
 
-def get_logger() -> Logger:
-    """
-    Returns an appropriate logger based on the execution context.
-    If running inside a Flask application context, returns the Flask app's logger (`currentlogger`).
-    Otherwise, falls back to a standard Python logger using `logging.getLogger(__name__)`.
-    Returns:
-        logging.Logger: A logger instance appropriate for the current context.
-    """
-    try:
-        from flask import has_app_context, current_app
-        if has_app_context():
-            return current_app.logger
-    except ImportError:
-        pass  # Flask not installed or not in Flask app context
-    return logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
-logger = get_logger()
+def set_logger(custom_logger) -> None:
+    """
+    Sets a custom logger to be used globally within the module.
+    This allows external modules (e.g., Flask apps) to inject their own logger instance,
+    enabling unified logging across different parts of the application.
+    Args:
+        custom_logger (logging.Logger): A configured logger instance to override the default python logger.
+    """
+    global logger
+    logger = custom_logger
 
 
 class Helper:
@@ -81,7 +76,7 @@ class Helper:
             command (str): The shell command to execute on the remote host.
         Returns:
             str: The output from the successful execution of the command,
-                        or empty string if the command fails on all hosts.        
+                        or empty string if the command fails on all hosts.
         """
         result = ""
         for host in HOSTS:
@@ -150,36 +145,6 @@ class Helper:
             logger.error(f"Unexpected error: {e}")
 
     @staticmethod
-    def update_configmap_with_timestamp(
-        configmap_name: str, namespace: str, timestamp: str, key: str
-    ) -> None:
-        """
-        Patch a Kubernetes ConfigMap with a given timestamp under a specific key.
-        Args:
-            configmap_name (str): The name of the ConfigMap to patch.
-            namespace (str): The Kubernetes namespace where the ConfigMap resides.
-            timestamp (str): The timestamp value to store (usually in ISO 8601 format).
-            key (str): The key inside the ConfigMap's data field to update with the timestamp.
-        Returns:
-            None
-        """
-        try:
-            ConfigMapHelper.load_k8s_config()
-            v1 = client.CoreV1Api()
-            body = {"data": {key: timestamp}}
-            v1.patch_namespaced_config_map(
-                name=configmap_name, namespace=namespace, body=body
-            )
-
-            logger.info(
-                f"Updated ConfigMap '{configmap_name}' with start_timestamp_api = {timestamp}"
-            )
-        except ApiException as e:
-            logger.error(f"Failed to update ConfigMap: {e.reason}")
-        except Exception as e:
-            logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
-
-    @staticmethod
     def token_fetch() -> Optional[str]:
         """Fetch an access token from Keycloak using client credentials.
         Returns:
@@ -213,7 +178,13 @@ class Helper:
             return None
 
     @staticmethod
-    def get_sls_hsm_data(get_hsm:bool = True, get_sls:bool = True) -> Tuple[Optional[Dict[str, List[Dict[str, Any]]]], Optional[List[Dict[str, Any]]]]:
+    def get_sls_hsm_data(
+        get_hsm: bool = True,
+        get_sls: bool = True
+    ) -> Tuple[
+        Optional[Dict[str, List[Dict[str, Any]]]],
+        Optional[List[Dict[str, Any]]]
+    ]:
         """
         Fetch data from HSM and SLS services.
         Returns:
@@ -270,7 +241,7 @@ class Helper:
         Args:
             node_name (str): The logical or alias name of the node to search for.
         Returns:
-            Optional[str]: The rack Xname (e.g., "x3000") if found, otherwise None.        
+            Optional[str]: The rack Xname (e.g., "x3000") if found, otherwise None.
         """
         try:
             logger.debug("Retrieving rack name for a particular node")
@@ -339,11 +310,11 @@ class cephHelper:
 
     @staticmethod
     def check_ceph_services() -> bool:
-        """ 
-        Checks the status of Ceph services 
+        """
+        Checks the status of Ceph services
         Returns:
-            bool: True if at least one service is in a 'running' state, 
-                False if the command fails on all hosts or if all services are in a failed state.            
+            bool: True if at least one service is in a 'running' state,
+                False if the command fails on all hosts or if all services are in a failed state.
         """
         ceph_healthy = False
         try:
@@ -559,6 +530,7 @@ class cephHelper:
             logger.exception("Error occurred while processing CEPH status: %s", e)
             return {}, False
 
+
 class k8sHelper:
     """
     Helper class to provide kubernetes related utility functions for the application.
@@ -658,7 +630,7 @@ class k8sHelper:
                 nodes = k8sHelper.get_k8s_nodes()
 
             if not nodes or not isinstance(nodes, list):
-                logger.debug("Failed to retrieve k8s nodes")
+                logger.error("Failed to retrieve k8s nodes")
                 return "Unknown"
             for node in nodes:
                 if isinstance(node, V1Node) and node.metadata.name == node_name:
@@ -667,7 +639,7 @@ class k8sHelper:
                         status = node.status.conditions[-1].status
                         return "Ready" if status == "True" else "NotReady"
                     return "Unknown"
-            logger.debug("Node %s not found in the node list", node_name)
+            logger.warning("Node %s not found in the node list", node_name)
             return "Unknown"
         except Exception as e:
             logger.exception("Error while checking status for node %s: %s", node_name, e)
@@ -802,14 +774,14 @@ class criticalServicesHelper:
     """
 
     @staticmethod
-    def check_skew(service_name: str, pods: List[Dict[str, Any]]) -> dict[str, Any]:
+    def check_skew(service_name: str, pods: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
         Check whether pod replicas of a service are evenly distributed across zones.
         Args:
             service_name (str): Name of the service being evaluated.
             pods (List[Dict[str, Any]]): List of pod metadata containing Zone, Node, and Name.
         Returns:
-            Dict[str, Any]: 
+            Dict[str, Any]:
                 - service-name: the name of the service
                 - balanced: "true" or "false" depending on replica distribution
                 - status (optional): "no replicas found"
@@ -922,7 +894,7 @@ class criticalServicesHelper:
         Args:
             services_data (Dict[str, Any]): The critical-services section from config.
         Returns:
-            Dict[str, Any]: Updated services_data with 'status' and 'balanced' flags added per service.        
+            Dict[str, Any]: Updated services_data with 'status' and 'balanced' flags added per service.
         """
         try:
             # Fetch all pods in one API call

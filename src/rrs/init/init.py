@@ -42,7 +42,7 @@ from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import *
 
-logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s", level=logging.INFO)
+logging.basicConfig(format="%(asctime)s - %(levelname)s in %(module)s: %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 state_manager = RMSStateManager()
@@ -245,22 +245,22 @@ def init() -> None:
         # Retrieve current node and rack where the RMS pod is running
         # node_name = "ncn-w004"
         node_name = k8sHelper.get_current_node()
-        rack_name = None
+        zone_name = None
         for rack, nodes_list in updated_k8s_data.items():
             for node in nodes_list:
                 if node.get("name") == node_name:
-                    rack_name = rack
+                    zone_name = rack
                     break
-            if rack_name:
+            if zone_name:
                 break
         rack_name = Helper.get_rack_name_for_node(node_name)
 
-        rrs_pod_placement = dynamic_data.get("rrs", None)
-        rrs_pod_placement["zone"] = rack_name
+        rrs_pod_placement = dynamic_data.get("cray_rrs_pod", None)
+        rrs_pod_placement["zone"] = zone_name
         rrs_pod_placement["node"] = node_name
         rrs_pod_placement["rack"] = rack_name
         logger.info(
-            "RMS pod is running on node: %s under zone %s", node_name, rack_name
+            "RMS pod is running on node: %s in rack %s under zone %s", node_name, rack_name, zone_name
         )
 
         if check_critical_services_and_timers() and discovery_status:
