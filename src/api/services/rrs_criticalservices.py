@@ -38,7 +38,6 @@ Usage:
 """
 
 import json
-import os
 from typing import Dict, List, Any, Union, Optional
 from datetime import datetime
 from flask import current_app as app
@@ -46,9 +45,7 @@ from kubernetes import client  # type: ignore
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
-
-CM_NAMESPACE = os.getenv("namespace", "")
-CM_KEY = os.getenv("key_criticalservice", "")
+from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DYNAMIC_CM
 
 
 class CriticalServices:
@@ -115,12 +112,11 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID to track this request
         try:
-            CM_NAME = os.getenv("static_cm_name", "")
             # Log the start of the fetching process
             app.logger.info(f"[{log_id}] Fetching critical services from ConfigMap.")
             # Fetch the ConfigMap data
             services = CriticalServiceHelper.fetch_service_list(
-                CM_NAME, CM_NAMESPACE, CM_KEY
+                STATIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
 
             # Check if there was an error in the services data
@@ -156,7 +152,6 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID to track this request
         try:
-            CM_NAME = os.getenv("dynamic_cm_name", "")
             # Log the start of the process to retrieve service details
             app.logger.info(
                 f"[{log_id}] Attempting to retrieve details for service: {service_name}"
@@ -164,7 +159,7 @@ class CriticalServices:
 
             # Fetch the ConfigMap that contains the critical service details
             services = CriticalServiceHelper.fetch_service_list(
-                CM_NAME, CM_NAMESPACE, CM_KEY
+                DYNAMIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
             if service_name not in services:
                 app.logger.warning(
@@ -229,7 +224,6 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
-            CM_NAME = os.getenv("static_cm_name", "")
             # Extract existing critical services and the new critical services
             existing_services = existing_data
             new_services = new_data["critical-services"]
@@ -246,7 +240,7 @@ class CriticalServices:
             new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
             if not test:  # Only update ConfigMap if not in test mode
                 ConfigMapHelper.update_configmap_data(
-                    None, CM_KEY, new_cm_data, CM_NAMESPACE, CM_NAME
+                    None, CRITICAL_SERVICE_KEY, new_cm_data, NAMESPACE, STATIC_CM
                 )
                 app.logger.info(f"[{log_id}] Updating timestamp in ConfigMap")
                 # Update the timestamp of the last update in the ConfigMap
@@ -254,8 +248,8 @@ class CriticalServices:
                     None,
                     "last_updated_timestamp",
                     datetime.utcnow().isoformat() + "Z",
-                    CM_NAMESPACE,
-                    CM_NAME,
+                    NAMESPACE,
+                    STATIC_CM
                 )
             # Log the event using app.logger
             app.logger.info(
@@ -291,7 +285,6 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
-            CM_NAME = os.getenv("static_cm_name", "")
             if "error" in new_data:
                 app.logger.error(f"[{log_id}] Error in new data: {new_data}")
                 return new_data
@@ -312,7 +305,7 @@ class CriticalServices:
 
             # Fetch the current ConfigMap data
             existing_data = CriticalServiceHelper.fetch_service_list(
-                CM_NAME, CM_NAMESPACE, CM_KEY
+                STATIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
 
             if "error" in existing_data:
@@ -376,12 +369,11 @@ class CriticalServicesStatus:
         """
         log_id = get_log_id()  # Generate a unique log ID for logging
         try:
-            CM_NAME = os.getenv("dynamic_cm_name", "")
             app.logger.info(
-                f"[{log_id}] Fetching ConfigMap: {CM_NAME} from namespace: {CM_NAMESPACE}"
+                f"[{log_id}] Fetching ConfigMap: {DYNAMIC_CM} from namespace: {NAMESPACE}"
             )
             services = CriticalServiceHelper.fetch_service_list(
-                CM_NAME, CM_NAMESPACE, CM_KEY
+                DYNAMIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
 
             # Check if there was an error in the services data
@@ -523,13 +515,12 @@ class CriticalServicesStatus:
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking
         try:
-            CM_NAME = os.getenv("dynamic_cm_name", "")
             # Log the attempt to fetch service details
             app.logger.info(
                 f"[{log_id}] Fetching details for service '{service_name}'."
             )
             services = CriticalServiceHelper.fetch_service_list(
-                CM_NAME, CM_NAMESPACE, CM_KEY
+                DYNAMIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
             # Check if the service exists in the services dictionary
             if service_name not in services:

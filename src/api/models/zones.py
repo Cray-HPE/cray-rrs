@@ -33,9 +33,9 @@ import yaml
 from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
+from src.lib.rrs_constants import DYNAMIC_DATA_KEY
 
 CM_NAMESPACE: str = os.getenv("namespace", "")
-CM_KEY: str = os.getenv("key_zones", "")
 CM_NAME: str = os.getenv("dynamic_cm_name", "")
 
 
@@ -86,7 +86,7 @@ class ZoneTopologyService:
 
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
-            parsed_data = yaml.safe_load(configmap_yaml[CM_KEY])
+            parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
             ceph_zones_with_nodes = parsed_data["zone"]["ceph_zones_with_nodes"]
 
             zone_mapping: ZoneMapping = {
@@ -132,7 +132,7 @@ class ZoneTopologyService:
 
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
-            parsed_data = yaml.safe_load(configmap_yaml[CM_KEY])
+            parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
             k8s_zones = parsed_data["zone"]["k8s_zones_with_nodes"]
 
             zone_mapping: Dict[str, Dict[str, Any]] = {}

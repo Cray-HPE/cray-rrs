@@ -59,6 +59,7 @@ from src.api.controllers.controls import (
     CriticalServiceStatusDescribeResource,
 )
 from src.lib.lib_rms import Helper
+from src.lib.rrs_constants import MAX_RETRIES
 
 
 def create_app() -> Flask:
@@ -95,9 +96,8 @@ def create_app() -> Flask:
             token = Helper.token_fetch()
             headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
 
-            max_retries = 3
             success = False
-            for attempt in range(max_retries):
+            for attempt in range(MAX_RETRIES):
                 try:
                     response = requests.get(ts_url, headers=headers, timeout=5)
                     if response.status_code == 200:
