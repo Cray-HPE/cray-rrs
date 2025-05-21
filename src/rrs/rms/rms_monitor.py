@@ -47,6 +47,9 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import *
 
 
+logger = None
+
+
 def set_logger(custom_logger) -> None:
     """
     Sets a custom logger to be used globally within this module and propagates

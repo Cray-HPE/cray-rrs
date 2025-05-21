@@ -39,8 +39,8 @@ import time
 import logging
 from datetime import datetime
 from typing import List, Tuple, Optional
-import yaml
 from http import HTTPStatus
+import yaml
 from flask import Flask, request, jsonify, Response
 import requests
 from src.lib import lib_rms

@@ -44,8 +44,8 @@ Usage:
 
 import sys
 import logging
-import requests
 from http import HTTPStatus
+import requests
 from flask import Flask
 from flask_restful import Api
 from src.api.models.healthz import Ready, Live

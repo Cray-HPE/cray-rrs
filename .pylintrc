@@ -46,6 +46,7 @@ disable=
     W0401,  #wildcard-import
     W0614,  #unused-wildcard-import
     R1702,  #too-many-nested-blocks
+    W0603,  #global-statement
 
 [REPORTS]
 # Set the output format. Available formats are text, parseable, colorized, msvs

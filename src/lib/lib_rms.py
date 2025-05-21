@@ -36,7 +36,6 @@ import subprocess
 import base64
 import time
 import logging
-from logging import Logger
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional, TypedDict
 import requests

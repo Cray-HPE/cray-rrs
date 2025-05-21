@@ -31,7 +31,6 @@ in Kubernetes to manage a lock mechanism for resources.
 import time
 import sys
 import logging
-from logging import Logger
 from typing import Dict, Union
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
