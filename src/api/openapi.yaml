@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # Rack Resiliency Service API Specification
-openapi: 3.1.1
+openapi: 3.0.3
 info:
   title: Rack Resiliency Service
   license:
@@ -618,6 +618,8 @@ components:
           properties:
             Type:
               type: string
+              enum:
+                - "Kubernetes Topology Zone"
             Nodes:
               type: array
               items:
@@ -627,6 +629,8 @@ components:
           properties:
             Type:
               type: string
+              enum:
+                - "Kubernetes Topology Zone"
             Nodes:
               type: array
               items:
@@ -636,6 +640,8 @@ components:
           properties:
             Type:
               type: string
+              enum:
+                - "CEPH Zone"
             Nodes:
               type: array
               items:
