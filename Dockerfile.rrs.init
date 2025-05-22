@@ -54,6 +54,4 @@ RUN echo -e "PasswordAuthentication no" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN ssh-keygen -A
 
-#CMD [ "python", "/app/src/rrs/init/init.py" ]
 CMD /usr/sbin/sshd && python3 -m src.rrs.init.init
-#CMD ["sh", "-c", "/usr/sbin/sshd && python3 /app/src/rrs/init/init.py"]

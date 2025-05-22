@@ -44,10 +44,9 @@ FROM base AS build
 ENV PYTHONPATH=/app
 ENV FLASK_APP=""
 
-# Copy rms sources
 EXPOSE 8551
-#COPY src/rrs/rms /app/src/rrs/rms
-#COPY src/lib /app/src/lib
+
+# Copy rms sources
 COPY src/ /app/src/
 
 # Enable and start SSH service (consider security implications)
@@ -56,5 +55,4 @@ RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
 RUN ssh-keygen -A
 
-#CMD [ "python", "/app/src/rrs/rms/rms.py" ]
 CMD /usr/sbin/sshd && python3 -m src.rrs.rms.rms

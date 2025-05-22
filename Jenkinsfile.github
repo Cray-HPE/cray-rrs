@@ -64,7 +64,7 @@ pipeline {
             parallel {
                 stage('Image') {
                     steps {
-                        sh "make all"
+                        sh "make images"
                     }
                 }
 
