@@ -62,7 +62,7 @@ class ZoneListResource(Resource):
     It returns a list of zones in JSON format.
     """
 
-    def get(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
+    def get(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], HTTPStatus]:
         """
         Get the list of all zones.
 
@@ -77,13 +77,13 @@ class ZoneListResource(Resource):
             zones = ZoneService.list_zones()
 
             # Return the list of zones (cast to correct type)
-            return cast(List[Dict[str, Any]], zones), HTTPStatus.OK.value
+            return cast(List[Dict[str, Any]], zones), HTTPStatus.OK
         except Exception as e:
             # Log any error that occurs while fetching zones
             log_event(f"Error fetching zones: {str(e)}", level="ERROR")
 
             # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to describe the zone entered
@@ -95,7 +95,7 @@ class ZoneDescribeResource(Resource):
     particular zone, identified by its name.
     """
 
-    def get(self, zone_name: str) -> Tuple[Dict[str, Any], int]:
+    def get(self, zone_name: str) -> Tuple[Dict[str, Any], HTTPStatus]:
         """
         Get the description of a specific zone by its name.
 
@@ -115,16 +115,16 @@ class ZoneDescribeResource(Resource):
             # If the zone does not exist, return a 404 error
             if not zone:
                 log_event(f"Zone {zone_name} not found", level="ERROR")
-                return {"error": "Zone not found"}, HTTPStatus.NOT_FOUND.value
+                return {"error": "Zone not found"}, HTTPStatus.NOT_FOUND
 
             # Return the zone description
-            return zone, HTTPStatus.OK.value
+            return zone, HTTPStatus.OK
         except Exception as e:
             # Log any error that occurs while describing the zone
             log_event(f"Error describing zone {zone_name}: {str(e)}", level="ERROR")
 
             # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to get the list of critical services
@@ -136,7 +136,7 @@ class CriticalServiceListResource(Resource):
     It returns a list of critical services in JSON format.
     """
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Dict[str, Any], HTTPStatus]:
         """
         Get the list of all critical services.
 
@@ -151,13 +151,13 @@ class CriticalServiceListResource(Resource):
             critical_services = CriticalServices.get_critical_service_list()
 
             # Return the list of critical services
-            return critical_services, HTTPStatus.OK.value
+            return critical_services, HTTPStatus.OK
         except Exception as e:
             # Log any error that occurs while fetching critical services
             log_event(f"Error fetching critical services: {str(e)}", level="ERROR")
 
             # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to describe the critical service entered
@@ -169,7 +169,7 @@ class CriticalServiceDescribeResource(Resource):
     particular critical service, identified by its name.
     """
 
-    def get(self, service_name: str) -> Tuple[Dict[str, Any], int]:
+    def get(self, service_name: str) -> Tuple[Dict[str, Any], HTTPStatus]:
         """
         Get the description of a specific critical service status by its name.
 
@@ -188,17 +188,17 @@ class CriticalServiceDescribeResource(Resource):
 
             # If the result is an error tuple, return it
             if isinstance(result, tuple) and len(result) == 2:
-                return result, HTTPStatus.INTERNAL_SERVER_ERROR.value
+                return result, HTTPStatus.INTERNAL_SERVER_ERROR
 
             # If the service is not found, return a 404 error
             if not result:
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return {
                     "error": "Critical service not found"
-                }, HTTPStatus.NOT_FOUND.value
+                }, HTTPStatus.NOT_FOUND
 
             # Return the service description
-            return result, HTTPStatus.OK.value
+            return result, HTTPStatus.OK
         except Exception as e:
             # Log any error that occurs while describing the service
             log_event(
@@ -206,7 +206,7 @@ class CriticalServiceDescribeResource(Resource):
             )
 
             # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to update the critical services list
@@ -217,7 +217,7 @@ class CriticalServiceUpdateResource(Resource):
     This resource handles the PATCH request to update the critical services list.
     """
 
-    def patch(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], int]:
+    def patch(self) -> Tuple[Union[List[Dict[str, Any]], Dict[str, str]], HTTPStatus]:
         """
         Update the list of critical services.
 
@@ -234,19 +234,19 @@ class CriticalServiceUpdateResource(Resource):
             # If no data is provided, return an error
             if not new_data:
                 log_event("No data provided for update", level="ERROR")
-                return {"error": "No data provided"}, HTTPStatus.BAD_REQUEST.value
+                return {"error": "No data provided"}, HTTPStatus.BAD_REQUEST
 
             # Update the critical services with the new data
             updated_services = CriticalServices.update_critical_services(new_data)
 
             # Return the updated list of critical services
-            return cast(List[Dict[str, Any]], updated_services), HTTPStatus.OK.value
+            return cast(List[Dict[str, Any]], updated_services), HTTPStatus.OK
         except Exception as e:
             # Log any error that occurs while updating the critical services
             log_event(f"Error updating critical services: {str(e)}", level="ERROR")
 
             # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to get the list of critical services status
@@ -258,7 +258,7 @@ class CriticalServiceStatusListResource(Resource):
     It returns a list of critical service statuses in JSON format.
     """
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Dict[str, Any], HTTPStatus]:
         """
         Get the status of all critical services.
 
@@ -273,7 +273,7 @@ class CriticalServiceStatusListResource(Resource):
             status = CriticalServicesStatus.get_criticalservice_status_list()
 
             # Return the status of critical services
-            return status, HTTPStatus.OK.value
+            return status, HTTPStatus.OK
         except Exception as e:
             # Log any error that occurs while fetching the status
             log_event(
@@ -281,7 +281,7 @@ class CriticalServiceStatusListResource(Resource):
             )
 
             # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to describe the critical service entered
@@ -293,7 +293,7 @@ class CriticalServiceStatusDescribeResource(Resource):
     particular critical service, identified by its name.
     """
 
-    def get(self, service_name: str) -> Tuple[Dict[str, Any], int]:
+    def get(self, service_name: str) -> Tuple[Dict[str, Any], HTTPStatus]:
         """
         Get the description of a specific critical service status by its name.
 
@@ -315,10 +315,10 @@ class CriticalServiceStatusDescribeResource(Resource):
                 log_event(f"Critical service {service_name} not found", level="ERROR")
                 return {
                     "error": "Critical service not found"
-                }, HTTPStatus.NOT_FOUND.value
+                }, HTTPStatus.NOT_FOUND
 
             # Return the service status description
-            return service, HTTPStatus.OK.value
+            return service, HTTPStatus.OK
         except Exception as e:
             # Log any error that occurs while describing the service status
             log_event(
@@ -327,4 +327,4 @@ class CriticalServiceStatusDescribeResource(Resource):
             )
 
             # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR.value
+            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR

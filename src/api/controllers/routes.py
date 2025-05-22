@@ -44,7 +44,6 @@ Usage:
 
 import sys
 import logging
-from http import HTTPStatus
 import requests
 from flask import Flask
 from flask_restful import Api
@@ -59,7 +58,6 @@ from src.api.controllers.controls import (
     CriticalServiceStatusListResource,
     CriticalServiceStatusDescribeResource,
 )
-from src.lib.lib_rms import Helper
 from src.lib.rrs_constants import MAX_RETRIES, REQUESTS_TIMEOUT
 
 
@@ -91,19 +89,16 @@ def create_app() -> Flask:
     # Timestamp logging via API call
     with app.app_context():
         app.logger.info("Update API start timestamp")
-        ts_url = "https://api-gw-service-nmn.local/apis/rms/api-ts"
+        ts_url = "http://localhost:8551/api-ts"
 
         try:
-            token = Helper.token_fetch()
-            headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-
             success = False
             for attempt in range(MAX_RETRIES):
                 try:
                     response = requests.post(
-                        ts_url, headers=headers, timeout=REQUESTS_TIMEOUT
+                        ts_url, timeout=REQUESTS_TIMEOUT
                     )
-                    if response.status_code == HTTPStatus.OK.value:
+                    if response.status_code == 200:
                         app.logger.info("Response: %s", response.text.strip())
                         success = True
                         break

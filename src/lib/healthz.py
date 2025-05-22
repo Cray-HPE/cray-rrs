@@ -35,18 +35,18 @@ from src.lib.rrs_logging import get_log_id
 class Ready(Resource):
     """Return k8s readiness check"""
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Dict[str, Any], HTTPStatus]:
         """Return k8s readiness check"""
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
-        return {}, HTTPStatus.OK.value  # Return empty body with HTTP 200 OK
+        return {}, HTTPStatus.OK  # Return empty body with HTTP 200 OK
 
 
 class Live(Resource):
     """Return k8s liveness check"""
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Dict[str, Any], HTTPStatus]:
         """Return k8s liveness check"""
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
-        return {}, HTTPStatus.OK.value  # Return empty body with HTTP 200 OK
+        return {}, HTTPStatus.OK  # Return empty body with HTTP 200 OK

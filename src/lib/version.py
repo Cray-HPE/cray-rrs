@@ -35,7 +35,7 @@ from src.lib.rrs_logging import get_log_id
 class Version(Resource):  # type: ignore[misc]
     """Return RRS version information"""
 
-    def get(self) -> Tuple[Dict[str, Any], int]:
+    def get(self) -> Tuple[Dict[str, Any], HTTPStatus]:
         """Return RRS version information"""
 
         # Generate or fetch a unique log ID for traceability
@@ -51,4 +51,4 @@ class Version(Resource):  # type: ignore[misc]
         app.logger.debug("%s Returning json response: %s", log_id, return_value)
 
         # Return version info with HTTP 200 OK
-        return return_value, HTTPStatus.OK.value
+        return return_value, HTTPStatus.OK

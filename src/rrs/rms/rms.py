@@ -164,7 +164,7 @@ api.add_resource(Version, "/version")
 
 
 @app.route("/api-ts", methods=["POST"])
-def update_api_timestamp() -> Tuple[str, int]:
+def update_api_timestamp() -> Tuple[str, HTTPStatus]:
     """
     Endpoint to update the API server start timestamp in dynamic configmap.
     Returns:
@@ -175,14 +175,14 @@ def update_api_timestamp() -> Tuple[str, int]:
         Helper.update_state_timestamp(
             state_manager, timestamp_field="start_timestamp_api"
         )
-        return "API timestamp updated successfully", HTTPStatus.OK.value
+        return "API timestamp updated successfully", HTTPStatus.OK
     except Exception:
         app.logger.exception("Failed to update API timestamp")
         return "Failed to update API timestamp", HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @app.route("/scn", methods=["POST"])
-def handleSCN() -> Tuple[Response, int]:
+def handleSCN() -> Tuple[Response, HTTPStatus]:
     """
     Handle incoming POST requests from HMNFD (Hardware Management Notification Framework Daemon).
     This endpoint processes system component notifications and initiates monitoring accordingly.
@@ -224,7 +224,7 @@ def handleSCN() -> Tuple[Response, int]:
                 "Unexpected state '%s' received for %s.", comp_state, components
             )
 
-        return jsonify({"message": "POST call received"}), HTTPStatus.OK.value
+        return jsonify({"message": "POST call received"}), HTTPStatus.OK
 
     except Exception as e:
         app.logger.error("Error processing the request: %s", e)
