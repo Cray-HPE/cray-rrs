@@ -50,7 +50,15 @@ from src.rrs.rms import rms_monitor
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.rrs_constants import *
+from src.lib.rrs_constants import (
+    NAMESPACE,
+    DYNAMIC_CM,
+    STATIC_CM,
+    DYNAMIC_DATA_KEY,
+    MAX_RETRIES,
+    RETRY_DELAY,
+    REQUESTS_TIMEOUT,
+)
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
 from src.rrs.rms.rms_monitor import (
@@ -109,7 +117,7 @@ def check_failure_type(components: List[str]) -> None:
                     break
             if not rack_id:
                 app.logger.warning(
-                    f"No matching component found in HSM data for {component_xname}"
+                    "No matching component found in HSM data for %s", component_xname
                 )
                 continue
             # Extract the components with ID starting with rack_id
@@ -123,10 +131,13 @@ def check_failure_type(components: List[str]) -> None:
             for component in rack_components:
                 if component["State"] in ["On", "Ready", "Populated"]:
                     rack_failure = False
-                app.logger.debug(f"ID: {component['ID']}, State: {component['State']}")
+                app.logger.debug(
+                    "ID: %s, State: %s", component["ID"], component["State"]
+                )
             if rack_failure:
                 app.logger.info(
-                    f"All the nodes in the rack {rack_id} are not healthy - RACK FAILURE"
+                    "All the nodes in the rack %s are not healthy - RACK FAILURE",
+                    rack_id,
                 )
             else:
                 failed_nodes = [
@@ -135,7 +146,9 @@ def check_failure_type(components: List[str]) -> None:
                     if c["State"] not in ["On", "Ready", "Populated"]
                 ]
                 app.logger.info(
-                    f"Some nodes in rack {rack_id} are down. Failed nodes: {failed_nodes}"
+                    "Some nodes in rack %s are down. Failed nodes: %s",
+                    rack_id,
+                    failed_nodes,
                 )
 
     except (AttributeError, KeyError, IndexError, TypeError) as e:
@@ -259,7 +272,7 @@ def check_and_create_hmnfd_subscription() -> None:
     dynamic_cm_data = state_manager.get_dynamic_cm_data()
     yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
     if yaml_content is None:
-        app.logger.error(f"{DYNAMIC_DATA_KEY} not found in the configmap")
+        app.logger.error("%s not found in the configmap", DYNAMIC_DATA_KEY)
         return
     dynamic_data = yaml.safe_load(yaml_content)
     subscriber_node = dynamic_data.get("cray_rrs_pod").get("rack")
@@ -363,7 +376,8 @@ def initial_check_and_update() -> bool:
             dynamic_data = yaml.safe_load(yaml_content)
         else:
             app.logger.error(
-                f"No content found under {DYNAMIC_DATA_KEY} in rrs-mon-dynamic configmap"
+                "No content found under %s in rrs-mon-dynamic configmap",
+                DYNAMIC_DATA_KEY,
             )
             sys.exit(1)
 
@@ -392,7 +406,7 @@ def initial_check_and_update() -> bool:
         rms_start_timestamp = timestamps.get("start_timestamp_rms", None)
         if rms_start_timestamp:
             app.logger.debug(
-                f"RMS start time already present in configmap - {rms_start_timestamp}"
+                "RMS start time already present in configmap - %s", rms_start_timestamp
             )
             app.logger.info(
                 "Rack Resiliency Monitoring Service is restarted post failure"

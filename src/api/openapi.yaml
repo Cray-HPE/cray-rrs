@@ -41,7 +41,7 @@ info:
           - Management Master Nodes
           - Management Worker Nodes
           - Management Storage Nodes
-          
+
         Alternatively, if zones are not configured, one of the following informational messages is returned:
           - "No K8s Topology/Ceph Zones configured"
           - "No Ceph zones configured"
@@ -245,7 +245,7 @@ paths:
       tags:
         - criticalservices
       description: >
-        Returns a list of critical services grouped by namespace. The response includes 
+        Returns a list of critical services grouped by namespace. The response includes
         a critical-services property containing namespaces with arrays of service objects
         including:
           - name: the name of the service

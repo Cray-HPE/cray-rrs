@@ -29,10 +29,10 @@ metadata:
   namespace: rack-resiliency
   labels:
     app.kubernetes.io/managed-by: Helm
-    type: rr-services 
+    type: rr-services
 data:
   log_dir: "/var/log/rr"
-  unit_of_time: "seconds" 
+  unit_of_time: "seconds"
   k8s_pre_monitoring_delay: "40"
   k8s_monitoring_polling_interval: "60"
   k8s_monitoring_total_time: "600"

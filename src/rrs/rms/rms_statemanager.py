@@ -32,7 +32,7 @@ management of state transitions for the Rack Resiliency Service (RRS) monitoring
 import threading
 from typing import Dict, Any, Union
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.rrs_constants import *
+from src.lib.rrs_constants import NAMESPACE, DYNAMIC_CM
 
 
 class RMSStateManager:

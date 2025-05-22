@@ -25,13 +25,10 @@ from setuptools import setup, find_packages
 
 with open("LICENSE") as license_file:
     LICENSE = license_file.read()
-
 with open("requirements.txt") as reqs_file:
     REQUIRMENTS = reqs_file.readlines()[1:]
-
 with open(".version") as vers_file:
     VERSION = vers_file.read().strip()
-
 setup(
     name="rrs",
     author="Cray Inc.",

@@ -46,7 +46,17 @@ from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
-from src.lib.rrs_constants import *
+from src.lib.rrs_constants import (
+    NAMESPACE,
+    DYNAMIC_DATA_KEY,
+    SECRET_NAME,
+    SECRET_DEFAULT_NAMESPACE,
+    SECRET_DATA_KEY,
+    REQUESTS_TIMEOUT,
+    MAX_RETRIES,
+    RETRY_DELAY,
+    HOSTS,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -80,7 +90,7 @@ class Helper:
         """
         for host in HOSTS:
             try:
-                logger.debug(f"Running command: {command} on host {host}")
+                logger.debug("Running command: %s on host %s", command, host)
                 formatted_command = command.format(host=host)
                 result: subprocess.CompletedProcess[str] = subprocess.run(
                     formatted_command,
@@ -97,7 +107,7 @@ class Helper:
                     command,
                     host,
                 )
-        logger.exception(f"All hosts failed for command: {command}")
+        logger.exception("All hosts failed for command: %s", command)
         return ""
 
     @staticmethod
@@ -123,11 +133,11 @@ class Helper:
             if yaml_content is not None:
                 dynamic_data = yaml.safe_load(yaml_content)
                 if new_state:
-                    logger.info(f"Updating state {state_field} to {new_state}")
+                    logger.info("Updating state %s to %s", state_field, new_state)
                     state = dynamic_data.get("state", {})
                     state[state_field] = new_state
                 if timestamp_field:
-                    logger.info(f"Updating timestamp {timestamp_field}")
+                    logger.info("Updating timestamp %s", timestamp_field)
                     timestamp = dynamic_data.get("timestamps", {})
                     timestamp[timestamp_field] = datetime.now().strftime(
                         "%Y-%m-%dT%H:%M:%SZ"
@@ -143,9 +153,9 @@ class Helper:
                     dynamic_cm_data[DYNAMIC_DATA_KEY],
                 )
         except ValueError as e:
-            logger.error(f"Error during configuration check and update: {e}")
+            logger.error("Error during configuration check and update: %s", e)
         except Exception as e:
-            logger.error(f"Unexpected error: {e}")
+            logger.error("Unexpected error: %s", e)
 
     @staticmethod
     def token_fetch() -> Optional[str]:
@@ -173,13 +183,13 @@ class Helper:
             return token
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Request failed: {e}")
+            logger.error("Request failed: %s", e)
             return None
         except ValueError as e:
-            logger.error(f"Failed to parse JSON: {e}")
+            logger.error("Failed to parse JSON: %s", e)
             return None
         except Exception as err:
-            logger.error(f"Error collecting secret from Kubernetes: {err}")
+            logger.error("Error collecting secret from Kubernetes: %s", err)
             return None
 
     @staticmethod
@@ -214,7 +224,7 @@ class Helper:
                     hsm_data = hsm_response.json()
                     break  # Success, exit retry loop
                 except (requests.exceptions.RequestException, ValueError) as e:
-                    logger.error(f"Attempt {attempt}: Failed to fetch HSM data: {e}")
+                    logger.error("Attempt %d: Failed to fetch HSM data: %s", attempt, e)
                     if attempt == MAX_RETRIES:
                         logger.error("Max retries reached. Could not fetch HSM data")
                         return None, None
@@ -235,7 +245,7 @@ class Helper:
                     sls_data = sls_response.json()
                     break  # Success, exit retry loop
                 except (requests.exceptions.RequestException, ValueError) as e:
-                    logger.error(f"Attempt {attempt}: Failed to fetch SLS data: {e}")
+                    logger.error("Attempt %d: Failed to fetch SLS data: %s", attempt, e)
                     if attempt == MAX_RETRIES:
                         logger.error("Max retries reached. Could not fetch SLS data")
                         return None, None
@@ -296,21 +306,25 @@ class Helper:
             # Log a message if the node is powered off
             for sls_entry in sls_data:
                 aliases = sls_entry["ExtraProperties"]["Aliases"][0]
-                if pod_node in aliases:
-                    for component in filtered_data:
-                        if sls_entry["Xname"] == component["ID"]:
-                            rack_id = component["ID"].split("c")[
-                                0
-                            ]  # Extract "x3000" from "x3000c0s1b75n75"
-                            comp_state = component["State"]
-                            if comp_state in ["Off"] and rack_id in pod_zone:
-                                logger.info(
-                                    "Monitoring pod was previously running on the "
-                                    "failed node %s under rack %s",
-                                    pod_node,
-                                    rack_id,
-                                )
-                        return
+                if pod_node not in aliases:
+                    continue
+
+                for component in filtered_data:
+                    if sls_entry["Xname"] != component["ID"]:
+                        continue
+
+                    rack_id = component["ID"].split("c")[
+                        0
+                    ]  # Extract "x3000" from "x3000c0s1b75n75"
+                    comp_state = component["State"]
+                    if comp_state in ["Off"] and rack_id in pod_zone:
+                        logger.info(
+                            "Monitoring pod was previously running on the "
+                            "failed node %s under rack %s",
+                            pod_node,
+                            rack_id,
+                        )
+                    return
                 return
         except Exception as e:
             logger.exception(
@@ -344,18 +358,24 @@ class cephHelper:
                 if service["status_desc"] != "running":
                     failed_services.append(service["service_name"])
                     logger.warning(
-                        f"Service {service['service_name']} running on "
-                        f"{service['hostname']} is in {service['status_desc']} state"
+                        "Service %s running on %s is in %s state",
+                        service["service_name"],
+                        service["hostname"],
+                        service["status_desc"],
                     )
                 else:
                     ceph_healthy = True
                     logger.debug(
-                        f"Service {service['service_name']} running on "
-                        f"{service['hostname']} is in {service['status_desc']} state"
+                        "Service %s running on %s is in %s state",
+                        service["service_name"],
+                        service["hostname"],
+                        service["status_desc"],
                     )
             if failed_services:
                 logger.warning(
-                    f"{len(failed_services)} out of {len(ceph_services)} ceph services are not running"
+                    "%d out of %d ceph services are not running",
+                    len(failed_services),
+                    len(ceph_services),
                 )
             return ceph_healthy
         except json.JSONDecodeError:
@@ -384,7 +404,7 @@ class cephHelper:
 
             if "HEALTH_OK" not in health_status:
                 logger.warning(
-                    f"CEPH is not healthy with health status as {health_status}"
+                    "CEPH is not healthy with health status as %s", health_status
                 )
                 # Check the reason for CEPH failure
                 # Explicitly check if PGs are degraded and recovery is in progess
@@ -410,7 +430,8 @@ class cephHelper:
                 else:
                     health_checks = ceph_status.get("health", {}).get("checks", {})
                     logger.warning(
-                        f"Reason for CEPH unhealthy state are - {list(health_checks.keys())}"
+                        "Reason for CEPH unhealthy state are - %s",
+                        list(health_checks.keys()),
                     )
             else:
                 # This case probably would not be happening in case of monitoring as
@@ -475,6 +496,7 @@ class cephHelper:
             ceph_tree, ceph_hosts = cephHelper.fetch_ceph_data()
             if not ceph_tree or not ceph_hosts:
                 return {}, False
+
             host_status_map: Dict[str, str] = {}
             if isinstance(ceph_hosts, list):
                 for host in ceph_hosts:
@@ -484,62 +506,70 @@ class cephHelper:
                         and "status" in host
                     ):
                         host_status_map[host["hostname"]] = host["status"]
+
             final_output: Dict[str, List[Dict[str, Any]]] = {}
             failed_hosts: List[str] = []
+
             for item in ceph_tree.get("nodes", []):
-                if item["type"] == "rack":
-                    rack_name = item["name"]
-                    storage_nodes = []
+                if item["type"] != "rack":
+                    continue
 
-                    for child_id in item.get("children", []):
-                        host_node = next(
-                            (x for x in ceph_tree["nodes"] if x["id"] == child_id), None
+                rack_name = item["name"]
+                storage_nodes = []
+
+                for child_id in item.get("children", []):
+                    host_node = next(
+                        (x for x in ceph_tree["nodes"] if x["id"] == child_id), None
+                    )
+
+                    if not (
+                        host_node
+                        and host_node["type"] == "host"
+                        and host_node["name"].startswith("ncn-s")
+                    ):
+                        continue
+
+                    osd_ids = host_node.get("children", [])
+                    osds = [
+                        osd
+                        for osd in ceph_tree["nodes"]
+                        if osd["id"] in osd_ids and osd["type"] == "osd"
+                    ]
+                    osd_status_list = [
+                        {
+                            "name": osd["name"],
+                            "status": osd.get("status", "unknown"),
+                        }
+                        for osd in osds
+                    ]
+
+                    node_status = host_status_map.get(host_node["name"], "No Status")
+                    if node_status in ["", "online"]:
+                        node_status = "Ready"
+                    else:
+                        failed_hosts.append(host_node["name"])
+                        logger.warning(
+                            "Host %s is in - %s state",
+                            host_node["name"],
+                            node_status,
                         )
+                        node_status = "NotReady"
 
-                        if (
-                            host_node
-                            and host_node["type"] == "host"
-                            and host_node["name"].startswith("ncn-s")
-                        ):
-                            osd_ids = host_node.get("children", [])
+                    storage_nodes.append(
+                        {
+                            "name": host_node["name"],
+                            "status": node_status,
+                            "osds": osd_status_list,
+                        }
+                    )
 
-                            osds = [
-                                osd
-                                for osd in ceph_tree["nodes"]
-                                if osd["id"] in osd_ids and osd["type"] == "osd"
-                            ]
-                            osd_status_list = [
-                                {
-                                    "name": osd["name"],
-                                    "status": osd.get("status", "unknown"),
-                                }
-                                for osd in osds
-                            ]
+                final_output[rack_name] = storage_nodes
 
-                            node_status = host_status_map.get(
-                                host_node["name"], "No Status"
-                            )
-                            if node_status in ["", "online"]:
-                                node_status = "Ready"
-                            else:
-                                failed_hosts.append(host_node["name"])
-                                logger.warning(
-                                    f"Host {host_node['name']} is in - {node_status} state"
-                                )
-                                node_status = "NotReady"
-
-                            storage_nodes.append(
-                                {
-                                    "name": host_node["name"],
-                                    "status": node_status,
-                                    "osds": osd_status_list,
-                                }
-                            )
-
-                    final_output[rack_name] = storage_nodes
             if failed_hosts:
                 logger.warning(
-                    f"{len(failed_hosts)} out of {len(ceph_hosts)} ceph nodes are not healthy"
+                    "%d out of %d ceph nodes are not healthy",
+                    len(failed_hosts),
+                    len(ceph_hosts),
                 )
 
             ceph_healthy = cephHelper.check_ceph_health()
@@ -904,17 +934,20 @@ class criticalServicesHelper:
                     app.status.number_ready,
                     app.spec.selector.match_labels,
                 )
-            logger.warning(f"Unsupported service type: {service_type}")
+            logger.warning("Unsupported service type: %s", service_type)
             return None, None, None
         except client.exceptions.ApiException as e:
             match = re.search(r"Reason: (.*?)\n", str(e))
             error_message = match.group(1) if match else str(e)
             logger.error(
-                f"Error fetching {service_type} {service_name}: {error_message}"
+                "Error fetching %s %s: %s", service_type, service_name, error_message
             )
         except Exception as e:
             logger.exception(
-                f"Unexpected error while fetching {service_type} '{service_name}': {e}"
+                "Unexpected error while fetching %s '%s': %s",
+                service_type,
+                service_name,
+                e,
             )
         return None, None, None
 
@@ -932,7 +965,7 @@ class criticalServicesHelper:
             all_pods = k8sHelper.fetch_all_pods()
 
             critical_services = services_data.get("critical-services", {})
-            logger.info(f"Number of critical services are - {len(critical_services)}")
+            logger.info("Number of critical services are - %d", len(critical_services))
             imbalanced_services: List[str] = []
             unconfigured_services: List[str] = []
             for service_name, service_info in critical_services.items():
@@ -960,12 +993,20 @@ class criticalServicesHelper:
                         imbalanced_services.append(service_name)
                         status = "PartiallyConfigured"
                         logger.warning(
-                            f"{service_type} '{service_name}' in namespace '{service_namespace}' is not ready. "
-                            f"Only {ready_replicas} replicas are ready out of {desired_replicas} desired replicas"
+                            (
+                                "%s '%s' in namespace '%s' is not ready. "
+                                "Only %d replicas are ready out of %d desired replicas"
+                            ),
+                            service_type,
+                            service_name,
+                            service_namespace,
+                            ready_replicas,
+                            desired_replicas,
                         )
                     elif ready_replicas == desired_replicas:
                         logger.debug(
-                            f"Desired replicas and ready replicas are matching for '{service_name}'"
+                            "Desired replicas and ready replicas are matching for '%s'",
+                            service_name,
                         )
 
                     filtered_pods: List[Dict[str, Any]] = []
@@ -993,11 +1034,11 @@ class criticalServicesHelper:
                     service_info.update({"status": "Unconfigured", "balanced": "NA"})
             if imbalanced_services:
                 logger.warning(
-                    f"List of imbalanced services are - {imbalanced_services}"
+                    "List of imbalanced services are - %s", imbalanced_services
                 )
             if unconfigured_services:
                 logger.warning(
-                    f"List of unconfigured services are - {unconfigured_services}"
+                    "List of unconfigured services are - %s", unconfigured_services
                 )
             return services_data
         except Exception as e:

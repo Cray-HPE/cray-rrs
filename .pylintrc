@@ -31,21 +31,9 @@ confidence=
 # Disable the message, report, category, or checker with the given ID(s).
 disable=
     W0703,  # broad-except
-    attribute-defined-outside-init,
     too-few-public-methods,
     invalid-name,
     duplicate-code,
-    too-many-branches,
-    too-many-return-statements,
-    too-many-locals,
-    fixme,
-	logging-fstring-interpolation,
-	W1203,
-	C0415,
-    C0301,  #Line too long
-    W0401,  #wildcard-import
-    W0614,  #unused-wildcard-import
-    R1702,  #too-many-nested-blocks
     W0603,  #global-statement
 
 [REPORTS]

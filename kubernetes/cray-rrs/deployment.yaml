@@ -44,7 +44,7 @@ spec:
         #tag: latest
         #imagePullPolicy: IfNotPresent
         imagePullPolicy: Always
-        env: 
+        env:
           - name: static_cm_name
             value: "rrs-mon-static"
           - name: dynamic_cm_name

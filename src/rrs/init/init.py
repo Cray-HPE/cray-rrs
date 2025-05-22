@@ -40,7 +40,13 @@ import yaml
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.rrs_constants import *
+from src.lib.rrs_constants import (
+    NAMESPACE,
+    DYNAMIC_CM,
+    STATIC_CM,
+    DYNAMIC_DATA_KEY,
+    CRITICAL_SERVICE_KEY,
+)
 
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s in %(module)s: %(message)s", level=logging.INFO
@@ -145,7 +151,7 @@ def check_critical_services_and_timers() -> bool:
                 return False
         else:
             logger.error(
-                f"{CRITICAL_SERVICE_KEY} not present in Rack Resiliency configmap"
+                "%s not present in Rack Resiliency configmap", CRITICAL_SERVICE_KEY
             )
             return False
 
@@ -194,7 +200,7 @@ def init() -> None:
         configmap_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
         if not configmap_data or not isinstance(configmap_data, dict):
             logger.error(
-                f"Data is missing in configmap {DYNAMIC_CM} or not in expected format"
+                "Data is missing in configmap %s or not in expected format", DYNAMIC_CM
             )
             sys.exit(1)
         yaml_content = configmap_data.get(DYNAMIC_DATA_KEY, None)
@@ -202,7 +208,9 @@ def init() -> None:
             dynamic_data = yaml.safe_load(yaml_content)
         else:
             logger.error(
-                f"No content found under {DYNAMIC_DATA_KEY} in {DYNAMIC_CM} configmap"
+                "No content found under %s in %s configmap",
+                DYNAMIC_DATA_KEY,
+                DYNAMIC_CM,
             )
             sys.exit(1)
 
@@ -235,7 +243,7 @@ def init() -> None:
             DYNAMIC_DATA_KEY,
             yaml.dump(dynamic_data, default_flow_style=False),
         )
-        logger.debug("Updated init_timestamp and rms_state in {DYNAMIC_CM} configmap")
+        logger.debug("Updated init_timestamp and rms_state in %s configmap", DYNAMIC_CM)
 
         # Retrieve k8s and CEPH node/zone information and update in rrs-dynamic configmap
         zone_info = dynamic_data.get("zone", None)

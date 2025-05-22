@@ -29,12 +29,12 @@ metadata:
   namespace: rack-resiliency
   labels:
     app.kubernetes.io/managed-by: Helm
-    type: rr-services 
+    type: rr-services
 data:
   dynamic-data.yaml: |-
     timestamps:
       init_timestamp: ''
-      start_timestamp_rms: '' 
+      start_timestamp_rms: ''
       start_timestamp_api: ''
       last_update_timestamp: ''
       start_timestamp_k8s_monitoring: ''

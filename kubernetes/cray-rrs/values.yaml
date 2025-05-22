@@ -91,7 +91,7 @@ cray-service:
       virtualservice:
         name: cray-rrs-vs
         prefix: /apis/rrs
- 
+
   volumes:
     rrs-static-config:
       name: rrs-static-conf
@@ -109,7 +109,7 @@ cray-service:
     type: ClusterIP
     port: 80
     targetPort: 80
-        
+
   ingress:
     enabled: true
     prefix: /apis/rrs/

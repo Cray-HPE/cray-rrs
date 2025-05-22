@@ -60,7 +60,7 @@ from src.api.controllers.controls import (
     CriticalServiceStatusDescribeResource,
 )
 from src.lib.lib_rms import Helper
-from src.lib.rrs_constants import *
+from src.lib.rrs_constants import MAX_RETRIES, REQUESTS_TIMEOUT
 
 
 def create_app() -> Flask:
@@ -104,11 +104,13 @@ def create_app() -> Flask:
                         ts_url, headers=headers, timeout=REQUESTS_TIMEOUT
                     )
                     if response.status_code == HTTPStatus.OK.value:
-                        app.logger.info(f"Response: {response.text.strip()}")
+                        app.logger.info("Response: %s", response.text.strip())
                         success = True
                         break
                 except requests.RequestException as e:
-                    app.logger.warning(f"Attempt {attempt + 1} request exception: {e}")
+                    app.logger.warning(
+                        "Attempt %d request exception: %s", attempt + 1, e
+                    )
 
             if not success:
                 app.logger.error(
@@ -117,7 +119,7 @@ def create_app() -> Flask:
                 sys.exit(1)
 
         except Exception as e:
-            app.logger.exception(f"Error {str(e)} occured. Exiting...")
+            app.logger.exception("Error %s occurred. Exiting...", str(e))
             sys.exit(1)
     # Version reading
     try:

@@ -35,7 +35,7 @@ from logging import Logger
 from typing import Dict, Union, cast
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
-from src.lib.rrs_constants import *
+from src.lib.rrs_constants import RETRY_DELAY, MAX_RETRIES, NAMESPACE, DYNAMIC_CM
 from src.lib.rrs_logging import get_log_id
 
 
@@ -93,7 +93,7 @@ class ConfigMapHelper:
                 v1.read_namespaced_config_map(
                     namespace=namespace, name=configmap_lock_name
                 )
-                logger.info(f"Waiting for configmap {configmap_name} lock")
+                logger.info("Waiting for configmap %s lock", configmap_name)
                 time.sleep(1)
             except client.exceptions.ApiException as e:
                 if e.status == 404:
@@ -213,23 +213,29 @@ class ConfigMapHelper:
             if ConfigMapHelper.acquire_lock(namespace, configmap_name):
                 try:
                     logger.info(
-                        f"Updating ConfigMap {configmap_name} in namespace {namespace}"
+                        "Updating ConfigMap %s in namespace %s",
+                        configmap_name,
+                        namespace,
                     )
                     v1.replace_namespaced_config_map(
                         name=configmap_name, namespace=namespace, body=configmap_body
                     )
                     logger.info(
-                        f"ConfigMap {configmap_name} in namespace {namespace} updated successfully"
+                        "ConfigMap %s in namespace %s updated successfully",
+                        configmap_name,
+                        namespace,
                     )
                 except ApiException as e:
-                    logger.error(f"Failed to update ConfigMap: {e.reason}")
+                    logger.error("Failed to update ConfigMap: %s", e.reason)
                 except Exception as e:
-                    logger.error(f"Unexpected error updating ConfigMap: {str(e)}")
+                    logger.error("Unexpected error updating ConfigMap: %s", str(e))
                 finally:
                     ConfigMapHelper.release_lock(namespace, configmap_name)
             else:
                 logger.warning(
-                    f"Failed to update ConfigMap {configmap_name} in namespace {namespace}"
+                    "Failed to update ConfigMap %s in namespace %s",
+                    configmap_name,
+                    namespace,
                 )
         except Exception as e:
             logger.exception("Unhandled exception in update_configmap_data")
@@ -251,7 +257,10 @@ class ConfigMapHelper:
         """
         log_id = get_log_id()
         logger.info(
-            f"[{log_id}] Fetching ConfigMap {configmap_name} from namespace {namespace}"
+            "[%s] Fetching ConfigMap %s from namespace %s",
+            log_id,
+            configmap_name,
+            namespace,
         )
 
         try:
@@ -263,14 +272,15 @@ class ConfigMapHelper:
             data = cast(Dict[str, str], config_map.data)
             if not data or not isinstance(data, dict):
                 logger.error(
-                    f"Data is missing in configmap {configmap_name} or not in expected format (dict)"
+                    "Data is missing in configmap %s or not in expected format (dict)",
+                    configmap_name,
                 )
                 sys.exit(1)
             return data
 
         except client.exceptions.ApiException as e:
-            logger.exception(f"[{log_id}] API error fetching ConfigMap")
+            logger.exception("[%s] API error fetching ConfigMap", log_id)
             return {"error": f"API error: {str(e)}"}
         except Exception as e:
-            logger.exception(f"[{log_id}] Unexpected error fetching ConfigMap")
+            logger.exception("[%s] Unexpected error fetching ConfigMap", log_id)
             return {"error": f"Unexpected error: {str(e)}"}

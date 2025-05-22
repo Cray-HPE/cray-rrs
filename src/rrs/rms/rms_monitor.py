@@ -45,7 +45,19 @@ from src.lib import lib_configmap
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.rrs_constants import *
+from src.lib.rrs_constants import (
+    NAMESPACE,
+    DYNAMIC_CM,
+    STATIC_CM,
+    DYNAMIC_DATA_KEY,
+    CRITICAL_SERVICE_KEY,
+    DEFAULT_K8S_MONITORING_POLLING_INTERVAL,
+    DEFAULT_K8S_MONITORING_TOTAL_TIME,
+    DEFAULT_K8S_PRE_MONITORING_DELAY,
+    DEFAULT_CEPH_MONITORING_POLLING_INTERVAL,
+    DEFAULT_CEPH_MONITORING_TOTAL_TIME,
+    DEFAULT_CEPH_PRE_MONITORING_DELAY,
+)
 
 
 logger = None
