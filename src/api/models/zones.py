@@ -87,7 +87,7 @@ class ZoneTopologyService:
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
             parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
-            ceph_zones_with_nodes = parsed_data["zone"]["ceph_zones_with_nodes"]
+            ceph_zones = parsed_data["zone"]["ceph_zones"]
 
             zone_mapping: ZoneMapping = {
                 zone_name: [
@@ -101,7 +101,7 @@ class ZoneTopologyService:
                     )
                     for node in nodes
                 ]
-                for zone_name, nodes in ceph_zones_with_nodes.items()
+                for zone_name, nodes in ceph_zones.items()
             }
 
             if zone_mapping:
@@ -133,7 +133,7 @@ class ZoneTopologyService:
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
             parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
-            k8s_zones = parsed_data["zone"]["k8s_zones_with_nodes"]
+            k8s_zones = parsed_data["zone"]["k8s_zones"]
 
             zone_mapping: Dict[str, Dict[str, Any]] = {}
 

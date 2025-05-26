@@ -44,6 +44,8 @@ Usage:
 
 import sys
 import logging
+import time
+from http import HTTPStatus
 import requests
 from flask import Flask
 from flask_restful import Api
@@ -58,7 +60,8 @@ from src.api.controllers.controls import (
     CriticalServiceStatusListResource,
     CriticalServiceStatusDescribeResource,
 )
-from src.lib.rrs_constants import MAX_RETRIES, REQUESTS_TIMEOUT
+from src.lib.lib_rms import Helper
+from src.lib.rrs_constants import REQUESTS_TIMEOUT, MAX_RETRIES, RETRY_DELAY
 
 
 def create_app() -> Flask:
@@ -89,24 +92,27 @@ def create_app() -> Flask:
     # Timestamp logging via API call
     with app.app_context():
         app.logger.info("Update API start timestamp")
-        ts_url = "http://localhost:8551/api-ts"
+        ts_url = "https://api-gw-service-nmn.local/apis/rms/api-ts"
 
         try:
+            token = Helper.token_fetch()
+            headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
             success = False
-            for attempt in range(MAX_RETRIES):
+            for attempt in range(MAX_RETRIES+5):
                 try:
                     response = requests.post(
-                        ts_url, timeout=REQUESTS_TIMEOUT
+                        ts_url, headers=headers, timeout=REQUESTS_TIMEOUT, verify=False
                     )
-                    if response.status_code == 200:
+                    if response.status_code == HTTPStatus.OK:
                         app.logger.info("Response: %s", response.text.strip())
                         success = True
                         break
-                except requests.RequestException as e:
-                    app.logger.warning(
-                        "Attempt %d request exception: %s", attempt + 1, e
-                    )
-
+                except (requests.exceptions.RequestException, ValueError) as e:
+                    app.logger.error("Attempt %d: Failed to update timestamp: %s", attempt, e)
+                    if attempt == MAX_RETRIES:
+                        app.logger.error("Max retries reached. Could not update timestamp")
+                    time.sleep(RETRY_DELAY+3)
+                    sys.exit(1)
             if not success:
                 app.logger.error(
                     "Failed to update API timestamp after all retries. Exiting."
@@ -116,6 +122,7 @@ def create_app() -> Flask:
         except Exception as e:
             app.logger.exception("Error %s occurred. Exiting...", str(e))
             sys.exit(1)
+
     # Version reading
     try:
         with open("/app/.version", encoding="utf-8") as version_file:
