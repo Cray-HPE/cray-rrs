@@ -60,7 +60,6 @@ from src.api.controllers.controls import (
     CriticalServiceStatusListResource,
     CriticalServiceStatusDescribeResource,
 )
-from src.lib.lib_rms import Helper
 from src.lib.rrs_constants import REQUESTS_TIMEOUT, MAX_RETRIES, RETRY_DELAY
 
 
@@ -92,16 +91,14 @@ def create_app() -> Flask:
     # Timestamp logging via API call
     with app.app_context():
         app.logger.info("Update API start timestamp")
-        ts_url = "https://api-gw-service-nmn.local/apis/rms/api-ts"
+        ts_url = "http://localhost:8551/api-ts"
 
         try:
-            token = Helper.token_fetch()
-            headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
             success = False
-            for attempt in range(MAX_RETRIES+5):
+            for attempt in range(MAX_RETRIES+3):
                 try:
                     response = requests.post(
-                        ts_url, headers=headers, timeout=REQUESTS_TIMEOUT, verify=False
+                        ts_url, timeout=REQUESTS_TIMEOUT
                     )
                     if response.status_code == HTTPStatus.OK:
                         app.logger.info("Response: %s", response.text.strip())
@@ -118,7 +115,6 @@ def create_app() -> Flask:
                     "Failed to update API timestamp after all retries. Exiting."
                 )
                 sys.exit(1)
-
         except Exception as e:
             app.logger.exception("Error %s occurred. Exiting...", str(e))
             sys.exit(1)
