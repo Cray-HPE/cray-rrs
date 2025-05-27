@@ -193,7 +193,7 @@ class Helper:
             return None
 
     @staticmethod
-    def get_sls_hsm_data(
+    def get_hsm_sls_data(
         get_hsm: bool = True, get_sls: bool = True
     ) -> Tuple[
         Optional[Dict[str, List[Dict[str, Any]]]], Optional[List[Dict[str, Any]]]
@@ -264,7 +264,7 @@ class Helper:
         """
         try:
             logger.debug("Retrieving rack name for a particular node")
-            _, sls_data = Helper.get_sls_hsm_data()
+            _, sls_data = Helper.get_hsm_sls_data(False, True)
             if not sls_data:
                 logger.error("Failed to retrieve SLS data")
                 return None

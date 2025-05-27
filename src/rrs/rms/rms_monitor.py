@@ -42,7 +42,7 @@ from flask import Flask, current_app as app
 import yaml
 from src.lib import lib_rms
 from src.lib import lib_configmap
-from src.rrs.rms.rms_statemanager import RMSStateManager
+from src.rrs.rms.rms_statemanager import RMSStateManager, RMSState
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import (
@@ -57,6 +57,8 @@ from src.lib.rrs_constants import (
     DEFAULT_CEPH_MONITORING_POLLING_INTERVAL,
     DEFAULT_CEPH_MONITORING_TOTAL_TIME,
     DEFAULT_CEPH_PRE_MONITORING_DELAY,
+    STARTED_STATE,
+    COMPLETED_STATE
 )
 
 
@@ -233,7 +235,7 @@ class RMSMonitor:
             Helper.update_state_timestamp(
                 self.state_manager,
                 "k8s_monitoring",
-                "Started",
+                STARTED_STATE,
                 "start_timestamp_k8s_monitoring",
             )
             start = time.time()
@@ -281,7 +283,7 @@ class RMSMonitor:
             Helper.update_state_timestamp(
                 self.state_manager,
                 "k8s_monitoring",
-                "Completed",
+                COMPLETED_STATE,
                 "end_timestamp_k8s_monitoring",
             )
             if unrecovered_services:
@@ -305,7 +307,7 @@ class RMSMonitor:
             Helper.update_state_timestamp(
                 self.state_manager,
                 "ceph_monitoring",
-                "Started",
+                STARTED_STATE,
                 "start_timestamp_ceph_monitoring",
             )
             start = time.time()
@@ -324,7 +326,7 @@ class RMSMonitor:
             Helper.update_state_timestamp(
                 self.state_manager,
                 "ceph_monitoring",
-                "Completed",
+                COMPLETED_STATE,
                 "end_timestamp_ceph_monitoring",
             )
             if ceph_health_status is False:
@@ -355,7 +357,7 @@ class RMSMonitor:
             monitor_k8s_start_time = dynamic_data.get("timestamps", {}).get(
                 "start_timestamp_k8s_monitoring", None
             )
-            if monitor_k8s_start_time:
+            if not monitor_k8s_start_time:
                 app.logger.error(
                     "start_timestamp_k8s_monitoring not found in ConfigMap. Cannot determine elapsed time"
                 )
@@ -427,7 +429,7 @@ class RMSMonitor:
                 )
 
                 if not self.state_manager.start_monitoring():
-                    app.logger.info("Another monitoring instance is already running")
+                    app.logger.warning("Another monitoring instance is already running")
                     if not self.check_previous_monitoring_instance_status(
                         int(static_cm_data.get("k8s_monitoring_total_time", 600))
                     ):
@@ -441,9 +443,9 @@ class RMSMonitor:
                     )
 
                 app.logger.info("Monitoring critical services and zone status...")
-                state = "Monitoring"
+                state = RMSState.MONITORING
                 self.state_manager.set_state(state)
-                Helper.update_state_timestamp(self.state_manager, "rms_state", state)
+                Helper.update_state_timestamp(self.state_manager, "rms_state", state.value)
 
                 t1 = threading.Thread(
                     target=self.monitor_k8s, args=k8s_args, daemon=True
@@ -460,9 +462,10 @@ class RMSMonitor:
 
                 app.logger.info("Monitoring complete")
                 self.state_manager.stop_monitoring()
-                self.state_manager.set_state("Started")
+                state = RMSState.STARTED
+                self.state_manager.set_state(state)
                 Helper.update_state_timestamp(
-                    self.state_manager, "rms_state", "Started"
+                    self.state_manager, "rms_state", state.value
                 )
             except Exception:
                 app.logger.exception("Unexpected error occurred during monitoring loop")

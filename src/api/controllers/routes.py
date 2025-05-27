@@ -81,10 +81,12 @@ def create_app() -> Flask:
     api = Api(app)
 
     # Logging setup
+    if app.logger.hasHandlers():
+        app.logger.handlers.clear()
     app.logger.setLevel(logging.INFO)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s in %(module)s - %(message)s")
     stream_handler.setFormatter(formatter)
     app.logger.addHandler(stream_handler)
 

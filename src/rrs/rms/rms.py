@@ -47,7 +47,7 @@ import requests
 from src.lib import lib_rms
 from src.lib import lib_configmap
 from src.rrs.rms import rms_monitor
-from src.rrs.rms.rms_statemanager import RMSStateManager
+from src.rrs.rms.rms_statemanager import RMSStateManager, RMSState
 from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import (
@@ -58,6 +58,7 @@ from src.lib.rrs_constants import (
     MAX_RETRIES,
     RETRY_DELAY,
     REQUESTS_TIMEOUT,
+    STARTED_STATE
 )
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
@@ -71,10 +72,12 @@ app = Flask(__name__)
 api = Api(app)
 
 # Logging setup
+if app.logger.hasHandlers():
+    app.logger.handlers.clear()
 app.logger.setLevel(logging.INFO)
 stream_handler = logging.StreamHandler()
 stream_handler.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+formatter = logging.Formatter("%(asctime)s - %(levelname)s in %(module)s - %(message)s")
 stream_handler.setFormatter(formatter)
 app.logger.addHandler(stream_handler)
 
@@ -92,11 +95,11 @@ def check_failure_type(components: List[str]) -> None:
     app.logger.debug(
         "Checking failure type i.e., node or rack failure upon recieving SCN ..."
     )
-    hsm_data, _ = Helper.get_sls_hsm_data()
+    hsm_data, _ = Helper.get_hsm_sls_data()
     if not hsm_data:
         app.logger.error("Failed to retrieve HSM data")
-        state_manager.set_state("internal_failure")
-        Helper.update_state_timestamp(state_manager, "rms_state", "internal_failure")
+        state_manager.set_state(RMSState.INTERNAL_FAILURE)
+        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
         return
     try:
         valid_subroles = {"Master", "Worker", "Storage"}
@@ -153,8 +156,8 @@ def check_failure_type(components: List[str]) -> None:
 
     except (AttributeError, KeyError, IndexError, TypeError) as e:
         app.logger.error("Error occurred while checking rack failure: %s", e)
-        state_manager.set_state("internal_failure")
-        Helper.update_state_timestamp(state_manager, "rms_state", "internal_failure")
+        state_manager.set_state(RMSState.INTERNAL_FAILURE)
+        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
 
 
 # Register healthz and version endpoints
@@ -208,8 +211,8 @@ def handleSCN() -> Tuple[Response, HTTPStatus]:
                 HTTPStatus.BAD_REQUEST,
             )
         if comp_state == "Off":
-            state_manager.set_state("Fail_notified")
-            Helper.update_state_timestamp(state_manager, "rms_state", "Fail_notified")
+            state_manager.set_state(RMSState.FAIL_NOTIFIED)
+            Helper.update_state_timestamp(state_manager, "rms_state", RMSState.FAIL_NOTIFIED.value)
             check_failure_type(components)
             # Start monitoring services in a new thread
             threading.Thread(target=monitor.monitoring_loop, daemon=True).start()
@@ -228,8 +231,8 @@ def handleSCN() -> Tuple[Response, HTTPStatus]:
 
     except Exception as e:
         app.logger.error("Error processing the request: %s", e)
-        state_manager.set_state("internal_failure")
-        Helper.update_state_timestamp(state_manager, "rms_state", "internal_failure")
+        state_manager.set_state(RMSState.INTERNAL_FAILURE)
+        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
         return (
             jsonify({"error": "Internal server error."}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -239,7 +242,7 @@ def handleSCN() -> Tuple[Response, HTTPStatus]:
 def get_management_xnames() -> Optional[List[str]]:
     """Get xnames for all the management nodes from HSM"""
     app.logger.debug("Getting xnames for all the management nodes from HSM ...")
-    hsm_data, _ = Helper.get_sls_hsm_data(True, False)
+    hsm_data, _ = Helper.get_hsm_sls_data(True, False)
     if not hsm_data:
         app.logger.error("Failed to retrieve HSM data")
         return None
@@ -260,8 +263,8 @@ def get_management_xnames() -> Optional[List[str]]:
             "Error occurred while filtering management xnames from HSM data - %s",
             str(e),
         )
-        state_manager.set_state("internal_failure")
-        Helper.update_state_timestamp(state_manager, "rms_state", "internal_failure")
+        state_manager.set_state(RMSState.INTERNAL_FAILURE)
+        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
         return None
 
 
@@ -309,9 +312,9 @@ def check_and_create_hmnfd_subscription() -> None:
             )
             if attempt == MAX_RETRIES:
                 app.logger.error("Max retries reached. Cannot fetch subscription list")
-                state_manager.set_state("internal_failure")
+                state_manager.set_state(RMSState.INTERNAL_FAILURE)
                 Helper.update_state_timestamp(
-                    state_manager, "rms_state", "internal_failure"
+                    state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
                 )
             time.sleep(RETRY_DELAY)
 
@@ -352,9 +355,9 @@ def check_and_create_hmnfd_subscription() -> None:
                     app.logger.error(
                         "Max retries reached. Cannot create subscription in hmnfd"
                     )
-                    state_manager.set_state("internal_failure")
+                    state_manager.set_state(RMSState.INTERNAL_FAILURE)
                     Helper.update_state_timestamp(
-                        state_manager, "rms_state", "internal_failure"
+                        state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
                     )
                 time.sleep(RETRY_DELAY)
     else:
@@ -383,23 +386,18 @@ def initial_check_and_update() -> bool:
 
         state = dynamic_data.get("state", {})
         rms_state_value = state.get("rms_state", None)
-        if rms_state_value != "Ready":
+        if RMSState(rms_state_value) != RMSState.READY:
             app.logger.info("RMS state is %s", rms_state_value)
             k8s_state = state.get("k8s_monitoring", None)
             ceph_state = state.get("ceph_monitoring", None)
             # If either of k8s_monitoring, ceph_monitoring is in 'Started' state instead of empty or 'Completed',
             # it means monitoring was not finished in the previous run.
-            if k8s_state == "Started" or ceph_state == "Started":
+            if STARTED_STATE in (k8s_state, ceph_state):
                 was_monitoring = True
-            elif rms_state_value == "Init_fail":
-                app.logger.error(
-                    "RMS is in 'init_fail' state as init container failed — not starting the RMS service"
-                )
-                sys.exit(1)
             else:
                 app.logger.info("Updating RMS state to Ready for this fresh run")
-                rms_state_value = "Ready"
-                state["rms_state"] = rms_state_value
+                rms_state_value = RMSState.READY
+                state["rms_state"] = rms_state_value.value
                 state_manager.set_state(rms_state_value)
         # Update RMS start timestamp in dynamic configmap
         timestamps = dynamic_data.get("timestamps", {})
@@ -474,16 +472,16 @@ if __name__ == "__main__":
         update_zone_status(state_manager)
         app.logger.info("Starting the main loop")
         while True:
-            if state_manager.get_state() != "monitoring":
-                rms_state = "Waiting"
+            if state_manager.get_state() != RMSState.MONITORING:
+                rms_state = RMSState.WAITING
                 state_manager.set_state(rms_state)
-                Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
+                Helper.update_state_timestamp(state_manager, "rms_state", rms_state.value)
                 time.sleep(600)
-                if state_manager.get_state() == "monitoring":
+                if state_manager.get_state() == RMSState.MONITORING:
                     continue
-                rms_state = "Started"
+                rms_state = RMSState.STARTED
                 state_manager.set_state(rms_state)
-                Helper.update_state_timestamp(state_manager, "rms_state", rms_state)
+                Helper.update_state_timestamp(state_manager, "rms_state", rms_state.value)
                 check_and_create_hmnfd_subscription()
                 update_critical_services(state_manager, True)
                 update_zone_status(state_manager)

@@ -29,13 +29,21 @@ in Kubernetes to manage a lock mechanism for resources.
 """
 
 import time
+from datetime import datetime
 import sys
 import logging
 from logging import Logger
 from typing import Dict, Union, cast
+import yaml
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
-from src.lib.rrs_constants import RETRY_DELAY, MAX_RETRIES, NAMESPACE, DYNAMIC_CM
+from src.lib.rrs_constants import (
+    RETRY_DELAY,
+    MAX_RETRIES,
+    NAMESPACE,
+    DYNAMIC_CM,
+    DYNAMIC_DATA_KEY
+)
 from src.lib.rrs_logging import get_log_id
 
 
@@ -205,7 +213,15 @@ class ConfigMapHelper:
                     namespace, configmap_name
                 )
             configmap_data[key] = new_data
-
+            # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
+            if configmap_name == DYNAMIC_CM:
+                dynamic_data = yaml.safe_load(configmap_data[DYNAMIC_DATA_KEY])
+                dynamic_data["timestamps"][
+                    "last_update_timestamp"
+                ] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+                configmap_data[DYNAMIC_DATA_KEY] = yaml.dump(
+                    dynamic_data, default_flow_style=False
+                )
             configmap_body = client.V1ConfigMap(
                 metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
             )

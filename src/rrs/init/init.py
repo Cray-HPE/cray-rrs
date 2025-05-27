@@ -37,7 +37,7 @@ import logging
 import json
 from typing import Dict, List, Tuple, Any
 import yaml
-from src.rrs.rms.rms_statemanager import RMSStateManager
+from src.rrs.rms.rms_statemanager import RMSState
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import (
@@ -53,8 +53,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-state_manager = RMSStateManager()
-
 
 def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
     """
@@ -68,7 +66,7 @@ def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
     """
     try:
         logger.info("Checking if previous running RMS pod was on the failed node")
-        hsm_data, sls_data = Helper.get_sls_hsm_data()
+        hsm_data, sls_data = Helper.get_hsm_sls_data()
         if not hsm_data or not sls_data:
             logger.error("Failed to retrieve HSM or SLS data")
             return
@@ -232,11 +230,11 @@ def init() -> None:
             pod_node = dynamic_data.get("cray_rrs_pod").get("node")
             if pod_zone and pod_node:
                 check_previous_rrs_pod_node_status(pod_node, pod_zone)
-            if rms_state == "Monitoring":
+            if RMSState(rms_state) == RMSState.MONITORING:
                 logger.info(
                     "Since the previous monitoring session did not complete, it will be relaunched in the RMS container"
                 )
-        state["rms_state"] = "Init"
+        state["rms_state"] = RMSState.INIT.value
         timestamps["init_timestamp"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         ConfigMapHelper.update_configmap_data(
             configmap_data,
@@ -253,7 +251,6 @@ def init() -> None:
             zone_info["ceph_zones"] = updated_ceph_data
 
         # Retrieve current node and rack where the RMS pod is running
-        # node_name = "ncn-w004"
         node_name = k8sHelper.get_current_node()
         zone_name = None
         for rack, nodes_list in updated_k8s_data.items():
@@ -277,12 +274,12 @@ def init() -> None:
         )
 
         if check_critical_services_and_timers() and discovery_status:
-            state["rms_state"] = "Ready"
+            state["rms_state"] = RMSState.READY.value
         else:
             logger.info(
                 "Updating rms state to init_fail because of initialization failures"
             )
-            state["rms_state"] = "init_fail"
+            state["rms_state"] = RMSState.INIT_FAIL.value
             sys.exit(1)
         logger.debug(
             "Updating zone information, pod placement, state in rrs-dynamic configmap"
