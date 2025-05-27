@@ -27,16 +27,18 @@ with open("LICENSE") as license_file:
     LICENSE = license_file.read()
 with open("requirements.txt") as reqs_file:
     REQUIRMENTS = reqs_file.readlines()[1:]
-with open(".version") as vers_file:
-    VERSION = vers_file.read().strip()
+with open(".docker_version") as vers_file:
+    DOCKER_VERSION = vers_file.read().strip()
+with open(".chart_version") as vers_file:
+    CHART_VERSION = vers_file.read().strip()
 setup(
     name="rrs",
-    author="Cray Inc.",
-    author_email="arka.pramanik@hpe.com, keshav.varshney@hpe.com",
+    author='HPE',
+    author_email="sravani.sanigepalli@hpe.com,ravikanth.nalla@hpe.com,arka.pramanik@hpe.com,keshav.varshney@hpe.com",
     url="http://hpe.com",
-    description="RRS Rack Resiliency Service",
-    long_description="RRS Rack Resiliency Service",
-    version=VERSION,
+    description="RRS (Rack Resiliency Service)",
+    long_description="RRS (Rack Resiliency Service)",
+    version=DOCKER_VERSION,
     package_data={"": ["../api/openapi.yaml"]},
     packages=find_packages(),
     license=LICENSE,

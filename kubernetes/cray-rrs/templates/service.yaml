@@ -21,17 +21,34 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.service.name }}
-  namespace: {{ .Values.namespace }}
+  name: cray-rrs-api
+  namespace: rack-resiliency
 spec:
   selector:
-    app: {{ .Values.name }}
+    app: cray-rrs
   ports:
-    - protocol: TCP
-      port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
-  type: {{ .Values.service.type }}
+    - name: http-api
+      protocol: TCP
+      port: 8550
+      targetPort: http-api
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cray-rrs-rms
+  namespace: rack-resiliency
+spec:
+  selector:
+    app: cray-rrs
+  ports:
+    - name: http-rms
+      protocol: TCP
+      port: 8551
+      targetPort: http-rms
+  type: ClusterIP
+---

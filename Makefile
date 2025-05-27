@@ -23,12 +23,12 @@
 #
 
 NAME ?=cray-rrs
-VERSION ?= $(shell cat .version)
-
-CHART_VERSION ?= $(VERSION)
-IMAGE ?= artifactory.algol60.net/csm-docker/stable/${NAME}
-
 CHARTDIR ?= kubernetes
+DOCKER_VERSION ?= $(shell head -1 .docker_version)
+API_VERSION ?= $(shell head -1 .api_version)
+CHART_VERSION ?= $(shell head -1 .chart_version)
+
+IMAGE ?= artifactory.algol60.net/csm-docker/stable/${NAME}
 
 RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
 RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
@@ -55,22 +55,22 @@ all: images chart
 images : rrs_api_image rrs_init_image rrs_rms_image
 
 rrs_api_image:
-	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${RRS_API_CONTAINER_NAME}:${VERSION}' .
+	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${RRS_API_CONTAINER_NAME}:${DOCKER_VERSION}' .
 
 rrs_init_image:
-	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_INIT} --tag '${RRS_INIT_CONTAINER_NAME}:${VERSION}' .
+	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_INIT} --tag '${RRS_INIT_CONTAINER_NAME}:${DOCKER_VERSION}' .
 
 rrs_rms_image:
-	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_RMS} --tag '${RRS_RMS_CONTAINER_NAME}:${VERSION}' .
+	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_RMS} --tag '${RRS_RMS_CONTAINER_NAME}:${DOCKER_VERSION}' .
 
 dev-image:
-	docker build --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --target dev --tag '${NAME}-dev:${VERSION}' .
+	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --target dev --tag '${NAME}-dev:${DOCKER_VERSION}' .
 
 lint: dev-image
-	docker run --rm '${NAME}-dev:${VERSION}' /app/run_lint.sh
+	docker run --rm '${NAME}-dev:${DOCKER_VERSION}' /app/run_lint.sh
 
 unittests: dev-image
-	docker run --rm '${NAME}-dev:${VERSION}' /app/run_tests.sh
+	docker run --rm '${NAME}-dev:${DOCKER_VERSION}' /app/run_tests.sh
 
 chart: chart-metadata chart-package chart-test
 
@@ -79,8 +79,8 @@ chart-metadata:
 		--user $(shell id -u):$(shell id -g) \
 		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
 		${CHART_METADATA_IMAGE} \
-		--version "${CHART_VERSION}" --app-version "${VERSION}" \
-		-i ${NAME} ${IMAGE}:${VERSION} \
+		--version "${CHART_VERSION}" --app-version "${API_VERSION}" \
+		-i ${NAME} ${IMAGE}:${CHART_VERSION} \
 		--cray-service-globals
 	docker run --rm \
 		--user $(shell id -u):$(shell id -g) \

@@ -22,11 +22,12 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: {{ .Values.virulaservice.name }}
-  namespace: {{ .Values.department }}
+  name: cray-rrs-vs
+  namespace: rack-resiliency
 spec:
   gateways:
   - services/services-gateway
@@ -36,11 +37,35 @@ spec:
   http:
   - match:
     - uri:
-        prefix: {{ .Values.virulaservice.prefix }}
+        prefix: /apis/rrs
     rewrite:
       uri: /
     route:
     - destination:
-        host: {{ .Values.service.name }}
+        host: cray-rrs-api
         port:
-          number: {{ .Values.service.port }}
+          number: 8550
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: cray-rms-vs
+  namespace: rack-resiliency
+spec:
+  gateways:
+  - services/services-gateway
+  - services/customer-admin-gateway
+  hosts:
+  - '*'
+  http:
+  - match:
+    - uri:
+        prefix: /apis/rms
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: cray-rrs-rms
+        port:
+          number: 8551
+---
