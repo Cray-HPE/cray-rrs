@@ -26,8 +26,9 @@
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: cray-rrs-vs
-  namespace: rack-resiliency
+  labels:
+    app.kubernetes.io/name: cray-rrs-api
+  namespace: {{ .Values.namespace }}
 spec:
   gateways:
   - services/services-gateway
@@ -49,8 +50,9 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: cray-rms-vs
-  namespace: rack-resiliency
+  labels:
+    app.kubernetes.io/name: cray-rrs-api
+  namespace: {{ .Values.namespace }}
 spec:
   gateways:
   - services/services-gateway

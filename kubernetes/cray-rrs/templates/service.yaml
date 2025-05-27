@@ -25,8 +25,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: cray-rrs-api
-  namespace: rack-resiliency
+  labels:
+    app.kubernetes.io/name: cray-rrs-api
+  namespace: {{ .Values.namespace }}
 spec:
   selector:
     app: cray-rrs
@@ -40,8 +41,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cray-rrs-rms
-  namespace: rack-resiliency
+  labels:
+    app.kubernetes.io/name: cray-rrs-rms
+  namespace: {{ .Values.namespace }}
 spec:
   selector:
     app: cray-rrs
