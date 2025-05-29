@@ -48,10 +48,9 @@ ENV PYTHONPATH=/app
 ENV FLASK_APP=""
 
 # Enable and start SSH service (consider security implications)
-RUN mkdir -p /var/run/sshd
-RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
-RUN echo -e "PasswordAuthentication no" >> /etc/ssh/sshd_config
-RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config
-RUN ssh-keygen -A
+RUN mkdir -p /var/run/sshd && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config && \
+    ssh-keygen -A
 
 CMD /usr/sbin/sshd && python3 -m src.rrs.init.init
