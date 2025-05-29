@@ -32,6 +32,7 @@ K8s and Ceph monitoring loops in separate threads.
 """
 
 import time
+from datetime import datetime, timezone
 import sys
 import json
 import copy
@@ -172,7 +173,7 @@ def update_critical_services(
             services_data
         )
         services_json = json.dumps(updated_services, indent=2)
-        app.logger.info(services_json)
+        app.logger.debug(services_json)
         if services_json != dynamic_cm_data.get(CRITICAL_SERVICE_KEY, None):
             app.logger.debug(
                 "critical services are modified. Updating dynamic configmap with latest information"
@@ -362,7 +363,9 @@ class RMSMonitor:
                     "start_timestamp_k8s_monitoring not found in ConfigMap. Cannot determine elapsed time"
                 )
                 sys.exit(1)
-            monitor_k8s_start_time = float(monitor_k8s_start_time)
+            dt = datetime.strptime(monitor_k8s_start_time, "%Y-%m-%dT%H:%M:%SZ")
+            dt = dt.replace(tzinfo=timezone.utc)
+            monitor_k8s_start_time = dt.timestamp()
             current_time = time.time()
             elapsed_time = current_time - monitor_k8s_start_time
 
@@ -445,7 +448,9 @@ class RMSMonitor:
                 app.logger.info("Monitoring critical services and zone status...")
                 state = RMSState.MONITORING
                 self.state_manager.set_state(state)
-                Helper.update_state_timestamp(self.state_manager, "rms_state", state.value)
+                Helper.update_state_timestamp(
+                    self.state_manager, "rms_state", state.value
+                )
 
                 t1 = threading.Thread(
                     target=self.monitor_k8s, args=k8s_args, daemon=True

@@ -40,6 +40,7 @@ from logging import Logger
 from datetime import datetime
 from typing import Dict, List, Tuple, Any, Union, Literal, Optional, TypedDict
 import requests
+import urllib3
 import yaml
 from kubernetes import client  # type: ignore
 from kubernetes.client.rest import ApiException
@@ -59,6 +60,8 @@ from src.lib.rrs_constants import (
 )
 
 
+# disables only the InsecureRequestWarning
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
 
 
@@ -192,9 +195,10 @@ class Helper:
             logger.error("Error collecting secret from Kubernetes: %s", err)
             return None
 
+
     @staticmethod
     def get_hsm_sls_data(
-        get_hsm: bool = True, get_sls: bool = True
+        get_hsm: bool, get_sls: bool
     ) -> Tuple[
         Optional[Dict[str, List[Dict[str, Any]]]], Optional[List[Dict[str, Any]]]
     ]:
@@ -208,7 +212,6 @@ class Helper:
         token = Helper.token_fetch()
         hsm_url = "https://api-gw-service-nmn.local/apis/smd/hsm/v2/State/Components"
         sls_url = "https://api-gw-service-nmn.local/apis/sls/v1/search/hardware"
-        params = {"type": "comptype_node"}
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
         hsm_data = None
         sls_data = None
@@ -217,6 +220,10 @@ class Helper:
         if get_hsm:
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
+                    params = {
+                        "role": "Management",
+                        "type": "Node"
+                    }
                     hsm_response = requests.get(
                         hsm_url, headers=headers, timeout=REQUESTS_TIMEOUT, verify=False
                     )
@@ -234,6 +241,7 @@ class Helper:
         if get_sls:
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
+                    params = {"type": "comptype_node"}
                     sls_response = requests.get(
                         sls_url,
                         headers=headers,
@@ -289,7 +297,7 @@ class Helper:
         pod_node: str,
         pod_zone: str,
         sls_data: List[Dict[str, Any]],
-        filtered_data: List[Dict[str, Any]],
+        hsm_data:  Dict[str, List[Dict[str, Any]]],
     ) -> None:
         """
         Checks if the monitoring pod was previously running on a failed node based on SLS and HSM data.
@@ -309,7 +317,7 @@ class Helper:
                 if pod_node not in aliases:
                     continue
 
-                for component in filtered_data:
+                for component in hsm_data.get("Components", []):
                     if sls_entry["Xname"] != component["ID"]:
                         continue
 
@@ -968,6 +976,7 @@ class criticalServicesHelper:
             logger.info("Number of critical services are - %d", len(critical_services))
             imbalanced_services: List[str] = []
             unconfigured_services: List[str] = []
+            partially_configured_services: List[str] = []
             for service_name, service_info in critical_services.items():
                 service_namespace = service_info["namespace"]
                 service_type = service_info["type"]
@@ -990,7 +999,7 @@ class criticalServicesHelper:
                         )
                         continue
                     if ready_replicas < desired_replicas:
-                        imbalanced_services.append(service_name)
+                        partially_configured_services.append(service_name)
                         status = "PartiallyConfigured"
                         logger.warning(
                             (
@@ -1032,6 +1041,10 @@ class criticalServicesHelper:
                 else:
                     unconfigured_services.append(service_name)
                     service_info.update({"status": "Unconfigured", "balanced": "NA"})
+            if partially_configured_services:
+                logger.warning(
+                    "List of partially configured services are - %s", partially_configured_services
+                )
             if imbalanced_services:
                 logger.warning(
                     "List of imbalanced services are - %s", imbalanced_services

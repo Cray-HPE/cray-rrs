@@ -66,19 +66,11 @@ def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
     """
     try:
         logger.info("Checking if previous running RMS pod was on the failed node")
-        hsm_data, sls_data = Helper.get_hsm_sls_data()
+        hsm_data, sls_data = Helper.get_hsm_sls_data(True, True)
         if not hsm_data or not sls_data:
             logger.error("Failed to retrieve HSM or SLS data")
             return
-
-        valid_subroles = {"Master", "Worker", "Storage"}
-        filtered_data = [
-            component
-            for component in hsm_data.get("Components", [])
-            if component.get("Role") == "Management"
-            and component.get("SubRole") in valid_subroles
-        ]
-        Helper.check_failed_node(pod_node, pod_zone, sls_data, filtered_data)
+        Helper.check_failed_node(pod_node, pod_zone, sls_data, hsm_data)
 
     except Exception as e:
         logger.exception("Unexpected error occurred during pod location check: %s", e)

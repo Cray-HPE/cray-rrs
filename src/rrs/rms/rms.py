@@ -44,6 +44,7 @@ import yaml
 from flask import Flask, request, jsonify, Response
 from flask_restful import Api
 import requests
+import urllib3
 from src.lib import lib_rms
 from src.lib import lib_configmap
 from src.rrs.rms import rms_monitor
@@ -90,29 +91,31 @@ state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager, app)
 
 
+# Until certificates are being used to talk to Redfish endpoints the basic
+# auth method will be used. To do so, SSL verification needs to be turned
+# off  which results in a InsecureRequestWarning. The following line
+# disables only the InsecureRequestWarning.
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
 def check_failure_type(components: List[str]) -> None:
     """Check if it is a rack or node failure"""
     app.logger.debug(
         "Checking failure type i.e., node or rack failure upon recieving SCN ..."
     )
-    hsm_data, _ = Helper.get_hsm_sls_data()
+    hsm_data, _ = Helper.get_hsm_sls_data(True, False)
     if not hsm_data:
         app.logger.error("Failed to retrieve HSM data")
         state_manager.set_state(RMSState.INTERNAL_FAILURE)
-        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
+        Helper.update_state_timestamp(
+            state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+        )
         return
     try:
-        valid_subroles = {"Master", "Worker", "Storage"}
-        filtered_data = [
-            component
-            for component in hsm_data.get("Components", [])
-            if component.get("Role") == "Management"
-            and component.get("SubRole") in valid_subroles
-        ]
         for component_xname in components:
             app.logger.info("Node %s has failed", component_xname)
             rack_id = ""
-            for component in filtered_data:
+            for component in hsm_data.get("Components", []):
                 if component["ID"] == component_xname:
                     rack_id = component["ID"].split("c")[
                         0
@@ -126,7 +129,7 @@ def check_failure_type(components: List[str]) -> None:
             # Extract the components with ID starting with rack_id
             rack_components = [
                 {"ID": component["ID"], "State": component["State"]}
-                for component in filtered_data
+                for component in hsm_data.get("Components", [])
                 if component["ID"].startswith(rack_id)
             ]
 
@@ -157,7 +160,9 @@ def check_failure_type(components: List[str]) -> None:
     except (AttributeError, KeyError, IndexError, TypeError) as e:
         app.logger.error("Error occurred while checking rack failure: %s", e)
         state_manager.set_state(RMSState.INTERNAL_FAILURE)
-        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
+        Helper.update_state_timestamp(
+            state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+        )
 
 
 # Register healthz and version endpoints
@@ -212,7 +217,9 @@ def handleSCN() -> Tuple[Response, HTTPStatus]:
             )
         if comp_state == "Off":
             state_manager.set_state(RMSState.FAIL_NOTIFIED)
-            Helper.update_state_timestamp(state_manager, "rms_state", RMSState.FAIL_NOTIFIED.value)
+            Helper.update_state_timestamp(
+                state_manager, "rms_state", RMSState.FAIL_NOTIFIED.value
+            )
             check_failure_type(components)
             # Start monitoring services in a new thread
             threading.Thread(target=monitor.monitoring_loop, daemon=True).start()
@@ -232,7 +239,9 @@ def handleSCN() -> Tuple[Response, HTTPStatus]:
     except Exception as e:
         app.logger.error("Error processing the request: %s", e)
         state_manager.set_state(RMSState.INTERNAL_FAILURE)
-        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
+        Helper.update_state_timestamp(
+            state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+        )
         return (
             jsonify({"error": "Internal server error."}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -247,15 +256,9 @@ def get_management_xnames() -> Optional[List[str]]:
         app.logger.error("Failed to retrieve HSM data")
         return None
     try:
-        # Filter components with the given role and subroles
-        valid_subroles = ["Master", "Worker", "Storage"]
-        filtered_data = [
-            component
-            for component in hsm_data.get("Components", [])
-            if component.get("Role") == "Management"
-            and component.get("SubRole") in valid_subroles
-        ]
-        management_xnames = {component["ID"] for component in filtered_data}
+        management_xnames = {
+            component["ID"] for component in hsm_data.get("Components", [])
+        }
         app.logger.debug(list(management_xnames))
         return list(management_xnames)
     except (KeyError, TypeError, AttributeError) as e:
@@ -264,7 +267,9 @@ def get_management_xnames() -> Optional[List[str]]:
             str(e),
         )
         state_manager.set_state(RMSState.INTERNAL_FAILURE)
-        Helper.update_state_timestamp(state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value)
+        Helper.update_state_timestamp(
+            state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+        )
         return None
 
 
@@ -284,16 +289,6 @@ def check_and_create_hmnfd_subscription() -> None:
     get_url = "https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions"
     post_url = f"https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
 
-    subscribing_components = get_management_xnames()
-    if not subscribing_components:
-        app.logger.error("Management xnames are empty or fetch failed")
-        return
-    post_data = {
-        "Components": subscribing_components,
-        "Roles": ["Management"],
-        "States": ["Ready", "on", "off", "empty", "unknown", "populated"],
-        "Url": "https://api-gw-service-nmn.local/apis/rms/scn",
-    }
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
     data = None
     for attempt in range(1, MAX_RETRIES + 1):
@@ -330,8 +325,17 @@ def check_and_create_hmnfd_subscription() -> None:
         app.logger.info(
             "rms not present in the HMNFD subscription list, creating it ..."
         )
-
+        subscribing_components = get_management_xnames()
+        if not subscribing_components:
+            app.logger.error("Management xnames are empty or fetch failed")
+            return
         for attempt in range(1, MAX_RETRIES + 1):
+            post_data = {
+                "Components": subscribing_components,
+                "Roles": ["Management"],
+                "States": ["Ready", "on", "off", "empty", "unknown", "populated"],
+                "Url": "http://cray-rrs-rms.services.svc.cluster.local/scn",
+            }
             try:
                 post_response = requests.post(
                     post_url,
@@ -475,13 +479,17 @@ if __name__ == "__main__":
             if state_manager.get_state() != RMSState.MONITORING:
                 rms_state = RMSState.WAITING
                 state_manager.set_state(rms_state)
-                Helper.update_state_timestamp(state_manager, "rms_state", rms_state.value)
+                Helper.update_state_timestamp(
+                    state_manager, "rms_state", rms_state.value
+                )
                 time.sleep(600)
                 if state_manager.get_state() == RMSState.MONITORING:
                     continue
                 rms_state = RMSState.STARTED
                 state_manager.set_state(rms_state)
-                Helper.update_state_timestamp(state_manager, "rms_state", rms_state.value)
+                Helper.update_state_timestamp(
+                    state_manager, "rms_state", rms_state.value
+                )
                 check_and_create_hmnfd_subscription()
                 update_critical_services(state_manager, True)
                 update_zone_status(state_manager)
