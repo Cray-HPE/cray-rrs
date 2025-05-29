@@ -38,6 +38,7 @@ from src.lib.rrs_constants import NAMESPACE, DYNAMIC_CM
 
 class RMSState(Enum):
     """Enum representing the various states of the Rack Resiliency Service (RRS)."""
+
     READY = "Ready"
     STARTED = "Started"
     WAITING = "Waiting"

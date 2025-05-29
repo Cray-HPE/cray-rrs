@@ -86,7 +86,9 @@ def create_app() -> Flask:
     app.logger.setLevel(logging.INFO)
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s in %(module)s - %(message)s")
+    formatter = logging.Formatter(
+        "%(asctime)s - %(levelname)s in %(module)s - %(message)s"
+    )
     stream_handler.setFormatter(formatter)
     app.logger.addHandler(stream_handler)
 
@@ -97,20 +99,22 @@ def create_app() -> Flask:
 
         try:
             success = False
-            for attempt in range(MAX_RETRIES+3):
+            for attempt in range(MAX_RETRIES + 3):
                 try:
-                    response = requests.post(
-                        ts_url, timeout=REQUESTS_TIMEOUT
-                    )
+                    response = requests.post(ts_url, timeout=REQUESTS_TIMEOUT)
                     if response.status_code == HTTPStatus.OK:
                         app.logger.info("Response: %s", response.text.strip())
                         success = True
                         break
                 except (requests.exceptions.RequestException, ValueError) as e:
-                    app.logger.error("Attempt %d: Failed to update timestamp: %s", attempt, e)
+                    app.logger.error(
+                        "Attempt %d: Failed to update timestamp: %s", attempt, e
+                    )
                     if attempt == MAX_RETRIES:
-                        app.logger.error("Max retries reached. Could not update timestamp")
-                    time.sleep(RETRY_DELAY+3)
+                        app.logger.error(
+                            "Max retries reached. Could not update timestamp"
+                        )
+                    time.sleep(RETRY_DELAY + 3)
                     sys.exit(1)
             if not success:
                 app.logger.error(

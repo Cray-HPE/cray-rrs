@@ -59,7 +59,7 @@ from src.lib.rrs_constants import (
     MAX_RETRIES,
     RETRY_DELAY,
     REQUESTS_TIMEOUT,
-    STARTED_STATE
+    STARTED_STATE,
 )
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version

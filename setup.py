@@ -33,7 +33,7 @@ with open(".chart_version") as vers_file:
     CHART_VERSION = vers_file.read().strip()
 setup(
     name="rrs",
-    author='HPE',
+    author="HPE",
     author_email="sravani.sanigepalli@hpe.com,ravikanth.nalla@hpe.com,arka.pramanik@hpe.com,keshav.varshney@hpe.com",
     url="http://hpe.com",
     description="RRS (Rack Resiliency Service)",

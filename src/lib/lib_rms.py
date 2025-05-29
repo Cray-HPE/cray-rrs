@@ -195,7 +195,6 @@ class Helper:
             logger.error("Error collecting secret from Kubernetes: %s", err)
             return None
 
-
     @staticmethod
     def get_hsm_sls_data(
         get_hsm: bool, get_sls: bool
@@ -220,10 +219,7 @@ class Helper:
         if get_hsm:
             for attempt in range(1, MAX_RETRIES + 1):
                 try:
-                    params = {
-                        "role": "Management",
-                        "type": "Node"
-                    }
+                    params = {"role": "Management", "type": "Node"}
                     hsm_response = requests.get(
                         hsm_url, headers=headers, timeout=REQUESTS_TIMEOUT, verify=False
                     )
@@ -297,7 +293,7 @@ class Helper:
         pod_node: str,
         pod_zone: str,
         sls_data: List[Dict[str, Any]],
-        hsm_data:  Dict[str, List[Dict[str, Any]]],
+        hsm_data: Dict[str, List[Dict[str, Any]]],
     ) -> None:
         """
         Checks if the monitoring pod was previously running on a failed node based on SLS and HSM data.
@@ -1043,7 +1039,8 @@ class criticalServicesHelper:
                     service_info.update({"status": "Unconfigured", "balanced": "NA"})
             if partially_configured_services:
                 logger.warning(
-                    "List of partially configured services are - %s", partially_configured_services
+                    "List of partially configured services are - %s",
+                    partially_configured_services,
                 )
             if imbalanced_services:
                 logger.warning(

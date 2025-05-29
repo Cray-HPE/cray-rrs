@@ -42,7 +42,7 @@ from src.lib.rrs_constants import (
     MAX_RETRIES,
     NAMESPACE,
     DYNAMIC_CM,
-    DYNAMIC_DATA_KEY
+    DYNAMIC_DATA_KEY,
 )
 from src.lib.rrs_logging import get_log_id
 
