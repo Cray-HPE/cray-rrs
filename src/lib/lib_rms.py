@@ -221,7 +221,11 @@ class Helper:
                 try:
                     params = {"role": "Management", "type": "Node"}
                     hsm_response = requests.get(
-                        hsm_url, headers=headers, timeout=REQUESTS_TIMEOUT, verify=False
+                        hsm_url,
+                        headers=headers,
+                        params=params,
+                        timeout=REQUESTS_TIMEOUT,
+                        verify=False,
                     )
                     hsm_response.raise_for_status()
                     hsm_data = hsm_response.json()
@@ -351,7 +355,11 @@ class cephHelper:
         """
         ceph_healthy = False
         try:
-            ceph_services_cmd = "ssh {host} 'ceph orch ps -f json'"
+            ceph_services_cmd = (
+                "ssh -o StrictHostKeyChecking=no "
+                "-o UserKnownHostsFile=/dev/null "
+                "{host} 'ceph orch ps -f json'"
+            )
             services_output = Helper.run_command_on_hosts(ceph_services_cmd)
             if not services_output:
                 logger.warning("Could not fetch CEPH services status")
@@ -398,7 +406,13 @@ class cephHelper:
             bool: Boolean flag indicating whether the CEPH cluster is healthy."""
         ceph_healthy = False
         try:
-            ceph_status_cmd = "ssh {host} 'ceph -s -f json'"
+
+            ceph_status_cmd = "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {host} 'ceph -s -f json'"
+            ceph_status_cmd = (
+                "ssh -o StrictHostKeyChecking=no "
+                "-o UserKnownHostsFile=/dev/null "
+                "{host} 'ceph -s -f json'"
+            )
             status_output = Helper.run_command_on_hosts(ceph_status_cmd)
             if not status_output:
                 logger.warning("Could not fetch CEPH health")
@@ -462,8 +476,16 @@ class cephHelper:
             Tuple: JSONs containing the Ceph OSD tree and host details.
         """
         try:
-            ceph_tree_cmd = "ssh {host} 'ceph osd tree -f json'"
-            ceph_hosts_cmd = "ssh {host} 'ceph orch host ls -f json'"
+            ceph_tree_cmd = (
+                "ssh -o StrictHostKeyChecking=no "
+                "-o UserKnownHostsFile=/dev/null "
+                "{host} 'ceph osd tree -f json'"
+            )
+            ceph_hosts_cmd = (
+                "ssh -o StrictHostKeyChecking=no "
+                "-o UserKnownHostsFile=/dev/null "
+                "{host} 'ceph orch host ls -f json'"
+            )
             tree_output = Helper.run_command_on_hosts(ceph_tree_cmd)
             host_output = Helper.run_command_on_hosts(ceph_hosts_cmd)
             if not tree_output or not host_output:

@@ -334,7 +334,7 @@ def check_and_create_hmnfd_subscription() -> None:
                 "Components": subscribing_components,
                 "Roles": ["Management"],
                 "States": ["Ready", "on", "off", "empty", "unknown", "populated"],
-                "Url": "http://cray-rrs-rms.services.svc.cluster.local/scn",
+                "Url": "http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551/scn",
             }
             try:
                 post_response = requests.post(
