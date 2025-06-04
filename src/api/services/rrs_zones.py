@@ -32,13 +32,40 @@ Key functionalities:
 - Provide detailed zone descriptions including node names, status, and OSD mapping.
 """
 
-from typing import Dict, List, Any, Union, Optional, TypedDict, Tuple
+from typing import Dict, List, Union, Optional, TypedDict, Tuple, Sequence
 from flask import current_app as app
-from src.api.models.zones import ZoneTopologyService
+from src.api.models.zones import (
+    ZoneTopologyService,
+    CephResultType,
+    k8sResultType,
+    ErrorDict,
+    CephNodeInfo,
+    k8sNodeType,
+    ZoneMapping,
+)
 from src.lib.rrs_logging import get_log_id
-from src.api.models.zones import ResultType
 
-ZoneInfoDict = Dict[str, Any]
+
+class NodeDetail(TypedDict):
+    """TypedDict for Kubernetes node details."""
+
+    Name: str
+    Status: str
+
+
+class StorageNodeDetail(TypedDict):
+    """TypedDict for Ceph storage node details including OSDs."""
+
+    Name: str
+    Status: str
+    OSDs: Dict[str, List[str]]
+
+
+class ZoneSection(TypedDict):
+    """TypedDict for zone section containing node type and list of nodes."""
+
+    Type: str
+    Nodes: Sequence[Union[NodeDetail, StorageNodeDetail]]
 
 
 class ZonesDict(TypedDict, total=False):
@@ -51,17 +78,9 @@ class ZonesDict(TypedDict, total=False):
         error: Error message if an issue occurred during zone processing
     """
 
-    Zones: List[Dict[str, Any]]
+    Zones: List[Dict[str, Union[str, Dict[str, List[str]]]]]
     Information: str
     error: str
-
-
-class NodeInfo(TypedDict, total=False):
-    """Information about a Ceph storage node including its OSDs."""
-
-    name: str
-    status: str
-    osds: List[Dict[str, str]]
 
 
 class ZoneService:
@@ -69,8 +88,8 @@ class ZoneService:
 
     @staticmethod
     def zone_exist(
-        k8s_zones: Union[Dict[str, Any], str], ceph_zones: Union[Dict[str, Any], str]
-    ) -> Optional[ZonesDict]:
+        k8s_zones: k8sResultType, ceph_zones: CephResultType
+    ) -> Optional[ErrorDict]:
         """
         Checks whether Kubernetes and/or Ceph zones are configured.
 
@@ -84,28 +103,29 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Checking if zones (K8s Topology or Ceph) exist")
 
-        if isinstance(k8s_zones, str) and isinstance(ceph_zones, str):
+        if not k8s_zones and not ceph_zones:
             app.logger.warning(
                 f"[{log_id}] No zones (K8s topology and Ceph) configured"
             )
             return {
-                "Zones": [],
                 "Information": "No zones (K8s topology and Ceph) configured",
             }
 
-        if isinstance(k8s_zones, str):
+        if not k8s_zones:
             app.logger.warning(f"[{log_id}] No K8s topology zones configured")
-            return {"Zones": [], "Information": "No K8s topology zones configured"}
+            return {"Information": "No K8s topology zones configured"}
 
-        if isinstance(ceph_zones, str):
+        if not ceph_zones:
             app.logger.warning(f"[{log_id}] No CEPH zones configured")
-            return {"Zones": [], "Information": "No CEPH zones configured"}
+            return {"Information": "No CEPH zones configured"}
 
         app.logger.info(f"[{log_id}] Zones found")
         return None
 
     @staticmethod
-    def get_node_names(node_list: List[Dict[str, Any]]) -> List[str]:
+    def get_node_names(
+        node_list: Union[List[Dict[str, str]], List[CephNodeInfo]],
+    ) -> List[str]:
         """
         Extracts node names from a list of node dictionaries.
 
@@ -122,7 +142,7 @@ class ZoneService:
         ]
 
     @staticmethod
-    def map_zones(k8s_zones: Dict[str, Any], ceph_zones: Dict[str, Any]) -> ZonesDict:
+    def map_zones(k8s_zones: k8sNodeType, ceph_zones: ZoneMapping) -> ZonesDict:
         """
         Maps the Kubernetes and Ceph zones into a structured response.
 
@@ -136,32 +156,30 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Mapping Kubernetes and Ceph zones")
 
-        zones_list: List[Dict[str, Any]] = []
+        zones_list: List[Dict[str, Union[str, Dict[str, List[str]]]]] = []
         all_zone_names = set(k8s_zones.keys()) | set(ceph_zones.keys())
         app.logger.info(f"[{log_id}] All zone names: {all_zone_names}")
 
         for zone_name in all_zone_names:
             app.logger.info(f"[{log_id}] Processing zone: {zone_name}")
-
             k8s_zone_data = k8s_zones.get(zone_name, {})
-            ceph_zone_data = ceph_zones.get(zone_name, [])
+            ceph_zone_data: List[CephNodeInfo] = ceph_zones.get(zone_name, [])
 
             masters = ZoneService.get_node_names(k8s_zone_data.get("masters", []))
             workers = ZoneService.get_node_names(k8s_zone_data.get("workers", []))
             storage = ZoneService.get_node_names(ceph_zone_data)
 
-            zone_data: Dict[str, Any] = {"Zone Name": zone_name}
+            zone_data: Dict[str, Union[str, Dict[str, List[str]]]] = {
+                "Zone Name": zone_name
+            }
 
             if masters or workers:
-                zone_data["Kubernetes Topology Zone"] = {}
+                k8s_topology: Dict[str, List[str]] = {}
                 if masters:
-                    zone_data["Kubernetes Topology Zone"][
-                        "Management Master Nodes"
-                    ] = masters
+                    k8s_topology["Management Master Nodes"] = masters
                 if workers:
-                    zone_data["Kubernetes Topology Zone"][
-                        "Management Worker Nodes"
-                    ] = workers
+                    k8s_topology["Management Worker Nodes"] = workers
+                zone_data["Kubernetes Topology Zone"] = k8s_topology
 
             if storage:
                 zone_data["CEPH Zone"] = {"Management Storage Nodes": storage}
@@ -174,9 +192,9 @@ class ZoneService:
     @staticmethod
     def get_zone_info(
         zone_name: str,
-        k8s_zones: Dict[str, Dict[str, List[NodeInfo]]],
-        ceph_zones: Dict[str, Any],
-    ) -> ZoneInfoDict:
+        k8s_zones: k8sNodeType,
+        ceph_zones: ZoneMapping,
+    ) -> Union[Dict[str, Union[str, int, ZoneSection]], ErrorDict]:
         """
         Retrieves detailed information for a specific zone.
 
@@ -199,7 +217,7 @@ class ZoneService:
             app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
             return {"error": "Zone not found"}
 
-        zone_data: ZoneInfoDict = {
+        zone_data: Dict[str, Union[str, int, ZoneSection]] = {
             "Zone Name": zone_name,
             "Management Masters": len(masters),
             "Management Workers": len(workers),
@@ -223,18 +241,23 @@ class ZoneService:
             }
 
         if storage:
-            zone_data["Management Storage"] = {"Type": "CEPH Zone", "Nodes": []}
+            storage_nodes: List[StorageNodeDetail] = []
             for node in storage:
                 osd_status_map: Dict[str, List[str]] = {}
                 for osd in node.get("osds", []):
                     osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
-                storage_node = {
+                storage_node: StorageNodeDetail = {
                     "Name": node["name"],
                     "Status": node["status"],
                     "OSDs": osd_status_map,
                 }
-                zone_data["Management Storage"]["Nodes"].append(storage_node)
+                storage_nodes.append(storage_node)
+
+            zone_data["Management Storage"] = {
+                "Type": "CEPH Zone",
+                "Nodes": storage_nodes,
+            }
 
         app.logger.info(
             f"[{log_id}] Zone information fetched successfully for zone: {zone_name}"
@@ -242,7 +265,7 @@ class ZoneService:
         return zone_data
 
     @staticmethod
-    def fetch_zones() -> Tuple[Dict[str, Dict[str, Any]], ResultType]:
+    def fetch_zones() -> Tuple[k8sResultType, CephResultType]:
         """
         Fetches zone information from the Kubernetes and Ceph zone providers.
 
@@ -258,7 +281,7 @@ class ZoneService:
         return k8s_zones, ceph_zones
 
     @staticmethod
-    def list_zones() -> ZonesDict:
+    def list_zones() -> Union[ZonesDict, ErrorDict]:
         """
         Returns a list of all zones with mapping between Kubernetes and Ceph.
 
@@ -268,18 +291,27 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching zones data")
         k8s_zones, ceph_zones = ZoneService.fetch_zones()
+        if isinstance(k8s_zones, Exception):
+            return {
+                "exception": f"Unexpected error {str(k8s_zones)} occured while fetching k8s_zones"
+            }
+        if isinstance(ceph_zones, Exception):
+            return {
+                "exception": f"Unexpected error {str(ceph_zones)} occured while fetching ceph_zones"
+            }
 
         zone_check_result = ZoneService.zone_exist(k8s_zones, ceph_zones)
         if zone_check_result:
             app.logger.warning(f"[{log_id}] {zone_check_result.get('Information', '')}")
             return zone_check_result
-
         result = ZoneService.map_zones(k8s_zones, ceph_zones)
         app.logger.info(f"[{log_id}] Zones data fetched successfully")
         return result
 
     @staticmethod
-    def describe_zone(zone_name: str) -> ZoneInfoDict:
+    def describe_zone(
+        zone_name: str,
+    ) -> Union[Dict[str, Union[str, int, ZoneSection]], ErrorDict]:
         """
         Provides detailed information for a given zone including nodes and OSDs.
 
@@ -292,11 +324,19 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching zone description for: {zone_name}")
         k8s_zones, ceph_zones = ZoneService.fetch_zones()
+        if isinstance(k8s_zones, Exception):
+            return {
+                "exception": f"Unexpected error {str(k8s_zones)} occured while fetching k8s_zones"
+            }
+        if isinstance(ceph_zones, Exception):
+            return {
+                "exception": f"Unexpected error {str(ceph_zones)} occured while fetching ceph_zones"
+            }
 
         zone_check_result = ZoneService.zone_exist(k8s_zones, ceph_zones)
         if zone_check_result:
             app.logger.warning(f"[{log_id}] {zone_check_result.get('Information', '')}")
-            return {"Warning": zone_check_result}
+            return zone_check_result
 
         result = ZoneService.get_zone_info(zone_name, k8s_zones, ceph_zones)
         app.logger.info(f"[{log_id}] Zone {zone_name} data fetched successfully")

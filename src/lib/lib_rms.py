@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Dict, List, Tuple, Any, Union, Literal, Optional, TypedDict
+from typing import Any, Dict, List, Tuple, Union, Literal, Optional
 import requests
 import urllib3
 import yaml
@@ -63,6 +63,18 @@ from src.lib.rrs_constants import (
 # disables only the InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
+hsm_datatype = Dict[str, List[Dict[str, Union[str, bool, int]]]]
+sls_datatype = List[Dict[str, Union[str, int, Dict[str, Union[str, int, List[str]]]]]]
+ceph_tree_datatype = Dict[
+    str,
+    Union[
+        List[Dict[str, Union[int, str, float, List[int], Dict[Any, Any]]]], List[Any]
+    ],
+]
+# The use of 'Any' in the above definition is intentional, as the types of the data
+# in pool_weights dictionary and the stray list from the 'ceph osd tree -f json' output are unknown
+ceph_host_datatype = List[Dict[str, Union[str, List[str]]]]
+pod_info_type = List[Dict[str, Union[str, Dict[str, str]]]]
 
 
 def set_logger(custom_logger: Logger) -> None:
@@ -196,10 +208,9 @@ class Helper:
             return None
 
     @staticmethod
-    def get_hsm_sls_data(
-        get_hsm: bool, get_sls: bool
-    ) -> Tuple[
-        Optional[Dict[str, List[Dict[str, Any]]]], Optional[List[Dict[str, Any]]]
+    def get_hsm_sls_data(get_hsm: bool, get_sls: bool) -> Tuple[
+        Optional[hsm_datatype],
+        Optional[sls_datatype],
     ]:
         """
         Fetch data from HSM and SLS services.
@@ -277,13 +288,18 @@ class Helper:
                 logger.error("Failed to retrieve SLS data")
                 return None
             for item in sls_data:
-                aliases = item.get("ExtraProperties", {}).get("Aliases", [])
-                if node_name in aliases:
-                    rack_xname = item.get("Xname")
-                    logger.debug(
-                        "Found rack xname '%s' for node '%s'", rack_xname, node_name
-                    )
-                    return rack_xname
+                extraProps = item.get("ExtraProperties", {})
+                if isinstance(extraProps, dict):
+                    aliases = extraProps.get("Aliases", [])
+                    if isinstance(aliases, List) and node_name in aliases:
+                        rack_xname = item.get("Xname")
+                        if isinstance(rack_xname, str):
+                            logger.debug(
+                                "Found rack xname '%s' for node '%s'",
+                                rack_xname,
+                                node_name,
+                            )
+                            return rack_xname
             logger.warning("No matching xname found for node: %s", node_name)
             return None
         except Exception as e:
@@ -296,16 +312,16 @@ class Helper:
     def check_failed_node(
         pod_node: str,
         pod_zone: str,
-        sls_data: List[Dict[str, Any]],
-        hsm_data: Dict[str, List[Dict[str, Any]]],
+        sls_data: sls_datatype,
+        hsm_data: hsm_datatype,
     ) -> None:
         """
         Checks if the monitoring pod was previously running on a failed node based on SLS and HSM data.
         Args:
             pod_node (str): Name of the node where the pod was previously running.
             pod_zone (str): Rack or zone where the pod was running.
-            sls_data (List[Dict[str, Any]]): List of SLS hardware components with xnames and aliases.
-            filtered_data (List[Dict[str, Any]]): HSM component data filtered to relevant roles/subroles.
+            sls_data (sls_datatype): List of SLS hardware components with xnames and aliases.
+            hsm_data (hsm_datatype): HSM component data filtered to relevant roles/subroles.
         Returns:
             None
         """
@@ -313,26 +329,31 @@ class Helper:
             # Retrieve the state of the node that previously hosted the RRS pod.
             # Log a message if the node is powered off
             for sls_entry in sls_data:
-                aliases = sls_entry["ExtraProperties"]["Aliases"][0]
-                if pod_node not in aliases:
-                    continue
+                extraProps = sls_entry["ExtraProperties"]
+                if isinstance(extraProps, dict):
+                    aliases = extraProps["Aliases"]
+                    if isinstance(aliases, List):
+                        alias = aliases[0]
+                        if pod_node not in alias:
+                            continue
 
                 for component in hsm_data.get("Components", []):
-                    if sls_entry["Xname"] != component["ID"]:
+                    comp_id = component["ID"]
+                    if sls_entry["Xname"] != comp_id:
                         continue
-
-                    rack_id = component["ID"].split("c")[
-                        0
-                    ]  # Extract "x3000" from "x3000c0s1b75n75"
-                    comp_state = component["State"]
-                    if comp_state in ["Off"] and rack_id in pod_zone:
-                        logger.info(
-                            "Monitoring pod was previously running on the "
-                            "failed node %s under rack %s",
-                            pod_node,
-                            rack_id,
-                        )
-                    return
+                    if isinstance(comp_id, str):
+                        rack_id = comp_id.split("c")[
+                            0
+                        ]  # Extract "x3000" from "x3000c0s1b75n75"
+                        comp_state = component["State"]
+                        if comp_state in ["Off"] and rack_id in pod_zone:
+                            logger.info(
+                                "Monitoring pod was previously running on the "
+                                "failed node %s under rack %s",
+                                pod_node,
+                                rack_id,
+                            )
+                        return
                 return
         except Exception as e:
             logger.exception(
@@ -468,7 +489,7 @@ class cephHelper:
         return ceph_healthy
 
     @staticmethod
-    def fetch_ceph_data() -> Tuple[Dict[str, Any], Dict[str, Any]]:
+    def fetch_ceph_data() -> Tuple[ceph_tree_datatype, ceph_host_datatype]:
         """
         Fetch Ceph OSD and host details using SSH commands.
         This function retrieves the OSD tree and host status using ceph commands executed remotely.
@@ -490,7 +511,7 @@ class cephHelper:
             host_output = Helper.run_command_on_hosts(ceph_hosts_cmd)
             if not tree_output or not host_output:
                 logger.warning("Could not fetch CEPH output")
-                return {}, {}
+                return {}, []
             ceph_tree = json.loads(tree_output)
             ceph_hosts = json.loads(host_output)
 
@@ -507,16 +528,15 @@ class cephHelper:
             logger.exception("Unexpected error while fetching CEPH data: %s", e)
 
         # Safe fallback on failure
-        return {}, {}
+        return {}, []
 
     @staticmethod
-    def get_ceph_status() -> Tuple[Dict[str, Any], bool]:
+    def get_ceph_status() -> (
+        Tuple[Dict[str, List[Dict[str, Union[str, List[Dict[str, str]]]]]], bool]
+    ):
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
-        Returns:
-            Tuple[Dict[str, Any], bool]:
-            A dictionary of storage nodes with their OSD status and a bool indicating health
         """
         try:
             ceph_tree, ceph_hosts = cephHelper.fetch_ceph_data()
@@ -531,9 +551,14 @@ class cephHelper:
                         and "hostname" in host
                         and "status" in host
                     ):
-                        host_status_map[host["hostname"]] = host["status"]
+                        if isinstance(host["status"], str) and isinstance(
+                            host["hostname"], str
+                        ):
+                            host_status_map[host["hostname"]] = host["status"]
 
-            final_output: Dict[str, List[Dict[str, Any]]] = {}
+            final_output: Dict[
+                str, List[Dict[str, Union[str, List[Dict[str, str]]]]]
+            ] = {}
             failed_hosts: List[str] = []
 
             for item in ceph_tree.get("nodes", []):
@@ -541,17 +566,27 @@ class cephHelper:
                     continue
 
                 rack_name = item["name"]
-                storage_nodes = []
+                if not isinstance(rack_name, str):
+                    continue
 
-                for child_id in item.get("children", []):
+                storage_nodes: List[Dict[str, Union[str, List[Dict[str, str]]]]] = []
+                children = item["children"]
+                if not isinstance(children, List):
+                    continue
+
+                for child_id in children:
                     host_node = next(
-                        (x for x in ceph_tree["nodes"] if x["id"] == child_id), None
+                        (x for x in ceph_tree["nodes"] if x["id"] == child_id),
+                        None,
                     )
+                    if not host_node:
+                        continue
 
+                    host_node_name = host_node["name"]
                     if not (
-                        host_node
+                        isinstance(host_node_name, str)
                         and host_node["type"] == "host"
-                        and host_node["name"].startswith("ncn-s")
+                        and host_node_name.startswith("ncn-s")
                     ):
                         continue
 
@@ -559,31 +594,38 @@ class cephHelper:
                     osds = [
                         osd
                         for osd in ceph_tree["nodes"]
-                        if osd["id"] in osd_ids and osd["type"] == "osd"
-                    ]
-                    osd_status_list = [
-                        {
-                            "name": osd["name"],
-                            "status": osd.get("status", "unknown"),
-                        }
-                        for osd in osds
+                        if isinstance(osd_ids, List)
+                        and osd["id"] in osd_ids
+                        and osd["type"] == "osd"
                     ]
 
-                    node_status = host_status_map.get(host_node["name"], "No Status")
+                    osd_status_list: List[Dict[str, str]] = []
+                    for osd in osds:
+                        osd_name = osd["name"]
+                        osd_status = osd.get("status", "Unknown")
+                        if isinstance(osd_name, str) and isinstance(osd_status, str):
+                            osd_status_list = [
+                                {
+                                    "name": osd_name,
+                                    "status": osd_status,
+                                }
+                            ]
+
+                    node_status = host_status_map.get(host_node_name, "No Status")
                     if node_status in ["", "online"]:
                         node_status = "Ready"
                     else:
-                        failed_hosts.append(host_node["name"])
+                        failed_hosts.append(host_node_name)
                         logger.warning(
                             "Host %s is in - %s state",
-                            host_node["name"],
+                            host_node_name,
                             node_status,
                         )
                         node_status = "NotReady"
 
                     storage_nodes.append(
                         {
-                            "name": host_node["name"],
+                            "name": host_node_name,
                             "status": node_status,
                             "osds": osd_status_list,
                         }
@@ -785,11 +827,11 @@ class k8sHelper:
             return None
 
     @staticmethod
-    def fetch_all_pods() -> Optional[Union[Dict[str, Any], List[Dict[str, Any]]]]:
+    def fetch_all_pods() -> Optional[pod_info_type]:
         """
         Fetch all Kubernetes pods in a single API call and annotate them with their zone.
         Returns:
-            List[Dict[str, Any]]: List of pod metadata dictionaries, each containing:
+            Optional[pod_info_type]: List of pod metadata dictionaries, each containing:
                 - Name: pod name
                 - Node: node name
                 - Zone: zone name (or "unknown" if not found)
@@ -824,7 +866,7 @@ class k8sHelper:
                         node_zone_map[node["name"]] = zone
 
             all_pods = v1.list_pod_for_all_namespaces(watch=False).items
-            pod_info: List[Dict[str, Any]] = []
+            pod_info: pod_info_type = []
 
             for pod in all_pods:
                 node_name = pod.spec.node_name
@@ -846,33 +888,23 @@ class k8sHelper:
         return None
 
 
-class PodInfo(TypedDict):
-    """Type definition for pod information dictionary returned by the Kubernetes API."""
-
-    Name: str
-    Node: str
-    Zone: str
-    labels: Dict[str, str]
-
-
 class criticalServicesHelper:
     """
     Helper class to provide utility functions related to critical services for the application.
     """
 
     @staticmethod
-    def check_skew(service_name: str, pods: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def check_skew(service_name: str, pods: pod_info_type) -> Dict[str, str]:
         """
         Check whether pod replicas of a service are evenly distributed across zones.
         Args:
             service_name (str): Name of the service being evaluated.
-            pods (List[Dict[str, Any]]): List of pod metadata containing Zone, Node, and Name.
+            pods (pod_info_type): List of pod metadata containing Zone, Node, and Name.
         Returns:
-            Dict[str, Any]:
+            Dict[str, str]:
                 - service-name: the name of the service
                 - balanced: "true" or "false" depending on replica distribution
-                - status (optional): "no replicas found"
-                - replicaDistribution (optional): zone-wise mapping of node to pod names
+                - status: "no replicas found"
         """
         try:
             zone_pod_map: Dict[str, Dict[str, List[str]]] = {}
@@ -884,8 +916,14 @@ class criticalServicesHelper:
 
                 if not zone or not node or not pod_name:
                     continue  # skip invalid pod entries
-
-                zone_pod_map.setdefault(zone, {}).setdefault(node, []).append(pod_name)
+                if (
+                    isinstance(pod_name, str)
+                    and isinstance(zone, str)
+                    and isinstance(node, str)
+                ):
+                    zone_pod_map.setdefault(zone, {}).setdefault(node, []).append(
+                        pod_name
+                    )
 
             counts = [
                 sum(len(pods) for pods in zone.values())
@@ -896,7 +934,6 @@ class criticalServicesHelper:
                 return {
                     "service-name": service_name,
                     "status": "no replicas found",
-                    "replicaDistribution": {},
                 }
 
             balanced = "true" if max(counts) - min(counts) <= 1 else "false"
@@ -910,7 +947,6 @@ class criticalServicesHelper:
                 "service-name": service_name,
                 "balanced": "unknown",
                 "status": "error",
-                "replicaDistribution": {},
             }
 
     @staticmethod
@@ -978,23 +1014,55 @@ class criticalServicesHelper:
         return None, None, None
 
     @staticmethod
-    def get_critical_services_status(services_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _filter_pods_by_labels(
+        all_pods: pod_info_type, labels: Dict[str, str]
+    ) -> pod_info_type:
+        """
+        Filter pods based on matching labels.
+        Args:
+            all_pods (pod_info_type): List of all pods
+            labels (Dict[str, str]): Labels to match against
+        Returns:
+            pod_info_type: Filtered list of pods matching the labels
+        """
+        if not all_pods:
+            return []
+
+        filtered_pods = []
+        for pod in all_pods:
+            pod_labels = pod.get("labels")
+            if not pod_labels or not isinstance(pod_labels, dict):
+                continue
+
+            if all(pod_labels.get(key) == value for key, value in labels.items()):
+                filtered_pods.append(pod)
+
+        return filtered_pods
+
+    @staticmethod
+    def get_critical_services_status(
+        services_data: Dict[str, Dict[str, Dict[str, str]]],
+    ) -> Dict[str, Dict[str, Dict[str, str]]]:
         """
         Update critical service info with status and balanced values
         Args:
-            services_data (Dict[str, Any]): The critical-services section from config.
+            services_data (Dict[str, Dict[str, Dict[str, str]]]): The critical-services section from config.
         Returns:
-            Dict[str, Any]: Updated services_data with 'status' and 'balanced' flags added per service.
+            Dict[str, Dict[str, Dict[str, str]]]:
+            Updated services_data with 'status' and 'balanced' flags added per service.
         """
         try:
-            # Fetch all pods in one API call
             all_pods = k8sHelper.fetch_all_pods()
+            if all_pods is None:
+                logger.warning("Failed to fetch pods, returning original services data")
+                return services_data
 
             critical_services = services_data.get("critical-services", {})
             logger.info("Number of critical services are - %d", len(critical_services))
             imbalanced_services: List[str] = []
             unconfigured_services: List[str] = []
             partially_configured_services: List[str] = []
+
             for service_name, service_info in critical_services.items():
                 service_namespace = service_info["namespace"]
                 service_type = service_info["type"]
@@ -1003,62 +1071,52 @@ class criticalServicesHelper:
                         service_name, service_namespace, service_type
                     )
                 )
-                # If replicas data was returned
-                if (
-                    desired_replicas is not None
-                    and ready_replicas is not None
-                    and labels is not None
-                ):
-                    status = "Configured"
-                    if ready_replicas == 0:
-                        unconfigured_services.append(service_name)
-                        service_info.update(
-                            {"status": "Unconfigured", "balanced": "NA"}
-                        )
-                        continue
-                    if ready_replicas < desired_replicas:
-                        partially_configured_services.append(service_name)
-                        status = "PartiallyConfigured"
-                        logger.warning(
-                            (
-                                "%s '%s' in namespace '%s' is not ready. "
-                                "Only %d replicas are ready out of %d desired replicas"
-                            ),
-                            service_type,
-                            service_name,
-                            service_namespace,
-                            ready_replicas,
-                            desired_replicas,
-                        )
-                    elif ready_replicas == desired_replicas:
-                        logger.debug(
-                            "Desired replicas and ready replicas are matching for '%s'",
-                            service_name,
-                        )
 
-                    filtered_pods: List[Dict[str, Any]] = []
-                    if isinstance(all_pods, list):
-                        filtered_pods = [
-                            pod
-                            for pod in all_pods
-                            if pod.get("labels")
-                            and all(
-                                pod["labels"].get(key) == value
-                                for key, value in labels.items()
-                            )
-                        ]
-
-                    balance_details = criticalServicesHelper.check_skew(
-                        service_name, filtered_pods
-                    )
-                    if balance_details["balanced"] == "False":
-                        imbalanced_services.append(service_name)
-                    service_info.update(
-                        {"status": status, "balanced": balance_details["balanced"]}
-                    )
-                else:
+                if desired_replicas is None or ready_replicas is None or labels is None:
                     unconfigured_services.append(service_name)
                     service_info.update({"status": "Unconfigured", "balanced": "NA"})
+                    continue
+
+                if ready_replicas == 0:
+                    unconfigured_services.append(service_name)
+                    service_info.update({"status": "Unconfigured", "balanced": "NA"})
+                    continue
+
+                status = "Configured"
+                if ready_replicas < desired_replicas:
+                    partially_configured_services.append(service_name)
+                    status = "PartiallyConfigured"
+                    logger.warning(
+                        "%s '%s' in namespace '%s' is not ready. Only %d replicas are ready out of %d desired replicas",
+                        service_type,
+                        service_name,
+                        service_namespace,
+                        ready_replicas,
+                        desired_replicas,
+                    )
+                elif ready_replicas == desired_replicas:
+                    logger.debug(
+                        "Desired replicas and ready replicas are matching for '%s'",
+                        service_name,
+                    )
+
+                filtered_pods = criticalServicesHelper._filter_pods_by_labels(
+                    all_pods, labels
+                )
+                balance_details = criticalServicesHelper.check_skew(
+                    service_name, filtered_pods
+                )
+
+                if balance_details.get("balanced") == "False":
+                    imbalanced_services.append(service_name)
+
+                service_info.update(
+                    {
+                        "status": status,
+                        "balanced": balance_details.get("balanced", "unknown"),
+                    }
+                )
+
             if partially_configured_services:
                 logger.warning(
                     "List of partially configured services are - %s",
@@ -1072,6 +1130,7 @@ class criticalServicesHelper:
                 logger.warning(
                     "List of unconfigured services are - %s", unconfigured_services
                 )
+
             return services_data
         except Exception as e:
             logger.exception(

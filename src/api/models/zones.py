@@ -27,7 +27,7 @@ Provides a model to fetch zone topology details from both Ceph and Kubernetes.
 The data is retrieved from a ConfigMap and returned as structured dictionaries.
 """
 
-from typing import Dict, List, Union, TypedDict, Any
+from typing import Dict, List, Union, TypedDict
 import os
 import yaml
 from flask import current_app as app
@@ -46,7 +46,7 @@ class OsdInfo(TypedDict):
     status: str
 
 
-class NodeInfo(TypedDict):
+class CephNodeInfo(TypedDict):
     """TypedDict representing a node containing OSDs."""
 
     name: str
@@ -54,9 +54,11 @@ class NodeInfo(TypedDict):
     osds: List[OsdInfo]
 
 
-ZoneMapping = Dict[str, List[NodeInfo]]
+k8sNodeType = Dict[str, Dict[str, List[Dict[str, str]]]]
+ZoneMapping = Dict[str, List[CephNodeInfo]]
 ErrorDict = Dict[str, str]
-ResultType = Union[ZoneMapping, ErrorDict]
+k8sResultType = Union[k8sNodeType, Exception]
+CephResultType = Union[ZoneMapping, Exception]
 
 
 class ZoneTopologyService:
@@ -64,20 +66,20 @@ class ZoneTopologyService:
     Service class to fetch zone details from Kubernetes and Ceph.
 
     Methods:
-    fetch_ceph_zones() -> ResultType
+    fetch_ceph_zones() -> CephResultType
         Fetches and parses Ceph zone data from the ConfigMap.
 
-    fetch_k8s_zones() -> Dict[str, Dict[str, Any]]
+    fetch_k8s_zones() -> k8sResultType
         Fetches and parses Kubernetes zone data from the ConfigMap.
     """
 
     @staticmethod
-    def fetch_ceph_zones() -> Union[ResultType, ErrorDict]:
+    def fetch_ceph_zones() -> CephResultType:
         """
         Extracts Ceph zone details from the ConfigMap.
 
         Returns:
-            ResultType
+            CephResultType
                 A dictionary mapping zone names to a list of node info including OSDs,
                 or an error dictionary in case of failure.
         """
@@ -91,7 +93,7 @@ class ZoneTopologyService:
 
             zone_mapping: ZoneMapping = {
                 zone_name: [
-                    NodeInfo(
+                    CephNodeInfo(
                         name=node["name"],
                         status=node["status"],
                         osds=[
@@ -109,21 +111,21 @@ class ZoneTopologyService:
                 return zone_mapping
 
             app.logger.warning(f"[{log_id}] No Ceph zones found.")
-            return {"error": "No Ceph zones present"}
+            return {}
 
         except Exception as e:
             app.logger.exception(
                 f"[{log_id}] Unexpected error while parsing Ceph zones."
             )
-            return {"error": f"Unexpected error occurred: {str(e)}"}
+            return e
 
     @staticmethod
-    def fetch_k8s_zones() -> Dict[str, Dict[str, Any]]:
+    def fetch_k8s_zones() -> k8sResultType:
         """
         Extracts Kubernetes zone details from the ConfigMap.
 
         Returns:
-            Dict[str, Dict[str, Any]]
+            k8sResultType
                 A dictionary mapping zone names to master and worker node lists,
                 or an error dictionary in case of failure.
         """
@@ -135,7 +137,7 @@ class ZoneTopologyService:
             parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
             k8s_zones = parsed_data["zone"]["k8s_zones"]
 
-            zone_mapping: Dict[str, Dict[str, Any]] = {}
+            zone_mapping: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
 
             for zone_name, nodes in k8s_zones.items():
                 zone_mapping[zone_name] = {"masters": [], "workers": []}
@@ -154,10 +156,10 @@ class ZoneTopologyService:
                     f"[{log_id}] Successfully parsed Kubernetes zone details."
                 )
                 return zone_mapping
-
+            # Return empty dict of type k8sResultType
             app.logger.warning(f"[{log_id}] No Kubernetes zones present.")
-            return {"error": {"reason": "No Kubernetes zones present"}}
+            return {}
 
         except Exception as e:
             app.logger.exception(f"[{log_id}] Failed to parse Kubernetes zone details")
-            return {"error": {"reason": f"Unexpected error occurred: {str(e)}"}}
+            return e

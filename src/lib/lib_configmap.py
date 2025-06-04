@@ -33,7 +33,7 @@ from datetime import datetime
 import sys
 import logging
 from logging import Logger
-from typing import Dict, Union, cast
+from typing import Dict, Any, Optional
 import yaml
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
@@ -94,14 +94,18 @@ class ConfigMapHelper:
         """Acquire the lock by creating the ConfigMap {configmap_lock_name}."""
         configmap_lock_name = configmap_name + "-lock"
         # Check if the ConfigMap already exists
-        while True:
+        for attempt in range(1, MAX_RETRIES + 1):
             try:
                 ConfigMapHelper.load_k8s_config()
                 v1 = client.CoreV1Api()
                 v1.read_namespaced_config_map(
                     namespace=namespace, name=configmap_lock_name
                 )
-                logger.info("Waiting for configmap %s lock", configmap_name)
+                logger.info(
+                    "Attempt %s - Waiting for configmap %s lock",
+                    attempt,
+                    configmap_name,
+                )
                 time.sleep(1)
             except client.exceptions.ApiException as e:
                 if e.status == 404:
@@ -113,7 +117,7 @@ class ConfigMapHelper:
                     return True  # Returning True as the lock is acquired
                 logger.error("Error checking for lock: %s", e)
                 break  # Exit the loop in case of error
-
+        logger.error("Max retries reached. Could not acquire Configmap lock")
         return False  # Return False if lock could not be acquired
 
     @staticmethod
@@ -180,10 +184,11 @@ class ConfigMapHelper:
                 )
                 break
 
-    # pylint: disable=R0917
+    # Any type is used here due to the complexity of the underlying config map schema.
+    # Strict typing would require extensive type definitions that outweigh the benefits.
     @staticmethod
     def update_configmap_data(
-        configmap_data: Union[Dict[str, str], None],
+        configmap_data: Optional[Dict[str, Any]],
         key: str,
         new_data: str,
         namespace: str = NAMESPACE,
@@ -248,26 +253,29 @@ class ConfigMapHelper:
                 finally:
                     ConfigMapHelper.release_lock(namespace, configmap_name)
             else:
-                logger.warning(
+                logger.error(
                     "Failed to update ConfigMap %s in namespace %s",
                     configmap_name,
                     namespace,
                 )
+                sys.exit(1)
         except Exception as e:
             logger.exception("Unhandled exception in update_configmap_data")
 
+    # Any type is used here due to the complexity of the underlying config map schema.
+    # Strict typing would require extensive type definitions that outweigh the benefits.
     @staticmethod
     def read_configmap(
         namespace: str,
         configmap_name: str,
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
         Fetch data from a Kubernetes ConfigMap
         Args:
             namespace (str): The Kubernetes namespace where the ConfigMap is located.
             configmap_name (str): The name of the ConfigMap to read.
         Returns:
-            Dict[str, str]:
+            Dict[str, Any]:
                 - If successful, returns the `.data` field of the ConfigMap as a dictionary.
                 - If an error occurs, returns a dictionary with an "error" key and error message.
         """
@@ -285,7 +293,7 @@ class ConfigMapHelper:
             config_map = v1.read_namespaced_config_map(
                 name=configmap_name, namespace=namespace
             )
-            data = cast(Dict[str, str], config_map.data)
+            data: Dict[str, Any] = config_map.data
             if not data or not isinstance(data, dict):
                 logger.error(
                     "Data is missing in configmap %s or not in expected format (dict)",

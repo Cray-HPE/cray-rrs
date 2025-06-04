@@ -30,7 +30,7 @@ management of state transitions for the Rack Resiliency Service (RRS) monitoring
 """
 
 import threading
-from typing import Dict, Any, Union
+from typing import Dict, Any
 from enum import Enum
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import NAMESPACE, DYNAMIC_CM
@@ -59,6 +59,8 @@ class RMSStateManager:
         """Initialize the state manager with default state values and resource identifiers."""
         self.lock = threading.Lock()
         self.monitor_running = False
+        # Any type is used here due to the complexity of the underlying config map schema.
+        # Strict typing would require extensive type definitions that outweigh the benefits.
         self.dynamic_cm_data: Dict[str, Any] = {}
         self.rms_state: RMSState = RMSState.READY
 
@@ -72,12 +74,16 @@ class RMSStateManager:
         with self.lock:
             return self.rms_state
 
+    # Any type is used here due to the complexity of the underlying config map schema.
+    # Strict typing would require extensive type definitions that outweigh the benefits.
     def set_dynamic_cm_data(self, data: Dict[str, Any]) -> None:
         """Thread-safe method to update the dynamic ConfigMap data."""
         with self.lock:
             self.dynamic_cm_data = data
 
-    def get_dynamic_cm_data(self) -> Union[Dict[str, str], Any]:
+    # Any type is used here due to the complexity of the underlying config map schema.
+    # Strict typing would require extensive type definitions that outweigh the benefits.
+    def get_dynamic_cm_data(self) -> Dict[str, Any]:
         """Thread-safe method to retrieve the dynamic ConfigMap data."""
         with self.lock:
             if not self.dynamic_cm_data:

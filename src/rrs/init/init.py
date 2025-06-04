@@ -35,7 +35,7 @@ from datetime import datetime
 from collections import defaultdict
 import logging
 import json
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Union
 import yaml
 from src.rrs.rms.rms_statemanager import RMSState
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
@@ -76,7 +76,11 @@ def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
         logger.exception("Unexpected error occurred during pod location check: %s", e)
 
 
-def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, Any]]:
+def zone_discovery() -> Tuple[
+    bool,
+    Dict[str, List[Dict[str, str]]],
+    Dict[str, List[Dict[str, Union[str, List[Dict[str, str]]]]]],
+]:
     """Retrieving zone information and status of k8s and CEPH nodes
     Returns:
         Tuple containing:
@@ -87,7 +91,9 @@ def zone_discovery() -> Tuple[bool, Dict[str, List[Dict[str, str]]], Dict[str, A
     try:
         status = True
         updated_k8s_data: defaultdict[str, List[Dict[str, str]]] = defaultdict(list)
-        updated_ceph_data: Dict[str, Any] = {}
+        updated_ceph_data: Dict[
+            str, List[Dict[str, Union[str, List[Dict[str, str]]]]]
+        ] = {}
         nodes = k8sHelper.get_k8s_nodes()
         logger.info("Retrieving zone information and status of k8s and CEPH nodes")
 
