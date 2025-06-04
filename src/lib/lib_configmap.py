@@ -33,7 +33,7 @@ from datetime import datetime
 import sys
 import logging
 from logging import Logger
-from typing import Dict, Union, cast
+from typing import Dict, Any, Optional
 import yaml
 from kubernetes import client, config  # type: ignore
 from kubernetes.client.exceptions import ApiException
@@ -183,7 +183,7 @@ class ConfigMapHelper:
     # pylint: disable=R0917
     @staticmethod
     def update_configmap_data(
-        configmap_data: Union[Dict[str, str], None],
+        configmap_data: Optional[Dict[str, Any]],
         key: str,
         new_data: str,
         namespace: str = NAMESPACE,
@@ -260,7 +260,7 @@ class ConfigMapHelper:
     def read_configmap(
         namespace: str,
         configmap_name: str,
-    ) -> Dict[str, str]:
+    ) -> Dict[str, Any]:
         """
         Fetch data from a Kubernetes ConfigMap
         Args:
@@ -285,7 +285,7 @@ class ConfigMapHelper:
             config_map = v1.read_namespaced_config_map(
                 name=configmap_name, namespace=namespace
             )
-            data = cast(Dict[str, str], config_map.data)
+            data: Dict[str, Any] = config_map.data
             if not data or not isinstance(data, dict):
                 logger.error(
                     "Data is missing in configmap %s or not in expected format (dict)",

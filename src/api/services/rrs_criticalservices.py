@@ -38,21 +38,29 @@ Usage:
 """
 
 import json
-from typing import Dict, List, Any, Union, Optional
+from typing import Dict, List, Union, Optional
 from datetime import datetime
 from flask import current_app as app
 from kubernetes import client  # type: ignore
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
-from src.api.models.criticalservice import CriticalServiceHelper
+from src.api.models.criticalservice import CriticalServiceHelper, CriticalServiceType
 from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DYNAMIC_CM
+
+ListCriticalServiceType = Dict[str, Dict[str, List[Dict[str, str]]]]
+ErrorDict = Dict[str, str]
+DescribeStatusType = Dict[
+    str, Dict[str, Union[str, int, Optional[int], List[Dict[str, str]]]]
+]
 
 
 class CriticalServices:
     """Class to list, describe and update criticalservices related to Rack Resiliency."""
 
     @staticmethod
-    def fetch_critical_services(services: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    def fetch_critical_services(
+        services: CriticalServiceType,
+    ) -> Union[ListCriticalServiceType, Exception]:
         """
         Fetch and format critical services grouped by namespace.
 
@@ -65,7 +73,7 @@ class CriticalServices:
         log_id = get_log_id()  # Generate a unique log ID to track this request
 
         # Initialize result dictionary to store services grouped by namespaces
-        result: Dict[str, Dict[str, List[Dict[str, str]]]] = {"namespace": {}}
+        result: ListCriticalServiceType = {"namespace": {}}
 
         try:
             # Log the start of the process
@@ -100,10 +108,12 @@ class CriticalServices:
             app.logger.error(
                 f"[{log_id}] Error occurred while processing services: {str(exc)}"
             )
-            return {"error": str(exc)}
+            return exc
 
     @staticmethod
-    def get_critical_service_list() -> Dict[str, Any]:
+    def get_critical_service_list() -> (
+        Union[Dict[str, ListCriticalServiceType], ErrorDict]
+    ):
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
 
@@ -120,14 +130,19 @@ class CriticalServices:
             )
 
             # Check if there was an error in the services data
-            if "error" in services:
+            if isinstance(services, Exception):
                 app.logger.warning(f"[{log_id}] Could not fetch critical services.")
-                return services
+                return {
+                    "exception": f"Unexpected error {str(services)} occured while fetching criticalservices"
+                }
 
+            data = CriticalServices.fetch_critical_services(services)
+            if isinstance(data, Exception):
+                return {
+                    "exception": f"Unexpected error {str(data)} occured while fetching criticalservices"
+                }
             # Return the formatted services as a JSON response
-            return {
-                "critical-services": CriticalServices.fetch_critical_services(services)
-            }
+            return {"critical-services": data}
 
         except (KeyError, TypeError, ValueError) as exc:
             # Log any errors during the fetching process
@@ -140,7 +155,7 @@ class CriticalServices:
     @staticmethod
     def describe_service(
         service_name: str,
-    ) -> Union[Dict[str, Any], Dict[str, str]]:
+    ) -> Union[DescribeStatusType, ErrorDict]:
         """
         Retrieve service details and return as a JSON response.
 
@@ -161,6 +176,13 @@ class CriticalServices:
             services = CriticalServiceHelper.fetch_service_list(
                 DYNAMIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
+            # Check if there was an error in the services data
+            if isinstance(services, Exception):
+                app.logger.warning(f"[{log_id}] Could not fetch critical services.")
+                return {
+                    "exception": f"Unexpected error {str(services)} occured while fetching criticalservices"
+                }
+
             if service_name not in services:
                 app.logger.warning(
                     f"[{log_id}] Service '{service_name}' not found in the ConfigMap."
@@ -170,9 +192,11 @@ class CriticalServices:
             data = CriticalServicesStatus.get_service_details(services, service_name)
 
             # In case of error throw it
-            if "error" in data:
+            if isinstance(data, Exception):
                 app.logger.warning(f"[{log_id}] Error encountered in result: {data}")
-                return data
+                return {
+                    "exception": f"Unexpected error {str(data)} occured while fetching criticalservices"
+                }
 
             # Pick up the relevant internal fields
             fields_to_exclude = [
@@ -209,8 +233,10 @@ class CriticalServices:
 
     @staticmethod
     def update_configmap(
-        new_data: Dict[str, Any], existing_data: Dict[str, Any], test: bool = False
-    ) -> Dict[str, Any]:
+        new_data: Dict[str, CriticalServiceType],
+        existing_data: CriticalServiceType,
+        test: bool = False,
+    ) -> Dict[str, object]:
         """
         Update the ConfigMap with new critical services.
 
@@ -272,8 +298,8 @@ class CriticalServices:
 
     @staticmethod
     def update_critical_services(
-        new_data: Dict[str, str],
-    ) -> Union[Dict[str, Any], Dict[str, str]]:
+        new_data: Dict[str, CriticalServiceType],
+    ) -> Union[Dict[str, object], ErrorDict]:
         """
         Function to update critical services in the ConfigMap.
 
@@ -285,18 +311,8 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
-            if "error" in new_data:
-                app.logger.error(f"[{log_id}] Error in new data: {new_data}")
-                return new_data
-
             # Try parsing the JSON string from the 'from_file' key
-            try:
-                new_services = json.loads(new_data["from_file"])
-            except json.JSONDecodeError as json_err:
-                app.logger.error(
-                    f"[{log_id}] Invalid JSON format in request: {json_err}"
-                )
-                return {"error": "Invalid JSON format in services"}
+            new_services = json.loads(str(new_data["from_file"]))
 
             # Check if 'critical-services' key is present in the parsed data
             if "critical-services" not in new_services:
@@ -307,15 +323,21 @@ class CriticalServices:
             existing_data = CriticalServiceHelper.fetch_service_list(
                 STATIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
+            # Check if there was an error in the existing services data
+            if isinstance(existing_data, Exception):
+                app.logger.warning(f"[{log_id}] Could not fetch critical services.")
+                return {
+                    "exception": f"Unexpected error {str(existing_data)} occured while existing criticalservices"
+                }
 
-            if "error" in existing_data:
-                app.logger.error(f"[{log_id}] Error in existing data: {existing_data}")
-                return existing_data
             # Call the update_configmap function to update the critical services
             result = CriticalServices.update_configmap(new_services, existing_data)
             return result
 
         # Handle any exceptions and return error responses
+        except json.JSONDecodeError as json_err:
+            app.logger.error(f"[{log_id}] Invalid JSON format in request: {json_err}")
+            return {"error": "Invalid JSON format in services"}
         except Exception as e:
             app.logger.error(
                 f"[{log_id}] Unhandled error in update_critical_services: {str(e)}"
@@ -328,8 +350,8 @@ class CriticalServicesStatus:
 
     @staticmethod
     def fetch_critical_services_status(
-        services: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        services: CriticalServiceType,
+    ) -> ListCriticalServiceType:
         """Fetch and format critical services grouped by namespace in the required structure.
 
         Args:
@@ -339,7 +361,7 @@ class CriticalServicesStatus:
             Formatted dictionary of services by namespace or error dictionary
         """
         log_id = get_log_id()
-        result: Dict[str, Dict[str, List[Dict[str, Any]]]] = {"namespace": {}}
+        result: ListCriticalServiceType = {"namespace": {}}
 
         # Iterate over the services and group them by their namespace
         for name, details in services.items():
@@ -360,7 +382,9 @@ class CriticalServicesStatus:
         return result
 
     @staticmethod
-    def get_criticalservice_status_list() -> Dict[str, Any]:
+    def get_criticalservice_status_list() -> (
+        Union[Dict[str, ListCriticalServiceType], ErrorDict]
+    ):
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
 
@@ -375,11 +399,12 @@ class CriticalServicesStatus:
             services = CriticalServiceHelper.fetch_service_list(
                 DYNAMIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
-
             # Check if there was an error in the services data
-            if "error" in services:
+            if isinstance(services, Exception):
                 app.logger.warning(f"[{log_id}] Could not fetch critical services.")
-                return services
+                return {
+                    "exception": f"Unexpected error {str(services)} occured while fetching criticalservices"
+                }
 
             # If no critical services are found, log and return an error response
             if not services:
@@ -410,8 +435,8 @@ class CriticalServicesStatus:
 
     @staticmethod
     def get_service_details(
-        services: Dict[str, Dict[str, Any]], service_name: str, test: bool = False
-    ) -> Dict[str, Any]:
+        services: CriticalServiceType, service_name: str, test: bool = False
+    ) -> Union[DescribeStatusType, Exception]:
         """
         Retrieve details of a specific critical service.
 
@@ -437,7 +462,7 @@ class CriticalServicesStatus:
             )
 
             # Initialize variables for filtering pods and counting running pods
-            filtered_pods: List[Dict[str, Any]] = []
+            filtered_pods: List[Dict[str, str]] = []
             running_pods: int = 0
             configured_instances: Optional[int] = None
 
@@ -493,17 +518,19 @@ class CriticalServicesStatus:
                 f"[{log_id}] API exception occurred while retrieving service '{service_name}': "
                 f"{str(api_exc)}"
             )
-            return {"error": str(api_exc)}
+            return Exception(api_exc)
 
         # Catch-all for unexpected errors
         except Exception as e:
             app.logger.error(
                 f"[{log_id}] Unexpected error occurred while processing service '{service_name}': {str(e)}"
             )
-            return {"error": str(e)}
+            return e
 
     @staticmethod
-    def describe_service_status(service_name: str) -> Dict[str, Any]:
+    def describe_service_status(
+        service_name: str,
+    ) -> Union[DescribeStatusType, ErrorDict]:
         """
         Retrieve service details and return as a JSON response.
 
@@ -522,6 +549,12 @@ class CriticalServicesStatus:
             services = CriticalServiceHelper.fetch_service_list(
                 DYNAMIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
             )
+            if isinstance(services, Exception):
+                app.logger.warning(f"[{log_id}] Could not fetch critical services.")
+                return {
+                    "exception": f"Unexpected error {str(services)} occured while fetching criticalservices"
+                }
+
             # Check if the service exists in the services dictionary
             if service_name not in services:
                 app.logger.warning(
@@ -529,8 +562,13 @@ class CriticalServicesStatus:
                 )
                 return {"error": "Service not found"}
 
+            data = CriticalServicesStatus.get_service_details(services, service_name)
+            if isinstance(data, Exception):
+                return {
+                    "exception": f"Unexpected error {str(data)} occured while fetching details"
+                }
             # Get the service details using the helper method
-            return CriticalServicesStatus.get_service_details(services, service_name)
+            return data
 
         # Catch all exceptions during the process of fetching service details
         except Exception as e:

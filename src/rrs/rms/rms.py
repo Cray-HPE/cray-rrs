@@ -116,8 +116,9 @@ def check_failure_type(components: List[str]) -> None:
             app.logger.info("Node %s has failed", component_xname)
             rack_id = ""
             for component in hsm_data.get("Components", []):
-                if component["ID"] == component_xname:
-                    rack_id = component["ID"].split("c")[
+                comp_id = component["ID"]
+                if comp_id == component_xname and isinstance(comp_id, str):
+                    rack_id = comp_id.split("c")[
                         0
                     ]  # Extract "x3000" from "x3000c0s1b75n75"
                     break
@@ -130,7 +131,9 @@ def check_failure_type(components: List[str]) -> None:
             rack_components = [
                 {"ID": component["ID"], "State": component["State"]}
                 for component in hsm_data.get("Components", [])
-                if component["ID"].startswith(rack_id)
+                if (comp_id := component["ID"])
+                and isinstance(comp_id, str)
+                and comp_id.startswith(rack_id)
             ]
 
             rack_failure = True
@@ -257,7 +260,9 @@ def get_management_xnames() -> Optional[List[str]]:
         return None
     try:
         management_xnames = {
-            component["ID"] for component in hsm_data.get("Components", [])
+            component["ID"]
+            for component in hsm_data.get("Components", [])
+            if isinstance(component["ID"], str)
         }
         app.logger.debug(list(management_xnames))
         return list(management_xnames)
