@@ -19,7 +19,7 @@ _If this repo is around only for historical purposes and the project is no longe
 
 _This is an example of how you may give instructions on setting up your project locally. To get a local copy up and running follow these simple example steps._
 
-_Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible._ 
+_Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible._
 
 ### Prerequisites
 

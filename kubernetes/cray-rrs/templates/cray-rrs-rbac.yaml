@@ -36,7 +36,7 @@ kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: {{.Values.serviceAccountName }}
-  namespace: {{ .Values.namespace }}  
+  namespace: {{ .Values.namespace }}
 rules:
 - apiGroups: ["apps"]
   resources: ["deployments", "statefulsets", "daemonsets"]
@@ -50,7 +50,7 @@ kind: ClusterRoleBinding
 metadata:
   labels:
     app.kubernetes.io/name: {{.Values.serviceAccountName }}
-  namespace: {{ .Values.namespace }}  
+  namespace: {{ .Values.namespace }}
 subjects:
 - kind: ServiceAccount
   name: {{.Values.serviceAccountName }}
