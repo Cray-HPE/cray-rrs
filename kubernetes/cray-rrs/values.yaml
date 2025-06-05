@@ -150,3 +150,11 @@ cray-service:
     hostPath:
       path: /root/.ssh
       type: Directory
+  ingress:
+    enabled: enable
+    ui: false
+    gateways:
+      - services/services-gateway
+      - services/customer-admin-gateway
+    prefix: "/apis/rrs"
+    uri: /

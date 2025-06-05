@@ -116,7 +116,7 @@ data:
           "namespace": "services",
           "type": "Deployment"
         },
-        "cray-dns-powerdns-manager": {
+        "cray-dns-powerdns-postgres": {
           "namespace": "services",
           "type": "Deployment"
         },
@@ -184,15 +184,7 @@ data:
           "namespace": "spire",
           "type": "StatefulSet"
         },
-        "spire-postgres": {
-          "namespace": "spire",
-          "type": "StatefulSet"
-        },
         "cray-spire-server": {
-          "namespace": "spire",
-          "type": "StatefulSet"
-        },
-        "spire-server": {
           "namespace": "spire",
           "type": "StatefulSet"
         },
@@ -312,10 +304,6 @@ data:
           "namespace": "cert-manager",
           "type": "Deployment"
         },
-        "istio-operator": {
-          "namespace": "istio-operator",
-          "type": "Deployment"
-        },
         "istio-ingressgateway": {
           "namespace": "istio-system",
           "type": "Deployment"
@@ -397,10 +385,6 @@ data:
           "type": "DaemonSet"
         },
         "kube-proxy": {
-          "namespace": "kube-system",
-          "type": "DaemonSet"
-        },
-        "weave-net": {
           "namespace": "kube-system",
           "type": "DaemonSet"
         },
