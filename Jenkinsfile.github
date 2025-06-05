@@ -23,7 +23,8 @@
  *  OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-@Library('csm-shared-library') _
+@Library('cms-meta-tools') _
+@Library('csm-shared-library') __
 
 pipeline {
     agent {
@@ -42,20 +43,39 @@ pipeline {
         RRS_RMS_IMAGE_NAME = "cray-rrs/cray-rrs-rms"
         DESCRIPTION = "Implements Rack Resiliency Service."
         IS_STABLE = getBuildIsStable()
-        VERSION = getDockerBuildVersion(isStable: env.IS_STABLE)
-        DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
-        DOCKER_ARGS = getDockerBuildArgs(name: env.NAME, description: env.DESCRIPTION, version: env.DOCKER_VERSION)
-        CHART_VERSION = getChartVersion(version: env.VERSION)
     }
 
     stages {
+        stage("Prep") {
+            steps {
+                // Clone the cms-meta-tools repository. This is needed for the next function call to work.
+                // This function is defined in cms-meta-tools:vars/cloneCMSMetaTools.groovy
+                cloneCMSMetaTools()
+
+                // Set Versions (this creates the .*version files)
+                // This function is defined in cms-meta-tools:vars/setVersionFiles.groovy
+                setVersionFiles()
+
+                // This replaces the hard-coded generic version strings with the ones created by the previous function
+                sh "make replace_version_strings"
+            }
+        }
+
         stage("Lint") {
+            environment {
+                DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+                DOCKER_ARGS = getDockerBuildArgs(name: env.NAME, description: env.DESCRIPTION, version: env.DOCKER_VERSION)
+            }
             steps {
                 sh "make lint"
             }
         }
 
         stage("Unittests") {
+            environment {
+                DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+                DOCKER_ARGS = getDockerBuildArgs(name: env.NAME, description: env.DESCRIPTION, version: env.DOCKER_VERSION)
+            }
             steps {
                 sh "make unittests"
             }
@@ -64,6 +84,10 @@ pipeline {
         stage("Build") {
             parallel {
                 stage('Image') {
+                    environment {
+                        DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+                        DOCKER_ARGS = getDockerBuildArgs(name: env.NAME, description: env.DESCRIPTION, version: env.DOCKER_VERSION)
+                    }
                     steps {
                         sh "make images"
                     }
@@ -71,9 +95,10 @@ pipeline {
 
                 // stage('Chart') {
                 //     environment {
-                //        IMAGE = "artifactory.algol60.net/csm-docker/${env.IS_STABLE ? "stable" : "unstable"}/${env.NAME}"
+                //         DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
                 //     }
                 //     steps {
+                //         updateCsmHelmChartAppVersion(chartPath: "${WORKSPACE}/kubernetes/${NAME}", appVersion: env.DOCKER_VERSION)
                 //         sh "make chart"
                 //     }
                 // }
@@ -81,6 +106,9 @@ pipeline {
         }
 
         stage("Publish") {
+            environment {
+                DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
+            }
             steps {
                 script {
                     publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api")

@@ -25,10 +25,10 @@
 NAME ?=cray-rrs
 CHARTDIR ?= kubernetes
 DOCKER_VERSION ?= $(shell head -1 .docker_version)
-API_VERSION ?= $(shell head -1 .api_version)
+API_VERSION ?= $(shell head -1 .version)
 CHART_VERSION ?= $(shell head -1 .chart_version)
-
-IMAGE ?= artifactory.algol60.net/csm-docker/stable/${NAME}
+STABLE ?= $(shell head -1 .stable)
+IMAGE ?= artifactory.algol60.net/csm-docker/$(STABLE)/$(NAME)
 
 RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
 RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
@@ -66,6 +66,16 @@ rrs_rms_image:
 dev-image:
 	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --target dev --tag '${NAME}-dev:${DOCKER_VERSION}' .
 
+# Replace Old String with New String in specified Target Files
+#                        Old Regex          New String          Target file
+replace_version_strings:
+	./replace_strings.sh "0[.]0[.]0"        "$(API_VERSION)"    setup.py
+	./replace_strings.sh "0[.]0[.]0-api"    "$(API_VERSION)"    src/api/openapi.yaml
+	./replace_strings.sh "Unknown"          "$(API_VERSION)"    src/api/controllers/routes.py
+	./replace_strings.sh "0[.]0[.]0-chart"  "$(CHART_VERSION)"  kubernetes/cray-rrs/Chart.yaml
+	./replace_strings.sh "0[.]0[.]0-docker" "$(DOCKER_VERSION)" kubernetes/cray-rrs/Chart.yaml
+	./replace_strings.sh "S-T-A-B-L-E"      "$(STABLE)"         kubernetes/cray-rrs/values.yaml
+
 lint: dev-image
 	docker run --rm '${NAME}-dev:${DOCKER_VERSION}' /app/run_lint.sh
 
@@ -79,7 +89,7 @@ chart-metadata:
 		--user $(shell id -u):$(shell id -g) \
 		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
 		${CHART_METADATA_IMAGE} \
-		--version "${CHART_VERSION}" --app-version "${API_VERSION}" \
+		--version "${CHART_VERSION}" --app-version "${DOCKER_VERSION}" \
 		-i ${NAME} ${IMAGE}:${CHART_VERSION} \
 		--cray-service-globals
 	docker run --rm \
