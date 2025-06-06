@@ -42,7 +42,7 @@ from typing import Any, Dict, List, Tuple, Union, Literal, Optional
 import requests
 import urllib3
 import yaml
-from kubernetes import client  # type: ignore
+from kubernetes import client
 from kubernetes.client.rest import ApiException
 from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper

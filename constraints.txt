@@ -1,6 +1,5 @@
 aniso8601==10.0.0
 astroid==3.3.9
-attrs==25.3.0
 blinker==1.9.0
 cachetools==5.5.2
 certifi==2025.1.31
@@ -17,10 +16,8 @@ iniconfig==2.1.0
 isort==6.0.1
 itsdangerous==2.2.0
 Jinja2==3.1.6
-jsonschema==4.17.3
-jsonschema-typed-v2==0.8.0
 kubernetes==32.0.1
-kubernetes-typed==18.20.2
+kubernetes-stubs==22.6.0.post1
 MarkupSafe==3.0.2
 mccabe==0.7.0
 mypy==1.15.0
@@ -33,7 +30,6 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pycodestyle==2.13.0
 pylint==3.3.6
-pyrsistent==0.20.0
 pytest==8.3.5
 pytest-cov==6.1.1
 python-dateutil==2.9.0.post0
@@ -44,9 +40,9 @@ requests-oauthlib==2.0.0
 rsa==4.9
 six==1.17.0
 tomlkit==0.13.2
-types-colorama==0.4.15.20240311
-types-PyYAML==6.0.12.20250402
-typing==3.7.4.3
+types-PyYAML==6.0.12.20250516
+types-requests==2.32.0.20250602
+types-urllib3==1.26.25.14
 typing_extensions==4.13.0
 urllib3==2.3.0
 websocket-client==1.8.0

@@ -35,7 +35,7 @@ import logging
 from logging import Logger
 from typing import Dict, Any, Optional
 import yaml
-from kubernetes import client, config  # type: ignore
+from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
 from src.lib.rrs_constants import (
     RETRY_DELAY,

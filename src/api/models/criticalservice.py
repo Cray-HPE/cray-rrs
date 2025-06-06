@@ -32,7 +32,7 @@ Classes:
 from typing import Dict, Tuple, List, Union
 import json
 from flask import current_app as app
-from kubernetes import client  # type: ignore
+from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
