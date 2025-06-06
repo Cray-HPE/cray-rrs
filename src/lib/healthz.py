@@ -32,7 +32,8 @@ from flask_restful import Resource
 from src.lib.rrs_logging import get_log_id
 
 
-class Ready(Resource):
+# Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
+class Ready(Resource):  # type: ignore[misc]
     """Return k8s readiness check"""
 
     def get(self) -> Tuple[Dict[None, None], Literal[HTTPStatus.OK]]:
@@ -42,7 +43,8 @@ class Ready(Resource):
         return {}, HTTPStatus.OK  # Return empty body with HTTP 200 OK
 
 
-class Live(Resource):
+# Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
+class Live(Resource):  # type: ignore[misc]
     """Return k8s liveness check"""
 
     def get(self) -> Tuple[Dict[None, None], Literal[HTTPStatus.OK]]:
