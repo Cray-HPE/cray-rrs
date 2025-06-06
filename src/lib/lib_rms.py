@@ -43,7 +43,7 @@ import requests
 import urllib3
 import yaml
 from kubernetes import client
-from kubernetes.client.rest import ApiException
+from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager

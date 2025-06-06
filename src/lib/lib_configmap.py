@@ -72,9 +72,9 @@ class ConfigMapHelper:
     def load_k8s_config() -> None:
         """Load Kubernetes configuration for API access."""
         try:
-            config.load_incluster_config()
+            config.load_incluster_config()  # type: ignore[attr-defined]
         except Exception:
-            config.load_kube_config()
+            config.load_kube_config()  # type: ignore[attr-defined]
 
     @staticmethod
     def create_configmap(namespace: str, configmap_lock_name: str) -> None:
