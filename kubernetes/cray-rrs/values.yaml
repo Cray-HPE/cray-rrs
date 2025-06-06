@@ -29,6 +29,9 @@
 #   repository: ""
 #   tag: "" (default = "latest")
 #   pullPolicy: "" (default = "IfNotPresent")
+
+# The S-T-A-B-L-E values are replaced dynamically at build time
+
 cray-service:
   type: Deployment
   nameOverride: cray-rrs
@@ -45,7 +48,7 @@ cray-service:
     cray-rrs-init:
       name: cray-rrs-init
       image:
-        repository: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-init
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-init
       env:
         - name: static_cm_name
           value: "rrs-mon-static"
@@ -64,7 +67,7 @@ cray-service:
     cray-rrs-rms:
       name: cray-rrs-rms
       image:
-        repository: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-rms
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-rms
       env:
         - name: static_cm_name
           value: "rrs-mon-static"
@@ -104,7 +107,7 @@ cray-service:
     cray-rrs-api:
       name: cray-rrs-api
       image:
-        repository: artifactory.algol60.net/csm-docker/unstable/cray-rrs/cray-rrs-api
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-api
       env:
         - name: static_cm_name
           value: "rrs-mon-static"

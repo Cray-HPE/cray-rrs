@@ -71,7 +71,7 @@ def create_app() -> Flask:
     - Creates the Flask application and Flask-RESTful API instance.
     - Configures logging to stream container logs to stdout.
     - Calls an internal service endpoint to update the API start timestamp.
-    - Reads the version information from the /.version file (or defaults to "Unknown").
+    - Sets the version information
     - Registers all API endpoints for health checks, version info, zones, and critical services.
 
     Returns:
@@ -125,12 +125,8 @@ def create_app() -> Flask:
             app.logger.exception("Error %s occurred. Exiting...", str(e))
             sys.exit(1)
 
-    # Version reading
-    try:
-        with open("/app/.version", encoding="utf-8") as version_file:
-            app.config["VERSION"] = version_file.read().splitlines()[0]
-    except IOError:
-        app.config["VERSION"] = "Unknown"
+    # This version value is substituted dynamically at build time
+    app.config["VERSION"] = "Unknown"
 
     # Register healthz and version endpoints
     api.add_resource(Ready, "/healthz/ready")

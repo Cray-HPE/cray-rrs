@@ -24,7 +24,8 @@
 
 apiVersion: v2
 name: cray-rrs
-version: 1.0.0
+# This version is substituted dynamically at build time
+version: 0.0.0-chart
 description: Kubernetes resources for cray-rrs
 keywords:
   - cray-rrs
@@ -37,4 +38,5 @@ maintainers:
   - name: ravikanth-nalla-hpe
   - name: keshav-06-hpe
   - name: arka-pramanik-hpe
-appVersion: 1.0.0
+# This version is substituted dynamically at build time
+appVersion: 0.0.0-docker

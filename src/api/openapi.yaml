@@ -28,7 +28,8 @@ info:
   license:
     name: Hewlett Packard Enterprise Development LP
     url: http://www.hpe.com/
-  version: 1.0.0
+  # The version is filled in dynamically at build time
+  version: 0.0.0-api
   description: >
     The Rack Resiliency Service (RRS) provides a set of APIs to manage Rack Level resiliency. It queries the Kubernetes cluster to provide aggregated zone
     information and detailed critical service status. It gathers node details across various zones
