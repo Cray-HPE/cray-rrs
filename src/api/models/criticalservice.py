@@ -106,7 +106,7 @@ class CriticalServiceHelper:
 
         for pod in pod_list.items:
             # Use early continue to reduce nesting
-            if not pod.metadata.owner_references:
+            if not pod.metadata or not pod.metadata.owner_references:
                 continue
 
             # Check if any owner reference matches our criteria
@@ -119,17 +119,26 @@ class CriticalServiceHelper:
             if not is_matching:
                 continue
 
+            if not pod.status:
+                continue
             pod_status = pod.status.phase
             if pod_status == "Running":
                 running_pods += 1
 
+            if not pod.spec:
+                continue
             node_name = pod.spec.node_name
+            if node_name is None:
+                continue
             zone = node_zone_map.get(node_name, "unknown")
+
+            if not pod.metadata.name:
+                continue
 
             result.append(
                 {
                     "Name": pod.metadata.name,
-                    "Status": pod_status,
+                    "Status": pod_status if pod_status else "Unknown",
                     "Node": node_name,
                     "Zone": zone,
                 }

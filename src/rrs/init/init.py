@@ -102,11 +102,19 @@ def zone_discovery() -> Tuple[
             return False, updated_k8s_data, updated_ceph_data
 
         for node in nodes:
-            if not hasattr(node, "metadata"):
+            if not hasattr(node, "metadata") or node.metadata is None:
                 logger.error("Invalid node object found without metadata")
                 continue
 
             node_name = node.metadata.name
+            if node_name is None:
+                logger.error("Node has no name, skipping")
+                continue
+
+            if node.metadata.labels is None:
+                logger.error("Node %s has no labels, skipping", node_name)
+                continue
+
             zone = node.metadata.labels.get("topology.kubernetes.io/zone")
             if not zone:
                 logger.error("Node %s does not have a zone marked for it", node_name)

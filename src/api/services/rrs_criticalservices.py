@@ -487,11 +487,24 @@ class CriticalServicesStatus:
                 if resource_type in resource_methods:
                     resource = resource_methods[resource_type](service_name, namespace)
                     # Retrieve configured instances (number of replicas or desired instances)
-                    configured_instances = (
-                        resource.spec.replicas
-                        if hasattr(resource.spec, "replicas")
-                        else resource.status.desired_number_scheduled
-                    )
+                    if resource_type == "DaemonSet":
+                        configured_instances = (
+                            getattr(resource, "status", None)
+                            and hasattr(
+                                getattr(resource, "status"), "desired_number_scheduled"
+                            )
+                            and getattr(
+                                getattr(resource, "status"),
+                                "desired_number_scheduled",
+                                None,
+                            )
+                        ) or None
+                    else:  # Deployment or StatefulSet
+                        configured_instances = (
+                            getattr(resource, "spec", None)
+                            and hasattr(getattr(resource, "spec"), "replicas")
+                            and getattr(getattr(resource, "spec"), "replicas", None)
+                        ) or None
 
             # Log the success of retrieving service details
             app.logger.info(

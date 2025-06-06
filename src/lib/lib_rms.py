@@ -181,19 +181,20 @@ class Helper:
         v1 = client.CoreV1Api()
         try:
             secret = v1.read_namespaced_secret(SECRET_NAME, SECRET_DEFAULT_NAMESPACE)
-            client_secret = base64.b64decode(secret.data[SECRET_DATA_KEY]).decode(
+            if secret.data is not None:
+                client_secret = base64.b64decode(secret.data[SECRET_DATA_KEY]).decode(
                 "utf-8"
             )
-            keycloak_url = "https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token"
-            data = {
-                "grant_type": "client_credentials",
-                "client_id": "admin-client",
-                "client_secret": f"{client_secret}",
-            }
-            response = requests.post(
-                keycloak_url, data=data, timeout=REQUESTS_TIMEOUT, verify=False
-            )
-            token_data = response.json()
+                keycloak_url = "https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token"
+                data = {
+                    "grant_type": "client_credentials",
+                    "client_id": "admin-client",
+                    "client_secret": f"{client_secret}",
+                }
+                response = requests.post(
+                    keycloak_url, data=data, timeout=REQUESTS_TIMEOUT, verify=False
+                )
+                token_data = response.json()
             token: Optional[str] = token_data.get("access_token")
             return token
 
@@ -666,6 +667,8 @@ class k8sHelper:
                 logger.error("Environment variable HOSTNAME is not set")
                 return ""
             pod = v1.read_namespaced_pod(name=pod_name, namespace=NAMESPACE)
+            if pod.spec is None:
+                return ""
             node_name: str = str(pod.spec.node_name) if pod.spec.node_name else ""
             return node_name
         except ApiException as e:
@@ -689,7 +692,12 @@ class k8sHelper:
             if not pods.items:
                 logger.error("kube-controller-manager pod not found")
                 return None
-            command = pods.items[0].spec.containers[0].command
+            first_pod = pods.items[0]
+            if first_pod.spec is None or first_pod.spec.containers is None:
+                return None
+            command = first_pod.spec.containers[0].command
+            if command is None:
+                return None
             grace_period_flag = next(
                 (arg for arg in command if "--node-monitor-grace-period" in arg), None
             )
@@ -758,9 +766,13 @@ class k8sHelper:
                 logger.error("Failed to retrieve k8s nodes")
                 return "Unknown"
             for node in nodes:
-                if isinstance(node, V1Node) and node.metadata.name == node_name:
+                if (
+                    isinstance(node, V1Node)
+                    and node.metadata is not None
+                    and node.metadata.name == node_name
+                ):
                     # If the node has conditions, we check the last one
-                    if node.status.conditions:
+                    if node.status is not None and node.status.conditions:
                         status = node.status.conditions[-1].status
                         return "Ready" if status == "True" else "NotReady"
                     return "Unknown"
@@ -795,8 +807,14 @@ class k8sHelper:
                 if not isinstance(node, V1Node):
                     continue
 
+                if node.metadata is None:
+                    continue
                 node_name = node.metadata.name
+                if node_name is None:
+                    continue
                 node_status = k8sHelper.get_node_status(node_name, nodes)
+                if node.metadata.labels is None:
+                    continue
                 node_zone = node.metadata.labels.get("topology.kubernetes.io/zone")
 
                 # Skip nodes without a zone label
@@ -869,14 +887,24 @@ class k8sHelper:
             pod_info: pod_info_type = []
 
             for pod in all_pods:
+                if pod.spec is None:
+                    continue
                 node_name = pod.spec.node_name
+                if node_name is None:
+                    continue
                 zone = node_zone_map.get(node_name, "unknown")
+                if pod.metadata is None:
+                    continue
+                pod_name = pod.metadata.name
+                if pod_name is None:
+                    continue
+                pod_labels = pod.metadata.labels
                 pod_info.append(
                     {
-                        "Name": pod.metadata.name,
+                        "Name": pod_name,
                         "Node": node_name,
                         "Zone": zone,
-                        "labels": pod.metadata.labels,
+                        "labels": pod_labels if pod_labels is not None else {},
                     }
                 )
 
@@ -970,31 +998,49 @@ class criticalServicesHelper:
             apps_v1 = client.AppsV1Api()
 
             if service_type == "Deployment":
-                app = apps_v1.read_namespaced_deployment(
+                deployment = apps_v1.read_namespaced_deployment(
                     service_name, service_namespace
                 )
+                if (
+                    deployment.status is None
+                    or deployment.spec is None
+                    or deployment.spec.selector is None
+                ):
+                    return None, None, None
                 return (
-                    app.status.replicas,
-                    app.status.ready_replicas,
-                    app.spec.selector.match_labels,
+                    deployment.status.replicas,
+                    deployment.status.ready_replicas,
+                    deployment.spec.selector.match_labels,
                 )
             if service_type == "StatefulSet":
-                app = apps_v1.read_namespaced_stateful_set(
+                statefulset = apps_v1.read_namespaced_stateful_set(
                     service_name, service_namespace
                 )
+                if (
+                    statefulset.status is None
+                    or statefulset.spec is None
+                    or statefulset.spec.selector is None
+                ):
+                    return None, None, None
                 return (
-                    app.status.replicas,
-                    app.status.ready_replicas,
-                    app.spec.selector.match_labels,
+                    statefulset.status.replicas,
+                    statefulset.status.ready_replicas,
+                    statefulset.spec.selector.match_labels,
                 )
             if service_type == "DaemonSet":
-                app = apps_v1.read_namespaced_daemon_set(
+                daemonset = apps_v1.read_namespaced_daemon_set(
                     service_name, service_namespace
                 )
+                if (
+                    daemonset.status is None
+                    or daemonset.spec is None
+                    or daemonset.spec.selector is None
+                ):
+                    return None, None, None
                 return (
-                    app.status.desired_number_scheduled,
-                    app.status.number_ready,
-                    app.spec.selector.match_labels,
+                    daemonset.status.desired_number_scheduled,
+                    daemonset.status.number_ready,
+                    daemonset.spec.selector.match_labels,
                 )
             logger.warning("Unsupported service type: %s", service_type)
             return None, None, None
