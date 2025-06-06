@@ -5,6 +5,7 @@ pytest-cov
 pycodestyle
 pylint
 mypy
+types-Flask
 types-PyYAML
 types-requests
 types-urllib3

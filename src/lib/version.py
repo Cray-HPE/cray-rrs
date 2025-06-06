@@ -32,7 +32,7 @@ from flask_restful import Resource
 from src.lib.rrs_logging import get_log_id
 
 
-class Version(Resource):  # type: ignore[misc]
+class Version(Resource):
     """Return RRS version information"""
 
     def get(self) -> Tuple[Dict[str, str], Literal[HTTPStatus.OK]]:

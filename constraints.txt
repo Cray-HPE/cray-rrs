@@ -40,9 +40,14 @@ requests-oauthlib==2.0.0
 rsa==4.9
 six==1.17.0
 tomlkit==0.13.2
+types-click==7.1.8
+types-Flask==1.1.6
+types-Jinja2==2.11.9
+types-MarkupSafe==1.1.10
 types-PyYAML==6.0.12.20250516
 types-requests==2.32.0.20250602
 types-urllib3==1.26.25.14
+types-Werkzeug==1.0.9
 typing_extensions==4.13.0
 urllib3==2.3.0
 websocket-client==1.8.0

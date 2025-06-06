@@ -3,3 +3,6 @@
 kubernetes
 flask
 flask-restful
+PyYAML
+requests
+urllib3
