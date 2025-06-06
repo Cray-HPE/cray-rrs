@@ -33,7 +33,7 @@ from datetime import datetime
 import sys
 import logging
 from logging import Logger
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 import yaml
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
@@ -186,11 +186,9 @@ class ConfigMapHelper:
                 )
                 break
 
-    # Any type is used here due to the complexity of the underlying config map schema.
-    # Strict typing would require extensive type definitions that outweigh the benefits.
     @staticmethod
     def update_configmap_data(
-        configmap_data: Optional[Dict[str, Any]],
+        configmap_data: Optional[Dict[str, str]],
         key: str,
         new_data: str,
         namespace: str = NAMESPACE,
@@ -264,20 +262,18 @@ class ConfigMapHelper:
         except Exception as e:
             logger.exception("Unhandled exception in update_configmap_data")
 
-    # Any type is used here due to the complexity of the underlying config map schema.
-    # Strict typing would require extensive type definitions that outweigh the benefits.
     @staticmethod
     def read_configmap(
         namespace: str,
         configmap_name: str,
-    ) -> Dict[str, Any]:
+    ) -> Dict[str, str]:
         """
         Fetch data from a Kubernetes ConfigMap
         Args:
             namespace (str): The Kubernetes namespace where the ConfigMap is located.
             configmap_name (str): The name of the ConfigMap to read.
         Returns:
-            Dict[str, Any]:
+            Dict[str, str]:
                 - If successful, returns the `.data` field of the ConfigMap as a dictionary.
                 - If an error occurs, returns a dictionary with an "error" key and error message.
         """
@@ -295,7 +291,7 @@ class ConfigMapHelper:
             config_map = v1.read_namespaced_config_map(
                 name=configmap_name, namespace=namespace
             )
-            data: Dict[str, Any] = config_map.data
+            data = config_map.data
             if not data or not isinstance(data, dict):
                 logger.error(
                     "Data is missing in configmap %s or not in expected format (dict)",
