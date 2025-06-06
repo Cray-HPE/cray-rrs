@@ -29,7 +29,7 @@ These tests validate the function's behavior when retrieving details of critical
 """
 
 import unittest
-from typing import Any, Dict, cast
+from typing import Dict, cast
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServicesStatus
 from tests.tests_models.mock_data import (
@@ -95,7 +95,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         The function should return an error message indicating the failure.
         """
         # Cast the mock error response to the expected type
-        error_response = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
+        error_response = cast(Dict[str, Dict[str, object]], MOCK_ERROR_CRT_SVC)
         if "error" not in error_response:
             result = CriticalServicesStatus.get_service_details(
                 error_response, "coredns"

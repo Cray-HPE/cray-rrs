@@ -71,6 +71,8 @@ class ConfigMapHelper:
     @staticmethod
     def load_k8s_config() -> None:
         """Load Kubernetes configuration for API access."""
+        # Ignoring attr-defined false-positive errors here, due to known issue with kubernetes-stubs module:
+        # https://github.com/MaterializeInc/kubernetes-stubs/issues/11
         try:
             config.load_incluster_config()  # type: ignore[attr-defined]
         except Exception:

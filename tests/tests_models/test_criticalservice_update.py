@@ -30,7 +30,7 @@ These tests validate the update behavior of critical services in a ConfigMap.
 
 import unittest
 import json
-from typing import cast, Dict, Any
+from typing import cast, Dict
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
 from tests.tests_models.mock_data import (
@@ -95,7 +95,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         Ensures that an error key is present in the response.
         """
         # Convert the dict to a string as expected by the update_configmap method
-        error_data = cast(Dict[str, Any], MOCK_ERROR_CRT_SVC)
+        error_data = cast(Dict[str, object], MOCK_ERROR_CRT_SVC)
 
         result = CriticalServices.update_configmap(
             error_data, MOCK_CRITICAL_SERVICES_RESPONSE, True

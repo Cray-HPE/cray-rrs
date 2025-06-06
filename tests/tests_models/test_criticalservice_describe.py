@@ -29,7 +29,7 @@ Validates retrieval of critical service details.
 """
 
 import unittest
-from typing import Any, Dict, cast
+from typing import Dict, cast
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServicesStatus
 from tests.tests_models.mock_data import (
@@ -62,7 +62,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         """
         # Cast the mock data to the expected type for the get_service_details function
         mock_data = cast(
-            Dict[str, Dict[str, Any]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
+            Dict[str, Dict[str, object]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
         )
 
         result = CriticalServicesStatus.get_service_details(mock_data, "coredns", True)
@@ -81,7 +81,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         """
         # Cast the mock data to the expected type for the get_service_details function
         mock_data = cast(
-            Dict[str, Dict[str, Any]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
+            Dict[str, Dict[str, object]], MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
         )
         if "unknown-service" not in mock_data:
             result = CriticalServicesStatus.get_service_details(
@@ -98,7 +98,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
         The function should return an error message indicating the failure.
         """
         # Cast the mock data to the expected type for the get_service_details function
-        mock_data = cast(Dict[str, Dict[str, Any]], MOCK_ERROR_CRT_SVC)
+        mock_data = cast(Dict[str, Dict[str, object]], MOCK_ERROR_CRT_SVC)
         if "error" not in mock_data:
             result = CriticalServicesStatus.get_service_details(
                 mock_data, "coredns", True
