@@ -55,7 +55,7 @@ class CriticalServiceHelper:
             service_name (str): The name of the service for which pods are being fetched.
 
         Returns:
-            Tuple[List[Dict[str, Any]], int]:
+            Tuple[List[Dict[str, str]], int]:
                 - A list of dictionaries, where each dictionary contains details about a pod.
                   Example: {"name": "pod-1", "status": "Running", "node": "node-1", "zone": "zone-1"}
                 - An integer representing the total number of pod instances running.
@@ -79,7 +79,6 @@ class CriticalServiceHelper:
             return [{"exception": str(nodes_data)}], 0
 
         # Build node to zone mapping
-        # pylint: disable=no-member
         node_zone_map = {}
         if isinstance(nodes_data, dict):
             for zone, node_types in nodes_data.items():
@@ -158,7 +157,7 @@ class CriticalServiceHelper:
             cm_key (str): The key within the ConfigMap that contains the service list.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the service list if successful,
+            Union[CriticalServiceType, Exception]: A dictionary containing the service list if successful,
             or an error message if the operation fails.
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking

@@ -71,6 +71,8 @@ ceph_tree_datatype = Dict[
         List[Dict[str, Union[int, str, float, List[int], Dict[Any, Any]]]], List[Any]
     ],
 ]
+# The use of 'Any' in the above definition is intentional, as the types of the data
+# in pool_weights dictionary and the stray list from the 'ceph osd tree -f json' output are unknown
 ceph_host_datatype = List[Dict[str, Union[str, List[str]]]]
 pod_info_type = List[Dict[str, Union[str, Dict[str, str]]]]
 
@@ -318,8 +320,8 @@ class Helper:
         Args:
             pod_node (str): Name of the node where the pod was previously running.
             pod_zone (str): Rack or zone where the pod was running.
-            sls_data (List[Dict[str, Any]]): List of SLS hardware components with xnames and aliases.
-            filtered_data (List[Dict[str, Any]]): HSM component data filtered to relevant roles/subroles.
+            sls_data (sls_datatype): List of SLS hardware components with xnames and aliases.
+            hsm_data (hsm_datatype): HSM component data filtered to relevant roles/subroles.
         Returns:
             None
         """
@@ -535,9 +537,6 @@ class cephHelper:
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
-        Returns:
-            Tuple[Dict[str, Any], bool]:
-            A dictionary of storage nodes with their OSD status and a bool indicating health
         """
         try:
             ceph_tree, ceph_hosts = cephHelper.fetch_ceph_data()
@@ -832,7 +831,7 @@ class k8sHelper:
         """
         Fetch all Kubernetes pods in a single API call and annotate them with their zone.
         Returns:
-            List[Dict[str, Any]]: List of pod metadata dictionaries, each containing:
+            Optional[pod_info_type]: List of pod metadata dictionaries, each containing:
                 - Name: pod name
                 - Node: node name
                 - Zone: zone name (or "unknown" if not found)
@@ -900,12 +899,12 @@ class criticalServicesHelper:
         Check whether pod replicas of a service are evenly distributed across zones.
         Args:
             service_name (str): Name of the service being evaluated.
-            pods (List[Dict[str, Any]]): List of pod metadata containing Zone, Node, and Name.
+            pods (pod_info_type): List of pod metadata containing Zone, Node, and Name.
         Returns:
-            Dict[str, Any]:
+            Dict[str, str]:
                 - service-name: the name of the service
                 - balanced: "true" or "false" depending on replica distribution
-                - status (optional): "no replicas found"
+                - status: "no replicas found"
         """
         try:
             zone_pod_map: Dict[str, Dict[str, List[str]]] = {}
@@ -1047,9 +1046,10 @@ class criticalServicesHelper:
         """
         Update critical service info with status and balanced values
         Args:
-            services_data (Dict[str, Any]): The critical-services section from config.
+            services_data (Dict[str, Dict[str, Dict[str, str]]]): The critical-services section from config.
         Returns:
-            Dict[str, Any]: Updated services_data with 'status' and 'balanced' flags added per service.
+            Dict[str, Dict[str, Dict[str, str]]]:
+            Updated services_data with 'status' and 'balanced' flags added per service.
         """
         try:
             all_pods = k8sHelper.fetch_all_pods()
@@ -1136,4 +1136,4 @@ class criticalServicesHelper:
             logger.exception(
                 "Unexpected error while updating critical service statuses: %s", e
             )
-            return services_data
+            return services_data  # Return original or partially updated data

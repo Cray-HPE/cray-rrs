@@ -69,7 +69,7 @@ class ZoneTopologyService:
     fetch_ceph_zones() -> CephResultType
         Fetches and parses Ceph zone data from the ConfigMap.
 
-    fetch_k8s_zones() -> Dict[str, Dict[str, Any]]
+    fetch_k8s_zones() -> k8sResultType
         Fetches and parses Kubernetes zone data from the ConfigMap.
     """
 
@@ -125,7 +125,7 @@ class ZoneTopologyService:
         Extracts Kubernetes zone details from the ConfigMap.
 
         Returns:
-            Dict[str, Dict[str, Any]]
+            k8sResultType
                 A dictionary mapping zone names to master and worker node lists,
                 or an error dictionary in case of failure.
         """

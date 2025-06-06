@@ -38,7 +38,7 @@ import sys
 import time
 import logging
 from datetime import datetime
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Literal
 from http import HTTPStatus
 import yaml
 from flask import Flask, request, jsonify, Response
@@ -60,6 +60,7 @@ from src.lib.rrs_constants import (
     RETRY_DELAY,
     REQUESTS_TIMEOUT,
     STARTED_STATE,
+    MAIN_LOOP_WAIT_TIME_INTERVAL,
 )
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
@@ -175,7 +176,10 @@ api.add_resource(Version, "/version")
 
 
 @app.route("/api-ts", methods=["POST"])
-def update_api_timestamp() -> Tuple[str, HTTPStatus]:
+def update_api_timestamp() -> (Tuple[Literal["API timestamp updated successfully"],
+                                     Literal[HTTPStatus.OK]] | 
+                               Tuple[Literal["Failed to update API timestamp"],
+                                     Literal[HTTPStatus.INTERNAL_SERVER_ERROR]]):
     """
     Endpoint to update the API server start timestamp in dynamic configmap.
     Returns:
@@ -193,7 +197,7 @@ def update_api_timestamp() -> Tuple[str, HTTPStatus]:
 
 
 @app.route("/scn", methods=["POST"])
-def handleSCN() -> Tuple[Response, HTTPStatus]:
+def handleSCN() -> Tuple[Response, Literal[HTTPStatus.BAD_REQUEST, HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.OK]]:
     """
     Handle incoming POST requests from HMNFD (Hardware Management Notification Framework Daemon).
     This endpoint processes system component notifications and initiates monitoring accordingly.
@@ -500,5 +504,5 @@ if __name__ == "__main__":
                 update_zone_status(state_manager)
             else:
                 app.logger.info("Not running main loop as monitoring is running")
-                time.sleep(600)
+                time.sleep(MAIN_LOOP_WAIT_TIME_INTERVAL)
                 # Development for future scope
