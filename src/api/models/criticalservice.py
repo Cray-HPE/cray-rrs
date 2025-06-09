@@ -29,14 +29,16 @@ Classes:
     - CriticalServiceHelper: Static methods to retrieve pods and ConfigMap data.
 """
 
-from typing import Dict, Tuple, List, Union
+from typing import Dict, Tuple, List
 import json
 from flask import current_app as app
 from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
+from src.api.models.schema import PodSchema
 
+# This is for the format present in the configmap
 CriticalServiceType = Dict[str, Dict[str, str]]
 
 
@@ -46,7 +48,7 @@ class CriticalServiceHelper:
     @staticmethod
     def get_namespaced_pods(
         service_info: Dict[str, str], service_name: str
-    ) -> Tuple[List[Dict[str, str]], int]:
+    ) -> Tuple[List[PodSchema], int]:
         """
         Fetch the pods in a namespace and the number of instances using Kube-config.
 
@@ -63,7 +65,7 @@ class CriticalServiceHelper:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching namespaced pods")
 
-        # Load Kubernetes config (this can be done just once per method call)
+        # Load Kubernetes config
         ConfigMapHelper.load_k8s_config()
 
         # Initialize Kubernetes client
@@ -74,34 +76,27 @@ class CriticalServiceHelper:
 
         # Load K8s zone data
         nodes_data = ZoneTopologyService.fetch_k8s_zones()
-        if isinstance(nodes_data, Exception):
-            app.logger.error(f"[{log_id}] Error fetching nodes data: {nodes_data}")
-            return [{"exception": str(nodes_data)}], 0
 
         # Build node to zone mapping
         node_zone_map = {}
-        if isinstance(nodes_data, dict):
-            for zone, node_types in nodes_data.items():
-                if not isinstance(node_types, dict):
+
+        for zone, node_types in nodes_data.items():
+            for node_type in ["masters", "workers"]:
+                node_list = node_types.get(node_type, [])
+                if not isinstance(node_list, list):
                     continue
 
-                for node_type in ["masters", "workers"]:
-                    node_list = node_types.get(node_type, [])
-                    valid_nodes = {
-                        node["name"]: zone
-                        for node in node_list
-                        if isinstance(node, dict) and "name" in node
-                    }
-                    node_zone_map.update(valid_nodes)
+                valid_nodes = {node["name"]: zone for node in node_list}
+                node_zone_map.update(valid_nodes)
 
         try:
             pod_list = v1.list_namespaced_pod(namespace, label_selector="rrflag")
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
-            return [{"error": f"Failed to fetch pods: {str(e)}"}], 0
+            raise
 
         running_pods = 0
-        result: List[Dict[str, str]] = []
+        result: List[PodSchema] = []
         expected_owner_kind = CriticalServiceHelper.resolve_owner_kind(resource_type)
 
         for pod in pod_list.items:
@@ -111,8 +106,7 @@ class CriticalServiceHelper:
 
             # Check if any owner reference matches our criteria
             is_matching = any(
-                owner.kind == expected_owner_kind
-                and owner.name.startswith(service_name)
+                owner.kind == expected_owner_kind and owner.name == service_name
                 for owner in pod.metadata.owner_references
             )
 
@@ -121,8 +115,11 @@ class CriticalServiceHelper:
 
             if not pod.status:
                 continue
-            pod_status = pod.status.phase
-            if pod_status == "Running":
+
+            is_terminating = pod.metadata.deletion_timestamp is not None
+            pod_status = pod.status.phase if not is_terminating else "Terminating"
+
+            if pod_status == "Running" and not is_terminating:
                 running_pods += 1
 
             if not pod.spec:
@@ -156,7 +153,7 @@ class CriticalServiceHelper:
     @staticmethod
     def fetch_service_list(
         cm_name: str, cm_namespace: str, cm_key: str
-    ) -> Union[CriticalServiceType, Exception]:
+    ) -> CriticalServiceType:
         """
         Fetch the list of services from a ConfigMap in the specified namespace.
 
@@ -166,7 +163,7 @@ class CriticalServiceHelper:
             cm_key (str): The key within the ConfigMap that contains the service list.
 
         Returns:
-            Union[CriticalServiceType, Exception]: A dictionary containing the service list if successful,
+            CriticalServiceType: A dictionary containing the service list if successful,
             or an error message if the operation fails.
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking
@@ -176,6 +173,8 @@ class CriticalServiceHelper:
 
             # Fetch the ConfigMap data containing critical service information
             cm_data = ConfigMapHelper.read_configmap(cm_namespace, cm_name)
+            if "error" in cm_data:
+                raise ValueError(cm_data["error"])
             config_data: Dict[str, CriticalServiceType] = {}
             if cm_key in cm_data:
                 config_data = json.loads(cm_data[cm_key])
@@ -183,7 +182,17 @@ class CriticalServiceHelper:
             # Retrieve the critical services from the configuration
             services = config_data.get("critical-services", {})
             return services
-
+        except KeyError:
+            app.logger.error(f"Key '{cm_key}' not found in cm_data.")
+            raise
+        except TypeError:
+            app.logger.error(
+                "cm_data is not a dict or the value is not a valid string/bytes."
+            )
+            raise
+        except json.JSONDecodeError as e:
+            app.logger.error(f"Invalid JSON: {e}")
+            raise
         except Exception as e:
             app.logger.error(f"[{log_id}] Error while fetching services: {(e)}")
-            return e
+            raise

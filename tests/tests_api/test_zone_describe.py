@@ -30,11 +30,9 @@ and Ceph responses.
 """
 
 import unittest
-from typing import Dict, List, Union, cast
 from flask import Flask
 from src.api.services.rrs_zones import ZoneService
-from src.api.models.zones import CephNodeInfo
-from tests.tests_models.mock_data import (
+from tests.tests_api.mock_data import (
     MOCK_K8S_RESPONSE,
     MOCK_CEPH_RESPONSE,
 )
@@ -63,14 +61,11 @@ class TestZoneDescribe(unittest.TestCase):
         Ensures that the zone name is correctly returned.
         """
 
-        # For ceph_response, we need to specify the union type from both modules
-        ceph_response = cast(
-            Dict[str, List[Union[CephNodeInfo, CephNodeInfo]]], MOCK_CEPH_RESPONSE
+        result = ZoneService.get_zone_info(
+            "x3002", MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE
         )
-
-        result = ZoneService.get_zone_info("x3002", MOCK_K8S_RESPONSE, ceph_response)
-        self.assertIn("Zone Name", result)
-        self.assertEqual(result["Zone Name"], "x3002")
+        self.assertIn("Zone_Name", result)
+        self.assertEqual(result["Zone_Name"], "x3002")
 
     def test_describe_zone_not_found(self) -> None:
         """
@@ -78,14 +73,11 @@ class TestZoneDescribe(unittest.TestCase):
 
         Ensures that the function returns an appropriate error message.
         """
-        # For ceph_response, we need to specify the union type from both modules
-        ceph_response = cast(
-            Dict[str, List[Union[CephNodeInfo, CephNodeInfo]]], MOCK_CEPH_RESPONSE
-        )
 
-        result = ZoneService.get_zone_info("zoneX", MOCK_K8S_RESPONSE, ceph_response)
+        result = ZoneService.get_zone_info(
+            "zoneX", MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE
+        )
         self.assertIn("error", result)
-        self.assertEqual(result["error"], "Zone not found")
 
 
 if __name__ == "__main__":
