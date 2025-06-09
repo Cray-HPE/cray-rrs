@@ -183,8 +183,8 @@ class Helper:
             secret = v1.read_namespaced_secret(SECRET_NAME, SECRET_DEFAULT_NAMESPACE)
             if secret.data is not None:
                 client_secret = base64.b64decode(secret.data[SECRET_DATA_KEY]).decode(
-                "utf-8"
-            )
+                    "utf-8"
+                )
                 keycloak_url = "https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token"
                 data = {
                     "grant_type": "client_credentials",
