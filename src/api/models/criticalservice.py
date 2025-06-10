@@ -74,9 +74,10 @@ class CriticalServiceHelper:
 
         # Load K8s zone data
         nodes_data = ZoneTopologyService.fetch_k8s_zones()
-        if isinstance(nodes_data, Exception):
-            app.logger.error(f"[{log_id}] Error fetching nodes data: {nodes_data}")
-            return [{"exception": str(nodes_data)}], 0
+        # if isinstance(nodes_data, Exception):
+        # except Exception as e:
+        #     app.logger.error(f"[{log_id}] Error fetching nodes data: {e}")
+        #     return [{"exception": str(e)}], 0
 
         # Build node to zone mapping
         node_zone_map = {}
@@ -156,7 +157,7 @@ class CriticalServiceHelper:
     @staticmethod
     def fetch_service_list(
         cm_name: str, cm_namespace: str, cm_key: str
-    ) -> Union[CriticalServiceType, Exception]:
+    ) -> Union[CriticalServiceType]:
         """
         Fetch the list of services from a ConfigMap in the specified namespace.
 
@@ -176,6 +177,8 @@ class CriticalServiceHelper:
 
             # Fetch the ConfigMap data containing critical service information
             cm_data = ConfigMapHelper.read_configmap(cm_namespace, cm_name)
+            if "error" in cm_data:
+                raise ValueError(cm_data["error"])
             config_data: Dict[str, CriticalServiceType] = {}
             if cm_key in cm_data:
                 config_data = json.loads(cm_data[cm_key])
@@ -183,7 +186,17 @@ class CriticalServiceHelper:
             # Retrieve the critical services from the configuration
             services = config_data.get("critical-services", {})
             return services
-
+        except KeyError:
+            app.logger.error(f"Key '{cm_key}' not found in cm_data.")
+            raise
+        except TypeError:
+            app.logger.error(
+                "cm_data is not a dict or the value is not a valid string/bytes."
+            )
+            raise
+        except json.JSONDecodeError as e:
+            app.logger.error(f"Invalid JSON: {e}")
+            raise
         except Exception as e:
             app.logger.error(f"[{log_id}] Error while fetching services: {(e)}")
-            return e
+            raise

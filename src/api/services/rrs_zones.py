@@ -291,14 +291,14 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching zones data")
         k8s_zones, ceph_zones = ZoneService.fetch_zones()
-        if isinstance(k8s_zones, Exception):
-            return {
-                "exception": f"Unexpected error {str(k8s_zones)} occured while fetching k8s_zones"
-            }
-        if isinstance(ceph_zones, Exception):
-            return {
-                "exception": f"Unexpected error {str(ceph_zones)} occured while fetching ceph_zones"
-            }
+        # if isinstance(k8s_zones, Exception):
+        #     return {
+        #         "exception": f"Unexpected error {str(k8s_zones)} occured while fetching k8s_zones"
+        #     }
+        # if isinstance(ceph_zones, Exception):
+        #     return {
+        #         "exception": f"Unexpected error {str(ceph_zones)} occured while fetching ceph_zones"
+        #     }
 
         zone_check_result = ZoneService.zone_exist(k8s_zones, ceph_zones)
         if zone_check_result:
@@ -324,14 +324,14 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching zone description for: {zone_name}")
         k8s_zones, ceph_zones = ZoneService.fetch_zones()
-        if isinstance(k8s_zones, Exception):
-            return {
-                "exception": f"Unexpected error {str(k8s_zones)} occured while fetching k8s_zones"
-            }
-        if isinstance(ceph_zones, Exception):
-            return {
-                "exception": f"Unexpected error {str(ceph_zones)} occured while fetching ceph_zones"
-            }
+        # if isinstance(k8s_zones, Exception):
+        #     return {
+        #         "exception": f"Unexpected error {str(k8s_zones)} occured while fetching k8s_zones"
+        #     }
+        # if isinstance(ceph_zones, Exception):
+        #     return {
+        #         "exception": f"Unexpected error {str(ceph_zones)} occured while fetching ceph_zones"
+        #     }
 
         zone_check_result = ZoneService.zone_exist(k8s_zones, ceph_zones)
         if zone_check_result:

@@ -41,13 +41,25 @@ Usage:
     to expose the functionality of Rack Resiliency Service.
 """
 
+import json
 from typing import Dict, Literal, Tuple, Union
 from http import HTTPStatus
+import yaml
 from flask import request
 from flask_restful import Resource
+from kubernetes import client
 from src.lib.rrs_logging import log_event
-from src.api.services.rrs_zones import ZoneService, ZonesDict, ZoneSection
+from src.api.services.rrs_zones import ZoneService, ZoneSection
 from src.api.models.zones import ErrorDict
+from src.api.models.schema import (
+    ZoneItemSchema,
+    ZoneDescribeSchema,
+    CriticalServicesListSchema,
+    CriticalServiceDescribeSchema,
+    CriticalServicesStatusListSchema,
+    CriticalServiceStatusDescribeSchema,
+    CriticalServiceUpdateSchema,
+)
 from src.api.services.rrs_criticalservices import (
     CriticalServices,
     CriticalServicesStatus,
@@ -69,7 +81,7 @@ class ZoneListResource(Resource):  # type: ignore[misc]
     def get(
         self,
     ) -> Tuple[
-        Union[ZonesDict, ErrorDict],
+        Union[ZoneItemSchema, ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
     ]:
         """
@@ -85,20 +97,31 @@ class ZoneListResource(Resource):  # type: ignore[misc]
             # Retrieve zones using the ZoneMapper utility
             zones = ZoneService.list_zones()
             # If exceptions are caught
-            if "exception" in zones:
-                log_event(f"{zones}", level="ERROR")
-                return zones, HTTPStatus.INTERNAL_SERVER_ERROR
+            # if "exception" in zones:
+            #     log_event(f"{zones}", level="ERROR")
+            #     return zones, HTTPStatus.INTERNAL_SERVER_ERROR
             # If the zone does not exist, return a 404 error
-            if "error" in zones or "Information" in zones:
+            if "Information" in zones:
                 log_event(f"{zones}", level="ERROR")
                 return zones, HTTPStatus.NOT_FOUND
             return zones, HTTPStatus.OK
-        except Exception as e:
-            # Log any error that occurs while fetching zones
-            log_event(f"Error fetching zones: {str(e)}", level="ERROR")
-
-            # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except yaml.YAMLError as e:
+            log_event(f" YAML parsing error: {e}", level="ERROR")
+            return (
+                {"error": f"YAML parsing error: {e}"},
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+        except TypeError as e:
+            log_event(f"Invalid type passed to safe_load: {e}", level="ERROR")
+            return (
+                {"error": f"Invalid type passed to safe_load: {e}"},
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+        # except Exception as e:
+        #     # Log any error that occurs while fetching zones
+        #     log_event(f"Error fetching zones: {str(e)}", level="ERROR")
+        #     # Return error message with HTTP 500 status
+        #     return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to describe the zone entered
@@ -131,22 +154,34 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
             # Fetch the zone description using the ZoneDescriber utility
             zone = ZoneService.describe_zone(zone_name)
             # If exceptions are caught
-            if "exception" in zone:
-                log_event(f"{zone}", level="ERROR")
-                return zone, HTTPStatus.INTERNAL_SERVER_ERROR
+            # if "exception" in zone:
+            #     log_event(f"{zone}", level="ERROR")
+            #     return zone, HTTPStatus.INTERNAL_SERVER_ERROR
             # If the zone does not exist, return a 404 error
-            if "error" in zone or "Information" in zone:
+            if "Information" in zone:
                 log_event(f"{zone}", level="ERROR")
                 return zone, HTTPStatus.NOT_FOUND
 
             # Return the zone description
             return zone, HTTPStatus.OK
-        except Exception as e:
-            # Log any error that occurs while describing the zone
-            log_event(f"Error describing zone {zone_name}: {str(e)}", level="ERROR")
+        except yaml.YAMLError as e:
+            log_event(f" YAML parsing error: {e}", level="ERROR")
+            return (
+                {"error": f"YAML parsing error: {e}"},
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+        except TypeError as e:
+            log_event(f"Invalid type passed to safe_load: {e}", level="ERROR")
+            return (
+                {"error": f"Invalid type passed to safe_load: {e}"},
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+        # except Exception as e:
+        #     # Log any error that occurs while describing the zone
+        #     log_event(f"Error describing zone {zone_name}: {str(e)}", level="ERROR")
 
-            # Return error message with HTTP 500 status
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
+        #     # Return error message with HTTP 500 status
+        #     return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 # Route to get the list of critical services
@@ -177,18 +212,30 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc]
 
             # Retrieve the list of critical services
             critical_services = CriticalServices.get_critical_service_list()
-            if "exception" in critical_services:
-                log_event(f"{critical_services}", level="ERROR")
-                return critical_services, HTTPStatus.INTERNAL_SERVER_ERROR
+            # if "exception" in critical_services:
+            #     log_event(f"{critical_services}", level="ERROR")
+            #     return critical_services, HTTPStatus.INTERNAL_SERVER_ERROR
             if "error" in critical_services:
                 log_event(f"{critical_services}", level="ERROR")
                 return critical_services, HTTPStatus.NOT_FOUND
             # Return the list of critical services
             return critical_services, HTTPStatus.OK
+        except KeyError as e:
+            # log_event(f"Key not found in cm_data.", level="ERROR")
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except TypeError as e:
+            # app.logger.error(
+            #     "cm_data is not a dict or the value is not a valid string/bytes."
+            # )
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except client.exceptions.ApiException as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except json.JSONDecodeError as e:
+            # app.logger.error(f"Invalid JSON: {e}")
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
             # Log any error that occurs while fetching critical services
             log_event(f"Error fetching critical services: {str(e)}", level="ERROR")
-
             # Return error message with HTTP 500 status
             return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
@@ -224,21 +271,33 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc]
             result = CriticalServices.describe_service(service_name)
 
             # If the service is not found, return a 404 error
-            if "exception" in result:
-                log_event(f"{result}", level="ERROR")
-                return result, HTTPStatus.INTERNAL_SERVER_ERROR
+            # if "exception" in result:
+            #     log_event(f"{result}", level="ERROR")
+            #     return result, HTTPStatus.INTERNAL_SERVER_ERROR
             if "error" in result:
                 log_event(f"{result}", level="ERROR")
                 return result, HTTPStatus.NOT_FOUND
 
             # Return the service description
             return result, HTTPStatus.OK
+        except KeyError as e:
+            # log_event(f"Key not found in cm_data.", level="ERROR")
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except TypeError as e:
+            # app.logger.error(
+            #     "cm_data is not a dict or the value is not a valid string/bytes."
+            # )
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except json.JSONDecodeError as e:
+            # app.logger.error(f"Invalid JSON: {e}")
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except client.exceptions.ApiException as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
             # Log any error that occurs while describing the service
             log_event(
                 f"Error describing service {service_name}: {str(e)}", level="ERROR"
             )
-
             # Return error message with HTTP 500 status
             return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
@@ -291,10 +350,17 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
                 return updated_services, HTTPStatus.NOT_FOUND
             # Return the updated list of critical services
             return updated_services, HTTPStatus.OK
+        except KeyError as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except TypeError as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except json.JSONDecodeError as json_err:
+            return {"error": f"{str(json_err)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except client.exceptions.ApiException as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
             # Log any error that occurs while updating the critical services
             log_event(f"Error updating critical services: {str(e)}", level="ERROR")
-
             # Return error message with HTTP 500 status
             return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
 
@@ -335,6 +401,14 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
                 return status, HTTPStatus.NOT_FOUND
             # Return the status of critical services
             return status, HTTPStatus.OK
+        except KeyError as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except TypeError as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except json.JSONDecodeError as json_err:
+            return {"error": f"{str(json_err)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except client.exceptions.ApiException as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
             # Log any error that occurs while fetching the status
             log_event(
@@ -385,6 +459,19 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc]
 
             # Return the service status description
             return service, HTTPStatus.OK
+        except yaml.YAMLError as e:
+            return (
+                {"error": f"YAML parsing error: {e}"},
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
+        except KeyError as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except TypeError as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except json.JSONDecodeError as json_err:
+            return {"error": f"{str(json_err)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+        except client.exceptions.ApiException as e:
+            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
             # Log any error that occurs while describing the service status
             log_event(

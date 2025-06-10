@@ -248,8 +248,10 @@ class ConfigMapHelper:
                     )
                 except ApiException as e:
                     logger.error("Failed to update ConfigMap: %s", e.reason)
+                    raise
                 except Exception as e:
                     logger.error("Unexpected error updating ConfigMap: %s", str(e))
+                    raise
                 finally:
                     ConfigMapHelper.release_lock(namespace, configmap_name)
             else:
@@ -261,6 +263,7 @@ class ConfigMapHelper:
                 sys.exit(1)
         except Exception as e:
             logger.exception("Unhandled exception in update_configmap_data")
+            raise
 
     @staticmethod
     def read_configmap(
