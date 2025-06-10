@@ -831,13 +831,12 @@ class k8sHelper:
             if not nodes:
                 nodes = k8sHelper.get_k8s_nodes()
 
-            if not nodes or not isinstance(nodes, list):
+            if not nodes:
                 logger.error("Failed to retrieve k8s nodes")
                 return "Unknown"
             for node in nodes:
                 if (
-                    isinstance(node, V1Node)
-                    and node.metadata is not None
+                    node.metadata is not None
                     and node.metadata.name == node_name
                 ):
                     # If the node has conditions, we check the last one
@@ -866,16 +865,13 @@ class k8sHelper:
         """
         try:
             nodes = k8sHelper.get_k8s_nodes()
-            if not nodes or not isinstance(nodes, list):
+            if not nodes:
                 logger.debug("Failed to retrieve k8s nodes")
                 return None
 
             zone_mapping: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
 
             for node in nodes:
-                if not isinstance(node, V1Node):
-                    continue
-
                 if node.metadata is None:
                     continue
                 node_name = node.metadata.name
@@ -937,15 +933,10 @@ class k8sHelper:
                     continue  # Skip if node_types is not a dictionary
 
                 for node_type in ["masters", "workers"]:
-                    if node_type not in node_types or not isinstance(
-                        node_types[node_type], list
-                    ):
+                    if node_type not in node_types:
                         continue  # Skip if node_type key doesn't exist or value is not a list
 
                     for node in node_types[node_type]:
-                        if not isinstance(node, dict) or "name" not in node:
-                            continue  # Skip if node is not a dictionary or doesn't have a name key
-
                         node_zone_map[node["name"]] = zone
 
             all_pods = v1.list_pod_for_all_namespaces(watch=False).items

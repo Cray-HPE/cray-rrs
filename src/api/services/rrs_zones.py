@@ -74,13 +74,8 @@ class ZonesDict(TypedDict, total=False):
 
     Attributes:
         Zones: List of zone dictionaries containing zone details
-        Information: Informational message about zones status
-        error: Error message if an issue occurred during zone processing
     """
-
     Zones: List[Dict[str, Union[str, Dict[str, List[str]]]]]
-    Information: str
-    error: str
 
 
 class ZoneService:
