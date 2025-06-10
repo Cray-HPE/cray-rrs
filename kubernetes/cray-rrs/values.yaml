@@ -43,7 +43,7 @@ cray-service:
     rollingUpdate:
       maxUnavailable: 50%
     type: RollingUpdate
-  serviceAccountName: "cray-rrs-service"
+  serviceAccountName: cray-rrs-service
   initContainers:
     cray-rrs-init:
       name: cray-rrs-init
@@ -96,7 +96,7 @@ cray-service:
         failureThreshold: 5
         successThreshold: 1
       readinessProbe:
-       httpGet:
+        httpGet:
           path: /healthz/ready
           port: http-rms
         initialDelaySeconds: 5

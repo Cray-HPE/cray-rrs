@@ -27,7 +27,8 @@ kind: Service
 metadata:
   labels:
     app.kubernetes.io/name: cray-rrs-api
-  namespace: {{ .Values.namespace }}
+  namespace: {{ index .Values "cray-service" "namespace" }}
+  name: cray-rrs-api
 spec:
   selector:
     app: cray-rrs
@@ -43,7 +44,8 @@ kind: Service
 metadata:
   labels:
     app.kubernetes.io/name: cray-rrs-rms
-  namespace: {{ .Values.namespace }}
+  namespace: {{ index .Values "cray-service" "namespace" }}
+  name: cray-rrs-rms
 spec:
   selector:
     app: cray-rrs
