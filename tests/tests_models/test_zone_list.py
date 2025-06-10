@@ -78,21 +78,21 @@ class TestZoneMapping(unittest.TestCase):
         self.app.logger.info(result)
         zone = next(zone for zone in result["Zones"] if zone["Zone Name"] == "x3002")
 
-        self.assertIn("Kubernetes Topology Zone", zone)
-        k8s_zone_data = zone["Kubernetes Topology Zone"]
+        self.assertIn("Kubernetes_Topology_Zone", zone)
+        k8s_zone_data = zone["Kubernetes_Topology_Zone"]
         if isinstance(k8s_zone_data, dict):
-            self.assertIn("Management Master Nodes", k8s_zone_data)
-            master_nodes = k8s_zone_data["Management Master Nodes"]
+            self.assertIn("Management_Master_Nodes", k8s_zone_data)
+            master_nodes = k8s_zone_data["Management_Master_Nodes"]
             if isinstance(master_nodes, (list, dict)):
                 self.assertIn("ncn-m003", master_nodes)
             else:
                 self.assertIn("ncn-m003", str(master_nodes))
 
-        self.assertIn("CEPH Zone", zone)
-        ceph_zone_data = zone["CEPH Zone"]
+        self.assertIn("CEPH_Zone", zone)
+        ceph_zone_data = zone["CEPH_Zone"]
         if isinstance(ceph_zone_data, dict):
-            self.assertIn("Management Storage Nodes", ceph_zone_data)
-            storage_nodes = ceph_zone_data["Management Storage Nodes"]
+            self.assertIn("Management_Storage_Nodes", ceph_zone_data)
+            storage_nodes = ceph_zone_data["Management_Storage_Nodes"]
             if isinstance(storage_nodes, (list, dict)):
                 self.assertIn("ncn-s005", storage_nodes)
             else:

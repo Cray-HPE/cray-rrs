@@ -213,23 +213,23 @@ class ZoneService:
             return {"error": "Zone not found"}
 
         zone_data: Dict[str, Union[str, int, ZoneSection]] = {
-            "Zone Name": zone_name,
-            "Management Masters": len(masters),
-            "Management Workers": len(workers),
-            "Management Storages": len(storage),
+            "Zone_Name": zone_name,
+            "Management_Masters": len(masters),
+            "Management_Workers": len(workers),
+            "Management_Storages": len(storage),
         }
 
         if masters:
-            zone_data["Management Master"] = {
-                "Type": "Kubernetes Topology Zone",
+            zone_data["Management_Master"] = {
+                "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
                     {"Name": node["name"], "Status": node["status"]} for node in masters
                 ],
             }
 
         if workers:
-            zone_data["Management Worker"] = {
-                "Type": "Kubernetes Topology Zone",
+            zone_data["Management_Worker"] = {
+                "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
                     {"Name": node["name"], "Status": node["status"]} for node in workers
                 ],
@@ -249,8 +249,8 @@ class ZoneService:
                 }
                 storage_nodes.append(storage_node)
 
-            zone_data["Management Storage"] = {
-                "Type": "CEPH Zone",
+            zone_data["Management_Storage"] = {
+                "Type": "CEPH_Zone",
                 "Nodes": storage_nodes,
             }
 

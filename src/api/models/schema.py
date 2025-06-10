@@ -66,17 +66,17 @@ class StorageNodeSchema(TypedDict):
 
 
 class ManagementMasterSchema(TypedDict):
-    Type: Literal["Kubernetes Topology Zone"]
+    Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: List[NodeSchema]
 
 
 class ManagementWorkerSchema(TypedDict):
-    Type: Literal["Kubernetes Topology Zone"]
+    Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: List[NodeSchema]
 
 
 class ManagementStorageSchema(TypedDict):
-    Type: Literal["CEPH Zone"]
+    Type: Literal["CEPH_Zone"]
     Nodes: List[StorageNodeSchema]
 
 
