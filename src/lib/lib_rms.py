@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Any, Dict, List, Tuple, Union, Literal, Optional
+from typing import Dict, List, Tuple, Union, Literal, Optional, TypedDict
 import requests
 import urllib3
 import yaml
@@ -63,18 +63,102 @@ from src.lib.rrs_constants import (
 # disables only the InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
-hsm_datatype = Dict[str, List[Dict[str, Union[str, bool, int]]]]
-sls_datatype = List[Dict[str, Union[str, int, Dict[str, Union[str, int, List[str]]]]]]
-ceph_tree_datatype = Dict[
-    str,
-    Union[
-        List[Dict[str, Union[int, str, float, List[int], Dict[Any, Any]]]], List[Any]
-    ],
-]
-# The use of 'Any' in the above definition is intentional, as the types of the data
-# in pool_weights dictionary and the stray list from the 'ceph osd tree -f json' output are unknown
-ceph_host_datatype = List[Dict[str, Union[str, List[str]]]]
-pod_info_type = List[Dict[str, Union[str, Dict[str, str]]]]
+# hsm_datatype = Dict[str, List[Dict[str, Union[str, bool, int]]]]
+# sls_datatype = List[Dict[str, Union[str, int, Dict[str, Union[str, int, List[str]]]]]]
+
+
+class ExtraProperties(TypedDict):
+    """
+    This represents ExtraProperties field from the SLS get command.
+    """
+
+    Aliases: List[str]
+    Role: str
+
+
+class sls_entry_datatype(TypedDict):
+    """
+    This represents one of the entries in the output of the SLS get command.
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    This will not cause problems, because we don't ever try to access any fields not defined here.
+    """
+
+    Parent: str
+    Xname: str
+    Type: str
+    ExtraProperties: ExtraProperties
+
+
+sls_datatype = List[sls_entry_datatype]
+
+
+class component_type(TypedDict):
+    """
+    This represents one of the entries in the output of the HSM get command.
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    This will not cause problems, because we don't ever try to access any fields not defined here.
+    """
+
+    ID: str
+    State: str
+
+
+class hsm_datatype(TypedDict):
+    """
+    This represents the entire output from HSM get command.
+    """
+
+    Components: List[component_type]
+
+
+class ceph_tree_node_datatype(TypedDict):
+    """
+    This represents one of the entries in the nodes list in the output of the "ceph osd tree -f json" command
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    This will not cause problems, because we don't ever try to access any fields not defined here.
+    """
+
+    id: int
+    type: str
+    name: str
+    children: Optional[list[int]]
+    status: str
+
+
+class ceph_tree_datatype(TypedDict, total=False):
+    """
+    This represents the output of the "ceph osd tree -f json" command
+    Because we only use the "nodes" field from the output, we do not define any of the other
+    fields here, even though there are others. This will not cause problems, because we don't
+    ever try to access those fields.
+    """
+
+    nodes: list[ceph_tree_node_datatype]
+
+
+class ceph_host_datatype(TypedDict):
+    """
+    This represents one of the entries in the list in the output of the "ceph orch host ls -f json" command
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    This will not cause problems, because we don't ever try to access any fields not defined here.
+    """
+
+    hostname: str
+    status: str
+
+
+class pod_info_type(TypedDict):
+    """
+    This represents one of the entries in the list that is maintained internally to store pod details.
+    """
+
+    Name: str
+    Node: str
+    Zone: str
+    labels: Dict[str, str]
+
+
+pod_info_type_list = List[pod_info_type]
 
 
 def set_logger(custom_logger: Logger) -> None:
@@ -195,18 +279,17 @@ class Helper:
                     keycloak_url, data=data, timeout=REQUESTS_TIMEOUT, verify=False
                 )
                 token_data = response.json()
-            token: Optional[str] = token_data.get("access_token")
-            return token
+                token: Optional[str] = token_data.get("access_token")
+                return token
 
         except requests.exceptions.RequestException as e:
             logger.error("Request failed: %s", e)
-            return None
         except ValueError as e:
             logger.error("Failed to parse JSON: %s", e)
-            return None
         except Exception as err:
             logger.error("Error collecting secret from Kubernetes: %s", err)
-            return None
+
+        return None
 
     @staticmethod
     def get_hsm_sls_data(get_hsm: bool, get_sls: bool) -> Tuple[
@@ -290,17 +373,17 @@ class Helper:
                 return None
             for item in sls_data:
                 extraProps = item.get("ExtraProperties", {})
-                if isinstance(extraProps, dict):
-                    aliases = extraProps.get("Aliases", [])
-                    if isinstance(aliases, List) and node_name in aliases:
-                        rack_xname = item.get("Xname")
-                        if isinstance(rack_xname, str):
-                            logger.debug(
-                                "Found rack xname '%s' for node '%s'",
-                                rack_xname,
-                                node_name,
-                            )
-                            return rack_xname
+                # if isinstance(extraProps, dict):
+                aliases = extraProps.get("Aliases", [])
+                if node_name in aliases:
+                    rack_xname = item.get("Xname")
+                    # if isinstance(rack_xname, str):
+                    logger.debug(
+                        "Found rack xname '%s' for node '%s'",
+                        rack_xname,
+                        node_name,
+                    )
+                    return rack_xname
             logger.warning("No matching xname found for node: %s", node_name)
             return None
         except Exception as e:
@@ -331,30 +414,30 @@ class Helper:
             # Log a message if the node is powered off
             for sls_entry in sls_data:
                 extraProps = sls_entry["ExtraProperties"]
-                if isinstance(extraProps, dict):
-                    aliases = extraProps["Aliases"]
-                    if isinstance(aliases, List):
-                        alias = aliases[0]
-                        if pod_node not in alias:
-                            continue
+                # if isinstance(extraProps, dict):
+                aliases = extraProps["Aliases"]
+                # if isinstance(aliases, List):
+                alias = aliases[0]
+                if pod_node not in alias:
+                    continue
 
                 for component in hsm_data.get("Components", []):
                     comp_id = component["ID"]
                     if sls_entry["Xname"] != comp_id:
                         continue
-                    if isinstance(comp_id, str):
-                        rack_id = comp_id.split("c")[
-                            0
-                        ]  # Extract "x3000" from "x3000c0s1b75n75"
-                        comp_state = component["State"]
-                        if comp_state in ["Off"] and rack_id in pod_zone:
-                            logger.info(
-                                "Monitoring pod was previously running on the "
-                                "failed node %s under rack %s",
-                                pod_node,
-                                rack_id,
-                            )
-                        return
+                    # if isinstance(comp_id, str):
+                    rack_id = comp_id.split("c")[
+                        0
+                    ]  # Extract "x3000" from "x3000c0s1b75n75"
+                    comp_state = component["State"]
+                    if comp_state in ["Off"] and rack_id in pod_zone:
+                        logger.info(
+                            "Monitoring pod was previously running on the "
+                            "failed node %s under rack %s",
+                            pod_node,
+                            rack_id,
+                        )
+                    return
                 return
         except Exception as e:
             logger.exception(
@@ -490,7 +573,7 @@ class cephHelper:
         return ceph_healthy
 
     @staticmethod
-    def fetch_ceph_data() -> Tuple[ceph_tree_datatype, ceph_host_datatype]:
+    def fetch_ceph_data() -> Tuple[ceph_tree_datatype, List[ceph_host_datatype]]:
         """
         Fetch Ceph OSD and host details using SSH commands.
         This function retrieves the OSD tree and host status using ceph commands executed remotely.
@@ -545,17 +628,9 @@ class cephHelper:
                 return {}, False
 
             host_status_map: Dict[str, str] = {}
-            if isinstance(ceph_hosts, list):
-                for host in ceph_hosts:
-                    if (
-                        isinstance(host, dict)
-                        and "hostname" in host
-                        and "status" in host
-                    ):
-                        if isinstance(host["status"], str) and isinstance(
-                            host["hostname"], str
-                        ):
-                            host_status_map[host["hostname"]] = host["status"]
+            for host in ceph_hosts:
+                if "hostname" in host and "status" in host:
+                    host_status_map[host["hostname"]] = host["status"]
 
             final_output: Dict[
                 str, List[Dict[str, Union[str, List[Dict[str, str]]]]]
@@ -567,17 +642,16 @@ class cephHelper:
                     continue
 
                 rack_name = item["name"]
-                if not isinstance(rack_name, str):
-                    continue
 
                 storage_nodes: List[Dict[str, Union[str, List[Dict[str, str]]]]] = []
-                children = item["children"]
-                if not isinstance(children, List):
+                children = item.get("children")
+                nodes = ceph_tree.get("nodes")
+                if children is None or nodes is None:
                     continue
 
                 for child_id in children:
                     host_node = next(
-                        (x for x in ceph_tree["nodes"] if x["id"] == child_id),
+                        (x for x in nodes if x["id"] == child_id),
                         None,
                     )
                     if not host_node:
@@ -585,32 +659,26 @@ class cephHelper:
 
                     host_node_name = host_node["name"]
                     if not (
-                        isinstance(host_node_name, str)
-                        and host_node["type"] == "host"
+                        host_node["type"] == "host"
                         and host_node_name.startswith("ncn-s")
                     ):
                         continue
 
                     osd_ids = host_node.get("children", [])
-                    osds = [
-                        osd
-                        for osd in ceph_tree["nodes"]
-                        if isinstance(osd_ids, List)
-                        and osd["id"] in osd_ids
-                        and osd["type"] == "osd"
-                    ]
+                    ceph_nodes = ceph_tree.get("nodes")
+                    osds = []
+                    if ceph_nodes is not None and osd_ids is not None:
+                        osds = [
+                            osd
+                            for osd in ceph_nodes
+                            if osd["id"] in osd_ids and osd["type"] == "osd"
+                        ]
 
                     osd_status_list: List[Dict[str, str]] = []
                     for osd in osds:
                         osd_name = osd["name"]
-                        osd_status = osd.get("status", "Unknown")
-                        if isinstance(osd_name, str) and isinstance(osd_status, str):
-                            osd_status_list = [
-                                {
-                                    "name": osd_name,
-                                    "status": osd_status,
-                                }
-                            ]
+                        osd_status = osd["status"]
+                        osd_status_list = [{"name": osd_name, "status": osd_status}]
 
                     node_status = host_status_map.get(host_node_name, "No Status")
                     if node_status in ["", "online"]:
@@ -633,6 +701,7 @@ class cephHelper:
                     )
 
                 final_output[rack_name] = storage_nodes
+                print(final_output)
 
             if failed_hosts:
                 logger.warning(
@@ -845,15 +914,11 @@ class k8sHelper:
             return None
 
     @staticmethod
-    def fetch_all_pods() -> Optional[pod_info_type]:
+    def fetch_all_pods() -> Optional[pod_info_type_list]:
         """
         Fetch all Kubernetes pods in a single API call and annotate them with their zone.
         Returns:
-            Optional[pod_info_type]: List of pod metadata dictionaries, each containing:
-                - Name: pod name
-                - Node: node name
-                - Zone: zone name (or "unknown" if not found)
-                - labels: pod labels
+            Optional[pod_info_type_list]
             Returns None on error or invalid node metadata.
         """
         try:
@@ -884,7 +949,7 @@ class k8sHelper:
                         node_zone_map[node["name"]] = zone
 
             all_pods = v1.list_pod_for_all_namespaces(watch=False).items
-            pod_info: pod_info_type = []
+            pod_info: pod_info_type_list = []
 
             for pod in all_pods:
                 if pod.spec is None:
@@ -922,12 +987,12 @@ class criticalServicesHelper:
     """
 
     @staticmethod
-    def check_skew(service_name: str, pods: pod_info_type) -> Dict[str, str]:
+    def check_skew(service_name: str, pods: pod_info_type_list) -> Dict[str, str]:
         """
         Check whether pod replicas of a service are evenly distributed across zones.
         Args:
             service_name (str): Name of the service being evaluated.
-            pods (pod_info_type): List of pod metadata containing Zone, Node, and Name.
+            pods (pod_info_type_list): List of pod metadata containing Zone, Node, and Name.
         Returns:
             Dict[str, str]:
                 - service-name: the name of the service
@@ -944,14 +1009,12 @@ class criticalServicesHelper:
 
                 if not zone or not node or not pod_name:
                     continue  # skip invalid pod entries
-                if (
-                    isinstance(pod_name, str)
-                    and isinstance(zone, str)
-                    and isinstance(node, str)
-                ):
-                    zone_pod_map.setdefault(zone, {}).setdefault(node, []).append(
-                        pod_name
-                    )
+                # if (
+                #    isinstance(pod_name, str)
+                #    and isinstance(zone, str)
+                #    and isinstance(node, str)
+                # ):
+                zone_pod_map.setdefault(zone, {}).setdefault(node, []).append(pod_name)
 
             counts = [
                 sum(len(pods) for pods in zone.values())
@@ -1061,15 +1124,15 @@ class criticalServicesHelper:
 
     @staticmethod
     def _filter_pods_by_labels(
-        all_pods: pod_info_type, labels: Dict[str, str]
-    ) -> pod_info_type:
+        all_pods: pod_info_type_list, labels: Dict[str, str]
+    ) -> pod_info_type_list:
         """
         Filter pods based on matching labels.
         Args:
-            all_pods (pod_info_type): List of all pods
+            all_pods (pod_info_type_list): List of all pods
             labels (Dict[str, str]): Labels to match against
         Returns:
-            pod_info_type: Filtered list of pods matching the labels
+            pod_info_type_list: Filtered list of pods matching the labels
         """
         if not all_pods:
             return []
@@ -1077,10 +1140,10 @@ class criticalServicesHelper:
         filtered_pods = []
         for pod in all_pods:
             pod_labels = pod.get("labels")
-            if not pod_labels or not isinstance(pod_labels, dict):
+            if not pod_labels:
                 continue
 
-            if all(pod_labels.get(key) == value for key, value in labels.items()):
+            if all(pod_labels[key] == value for key, value in labels.items()):
                 filtered_pods.append(pod)
 
         return filtered_pods
