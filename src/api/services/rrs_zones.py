@@ -44,7 +44,7 @@ from src.api.models.zones import (
     ZoneMapping,
 )
 from src.lib.rrs_logging import get_log_id
-
+from src.api.models.schema import (ZoneListSchema, ZoneItemSchema, KubernetesTopologyZoneSchema)
 
 class NodeDetail(TypedDict):
     """TypedDict for Kubernetes node details."""
@@ -137,7 +137,7 @@ class ZoneService:
         ]
 
     @staticmethod
-    def map_zones(k8s_zones: k8sNodeType, ceph_zones: ZoneMapping) -> ZonesDict:
+    def map_zones(k8s_zones: k8sNodeType, ceph_zones: ZoneMapping) -> ZoneListSchema:
         """
         Maps the Kubernetes and Ceph zones into a structured response.
 
@@ -151,7 +151,7 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Mapping Kubernetes and Ceph zones")
 
-        zones_list: List[Dict[str, Union[str, Dict[str, List[str]]]]] = []
+        zones_list: List[ZoneItemSchema] = []
         all_zone_names = set(k8s_zones.keys()) | set(ceph_zones.keys())
         app.logger.info(f"[{log_id}] All zone names: {all_zone_names}")
 
@@ -164,20 +164,20 @@ class ZoneService:
             workers = ZoneService.get_node_names(k8s_zone_data.get("workers", []))
             storage = ZoneService.get_node_names(ceph_zone_data)
 
-            zone_data: Dict[str, Union[str, Dict[str, List[str]]]] = {
-                "Zone Name": zone_name
+            zone_data: ZoneItemSchema = {
+                "Zone_Name": zone_name
             }
 
             if masters or workers:
-                k8s_topology: Dict[str, List[str]] = {}
+                k8s_topology: KubernetesTopologyZoneSchema = {}
                 if masters:
-                    k8s_topology["Management Master Nodes"] = masters
+                    k8s_topology["Management_Master_Nodes"] = masters
                 if workers:
-                    k8s_topology["Management Worker Nodes"] = workers
-                zone_data["Kubernetes Topology Zone"] = k8s_topology
+                    k8s_topology["Management_Worker_Nodes"] = workers
+                zone_data["Kubernetes_Topology_Zone"] = k8s_topology
 
             if storage:
-                zone_data["CEPH Zone"] = {"Management Storage Nodes": storage}
+                zone_data["CEPH_Zone"] = {"Management_Storage_Nodes": storage}
 
             zones_list.append(zone_data)
 
@@ -276,7 +276,7 @@ class ZoneService:
         return k8s_zones, ceph_zones
 
     @staticmethod
-    def list_zones() -> Union[ZonesDict, ErrorDict]:
+    def list_zones() -> Union[ZoneListSchema, ErrorDict]:
         """
         Returns a list of all zones with mapping between Kubernetes and Ceph.
 

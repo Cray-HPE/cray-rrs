@@ -43,6 +43,8 @@ class ZoneItemSchema(TypedDict, total=False):
     Kubernetes_Topology_Zone: KubernetesTopologyZoneSchema
     CEPH_Zone: CephZoneSchema
 
+class ZoneListSchema(TypedDict):
+    Zones: List[ZoneItemSchema]
 
 # Zone Describe Schema
 

@@ -52,7 +52,7 @@ from src.lib.rrs_logging import log_event
 from src.api.services.rrs_zones import ZoneService, ZoneSection
 from src.api.models.zones import ErrorDict
 from src.api.models.schema import (
-    ZoneItemSchema,
+    ZoneListSchema,
     ZoneDescribeSchema,
     CriticalServicesListSchema,
     CriticalServiceDescribeSchema,
@@ -81,7 +81,7 @@ class ZoneListResource(Resource):  # type: ignore[misc]
     def get(
         self,
     ) -> Tuple[
-        Union[ZoneItemSchema, ErrorDict],
+        Union[ZoneListSchema, ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
     ]:
         """
