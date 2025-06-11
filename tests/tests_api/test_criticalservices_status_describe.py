@@ -31,7 +31,7 @@ These tests validate the function's behavior when retrieving details of critical
 import unittest
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServicesStatus
-from tests.tests_models.mock_data import (
+from tests.tests_api.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
 )
 

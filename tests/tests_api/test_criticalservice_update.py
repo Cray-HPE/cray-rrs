@@ -32,7 +32,7 @@ import unittest
 import json
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
-from tests.tests_models.mock_data import (
+from tests.tests_api.mock_data import (
     ERR_FILE,
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,
     MOCK_CRITICAL_SERVICES_RESPONSE,
@@ -93,8 +93,6 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         Ensures that an error key is present in the response.
         """
-        # Convert the dict to a string as expected by the update_configmap metho
-
         result = CriticalServices.update_critical_services(ERR_FILE)
         self.assertIn("error", result)
 

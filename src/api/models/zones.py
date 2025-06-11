@@ -81,9 +81,6 @@ class ZoneTopologyService:
         except TypeError as e:
             app.logger.exception(f"[{log_id}] Invalid type passed to safe_load: {e}")
             raise TypeError(f"Invalid type passed to safe_load: {e}") from e
-        # except Exception as e:
-        #     app.logger.exception(f"[{log_id}] Unexpected error while loading YAML: {e}")
-        #     raise Exception(f"Unexpected error while loading YAML: {e}") from e
 
         # Parsing the data
         ceph_zones = parsed_data["zone"]["ceph_zones"]
@@ -134,9 +131,6 @@ class ZoneTopologyService:
         except TypeError as e:
             app.logger.exception(f"[{log_id}] Invalid type passed to safe_load: {e}")
             raise TypeError(f"Invalid type passed to safe_load: {e}") from e
-        # except Exception as e:
-        #     app.logger.exception(f"[{log_id}] Unexpected error while loading YAML: {e}")
-        #     raise Exception(f"Unexpected error while loading YAML: {e}") from e
 
         # Parsing the data
         k8s_zones = parsed_data["zone"]["k8s_zones"]

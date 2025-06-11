@@ -30,7 +30,7 @@ These tests validate the function's behavior when retrieving and mapping zone de
 import unittest
 from flask import Flask
 from src.api.services.rrs_zones import ZoneService
-from tests.tests_models.mock_data import (
+from tests.tests_api.mock_data import (
     MOCK_K8S_RESPONSE,
     MOCK_CEPH_RESPONSE,
 )

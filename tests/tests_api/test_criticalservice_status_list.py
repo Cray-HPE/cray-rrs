@@ -21,24 +21,24 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
+
 """
-Unit tests for the 'CriticalServicesLister' function in the 'criticalservice_list' module.
+Unit tests for the 'get_critical_service_status' function in the 'criticalservice_list' module.
 
 These tests validate the function's behavior when retrieving critical services.
 """
 
 import unittest
 from flask import Flask
-from src.api.services.rrs_criticalservices import CriticalServices
-
-from tests.tests_models.mock_data import (
-    MOCK_CRITICAL_SERVICES_RESPONSE,
+from src.api.services.rrs_criticalservices import CriticalServicesStatus
+from tests.tests_api.mock_data import (
+    MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
 )
 
 
 class TestCriticalServicesList(unittest.TestCase):
     """
-    Test class for listing critical services using 'CriticalServicesLister.get_critical_services'.
+    Test class for listing critical services using 'get_critical_services'.
     """
 
     def setUp(self) -> None:
@@ -54,36 +54,35 @@ class TestCriticalServicesList(unittest.TestCase):
 
     def test_list_critical_services_success(self) -> None:
         """
-        Test case to verify that 'CriticalServicesLister.fetch_critical_services' correctly retrieves critical services.
-
-        The test ensures that the expected 'namespace' and 'kube-system' entries are present
-        and that at least one critical service is listed.
+        Test case to verify that 'fetch_critical_services' correctly retrieves critical services.
         """
         result = {
-            "critical-services": CriticalServices.fetch_critical_services(
-                MOCK_CRITICAL_SERVICES_RESPONSE
+            "critical-services": CriticalServicesStatus.fetch_critical_services_status(
+                MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
             )
         }
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertIn("kube-system", result["critical-services"]["namespace"])
-        self.assertGreater(
-            len(result["critical-services"]["namespace"]["kube-system"]), 0
-        )
+        services = result["critical-services"]["namespace"]["kube-system"]
+        self.assertGreater(len(services), 0)
+        self.assertTrue(any(s["name"] == "coredns" for s in services))
+        self.assertTrue(any(s["name"] == "coredns" and s["balanced"] for s in services))
         self.assertTrue(
             any(
-                service["name"] == "coredns"
-                for service in result["critical-services"]["namespace"]["kube-system"]
+                s["name"] == "coredns" and s["status"] == "Configured" for s in services
             )
         )
 
     def test_list_no_services(self) -> None:
         """
         Test case for when no critical services are available.
-
-        The function should return an empty namespace dictionary.
         """
-        result = {"critical-services": CriticalServices.fetch_critical_services({})}
+        result = {
+            "critical-services": CriticalServicesStatus.fetch_critical_services_status(
+                {}
+            )
+        }
         self.assertIn("critical-services", result)
         self.assertIn("namespace", result["critical-services"])
         self.assertEqual(len(result["critical-services"]["namespace"]), 0)

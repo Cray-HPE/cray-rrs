@@ -65,7 +65,7 @@ class CriticalServiceHelper:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Fetching namespaced pods")
 
-        # Load Kubernetes config (this can be done just once per method call)
+        # Load Kubernetes config
         ConfigMapHelper.load_k8s_config()
 
         # Initialize Kubernetes client
@@ -76,10 +76,6 @@ class CriticalServiceHelper:
 
         # Load K8s zone data
         nodes_data = ZoneTopologyService.fetch_k8s_zones()
-        # if isinstance(nodes_data, Exception):
-        # except Exception as e:
-        #     app.logger.error(f"[{log_id}] Error fetching nodes data: {e}")
-        #     return [{"exception": str(e)}], 0
 
         # Build node to zone mapping
         node_zone_map = {}
@@ -97,7 +93,6 @@ class CriticalServiceHelper:
             pod_list = v1.list_namespaced_pod(namespace, label_selector="rrflag")
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
-            # return [{"error": f"Failed to fetch pods: {str(e)}"}], 0
             raise
 
         running_pods = 0
