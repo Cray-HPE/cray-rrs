@@ -34,7 +34,7 @@ from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.lib.rrs_constants import DYNAMIC_DATA_KEY
-from src.lib.schema import k8sNodes, CephNodeInfo, NodeSchema
+from src.api.models.schema import k8sNodes, CephNodeInfo, NodeSchema
 
 CM_NAMESPACE: str = os.getenv("namespace", "")
 CM_NAME: str = os.getenv("dynamic_cm_name", "")

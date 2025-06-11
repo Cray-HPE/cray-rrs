@@ -36,7 +36,7 @@ from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.schema import PodSchema
+from src.api.models.schema import PodSchema
 
 # This is for the format present in the configmap
 CriticalServiceType = Dict[str, Dict[str, str]]
