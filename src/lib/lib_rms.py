@@ -699,7 +699,6 @@ class cephHelper:
                     )
 
                 final_output[rack_name] = storage_nodes
-                print(final_output)
 
             if failed_hosts:
                 logger.warning(
@@ -1124,7 +1123,7 @@ class criticalServicesHelper:
             if not pod_labels:
                 continue
 
-            if all(pod_labels[key] == value for key, value in labels.items()):
+            if all(pod_labels.get(key) == value for key, value in labels.items()):
                 filtered_pods.append(pod)
 
         return filtered_pods
