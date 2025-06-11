@@ -33,7 +33,6 @@ from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServicesStatus
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC,
-    MOCK_ERROR_CRT_SVC,
 )
 
 
@@ -74,18 +73,6 @@ class TestCriticalServicesList(unittest.TestCase):
                 s["name"] == "coredns" and s["status"] == "Configured" for s in services
             )
         )
-
-    def test_list_critical_services_failure(self) -> None:
-        """
-        Test case for handling errors when fetching critical services.
-        """
-        if "error" not in MOCK_ERROR_CRT_SVC:
-            result = CriticalServicesStatus.fetch_critical_services_status(
-                MOCK_ERROR_CRT_SVC
-            )
-        result = {"error": "string indices must be integers, not 'str'"}
-        self.assertIn("error", result)
-        self.assertEqual(result["error"], "string indices must be integers, not 'str'")
 
     def test_list_no_services(self) -> None:
         """

@@ -28,13 +28,11 @@ These tests validate the function's behavior when retrieving critical services.
 """
 
 import unittest
-from typing import Dict, cast
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
 
 from tests.tests_models.mock_data import (
     MOCK_CRITICAL_SERVICES_RESPONSE,
-    MOCK_ERROR_CRT_SVC,
 )
 
 
@@ -78,20 +76,6 @@ class TestCriticalServicesList(unittest.TestCase):
                 for service in result["critical-services"]["namespace"]["kube-system"]
             )
         )
-
-    def test_list_critical_services_failure(self) -> None:
-        """
-        Test case for handling errors when fetching critical services.
-
-        If an error occurs, the function should return an appropriate error message.
-        """
-        # Cast the mock error response to the expected type
-        error_response = cast(Dict[str, Dict[str, object]], MOCK_ERROR_CRT_SVC)
-        if "error" not in error_response:
-            result = CriticalServices.fetch_critical_services(error_response)
-        result = {"error": "string indices must be integers"}
-        self.assertIn("error", result)
-        self.assertEqual(result["error"], "string indices must be integers")
 
     def test_list_no_services(self) -> None:
         """

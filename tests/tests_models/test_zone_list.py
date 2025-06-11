@@ -27,7 +27,6 @@ Unit tests for the 'ZoneMapper.map_zones' function in the 'zone_list' module.
 
 These tests validate the function's behavior when retrieving and mapping zone details.
 """
-import logging
 import unittest
 from flask import Flask
 from src.api.services.rrs_zones import ZoneService
@@ -44,19 +43,6 @@ class TestZoneMapping(unittest.TestCase):
         """Set up an application context before each test."""
         self.app = Flask(__name__)  # Create a real Flask app instance
         self.app.config["TESTING"] = True
-        handler = logging.StreamHandler()
-        handler.setLevel(logging.DEBUG)  # You can change this level as needed
-        formatter = logging.Formatter(
-            "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
-        )
-        handler.setFormatter(formatter)
-
-        if not self.app.logger.handlers:
-            self.app.logger.addHandler(handler)
-
-        self.app.logger.setLevel(logging.DEBUG)
-        self.app.logger.debug("Flask test app created and logging is configured.")
-
         self.app_context = self.app.app_context()
         self.app_context.push()
 
@@ -70,13 +56,13 @@ class TestZoneMapping(unittest.TestCase):
         self.app.logger.info(result)
         self.assertIn("Zones", result)
         self.assertGreater(len(result["Zones"]), 0)
-        self.assertTrue(any(zone["Zone Name"] == "x3002" for zone in result["Zones"]))
+        self.assertTrue(any(zone["Zone_Name"] == "x3002" for zone in result["Zones"]))
 
     def test_node_status(self) -> None:
         """Test case to verify correct node status mapping in the response."""
         result = ZoneService.map_zones(MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE)
         self.app.logger.info(result)
-        zone = next(zone for zone in result["Zones"] if zone["Zone Name"] == "x3002")
+        zone = next(zone for zone in result["Zones"] if zone["Zone_Name"] == "x3002")
 
         self.assertIn("Kubernetes_Topology_Zone", zone)
         k8s_zone_data = zone["Kubernetes_Topology_Zone"]

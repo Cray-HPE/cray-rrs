@@ -90,10 +90,7 @@ class CriticalServiceHelper:
                 if not isinstance(node_list, list):
                     continue
 
-                valid_nodes = {
-                    node["Name"]: zone
-                    for node in node_list
-                }
+                valid_nodes = {node["Name"]: zone for node in node_list}
                 node_zone_map.update(valid_nodes)
 
         try:

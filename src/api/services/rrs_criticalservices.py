@@ -286,7 +286,7 @@ class CriticalServices:
 
     @staticmethod
     def update_critical_services(
-        new_data: Dict[str, CriticalServiceType],
+        new_data: Dict[str, str],
     ) -> CriticalServiceUpdateSchema:
         """
         Function to update critical services in the ConfigMap.

@@ -28,13 +28,11 @@ This module contains mock responses and test data used across various test cases
 for testing Kubernetes and Ceph zone mapping functionality.
 """
 
-from typing import List, Dict, cast
-from src.api.models.zones import CephNodeInfo
+from src.api.models.criticalservice import CriticalServiceType
+from src.api.models.zones import k8sResultType, CephResultType
 
-# Since error response will be a string and it won't be parsed in json so this error will come.
-MOCK_ERROR_CRT_SVC = {
-    "error": "string indices must be integers"
-}  # since func only read json
+
+ERR_FILE = {"from_file": """{"error": "string indices must be integers"}"""}
 
 # This response will come from configMap
 MOCK_CRITICAL_SERVICES_RESPONSE = {
@@ -43,7 +41,7 @@ MOCK_CRITICAL_SERVICES_RESPONSE = {
 }
 
 # This response will come from configMap
-MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC = {
+MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC: CriticalServiceType = {
     "coredns": {
         "namespace": "kube-system",
         "type": "Deployment",
@@ -83,26 +81,23 @@ MOCK_ALREADY_EXISTING_FILE = """{
 }"""
 
 # Mock Kubernetes response
-MOCK_K8S_RESPONSE = {
+MOCK_K8S_RESPONSE: k8sResultType = {
     "x3002": {
-        "masters": [{"name": "ncn-m003", "status": "Ready"}],
-        "workers": [{"name": "ncn-w003", "status": "Ready"}],
+        "masters": [{"Name": "ncn-m003", "Status": "Ready"}],
+        "workers": [{"Name": "ncn-w003", "Status": "Ready"}],
     }
 }
 
 # Mock Ceph response
-MOCK_CEPH_RESPONSE = cast(
-    Dict[str, List[CephNodeInfo]],
-    {
-        "x3002": [
-            {
-                "name": "ncn-s005",
-                "status": "Ready",
-                "osds": [
-                    {"name": "osd.0", "status": "down"},
-                    {"name": "osd.5", "status": "down"},
-                ],
-            }
-        ]
-    },
-)
+MOCK_CEPH_RESPONSE: CephResultType = {
+    "x3002": [
+        {
+            "Name": "ncn-s005",
+            "Status": "Ready",
+            "Osds": [
+                {"Name": "osd.0", "Status": "down"},
+                {"Name": "osd.5", "Status": "down"},
+            ],
+        }
+    ]
+}

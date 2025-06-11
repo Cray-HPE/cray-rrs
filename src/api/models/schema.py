@@ -22,9 +22,9 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-""" 
+"""
 This module defines various TypedDict schemas for cray-rrs-api
-related to zones, nodes, critical services, and pods in CSM Clusters. 
+related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
 from typing import TypedDict, List, Dict, Literal
@@ -35,17 +35,20 @@ from typing import TypedDict, List, Dict, Literal
 
 class KubernetesTopologyZoneSchema(TypedDict, total=False):
     """Schema for Kubernetes topology zone, including master and worker nodes."""
+
     Management_Master_Nodes: List[str]
     Management_Worker_Nodes: List[str]
 
 
 class CephZoneSchema(TypedDict, total=False):
     """Schema for Ceph zone, including storage nodes."""
+
     Management_Storage_Nodes: List[str]
 
 
 class ZoneItemSchema(TypedDict, total=False):
     """Schema for a single zone item, including its name and associated zones."""
+
     Zone_Name: str
     Kubernetes_Topology_Zone: KubernetesTopologyZoneSchema
     CEPH_Zone: CephZoneSchema
@@ -53,6 +56,7 @@ class ZoneItemSchema(TypedDict, total=False):
 
 class ZoneListSchema(TypedDict, total=False):
     """Schema for a list of zones."""
+
     Zones: List[ZoneItemSchema]
 
 
@@ -61,12 +65,14 @@ class ZoneListSchema(TypedDict, total=False):
 
 class NodeSchema(TypedDict, total=False):
     """Schema for a node, including its name and status."""
+
     Name: str
     Status: str
 
 
 class StorageNodeSchema(TypedDict, total=False):
     """Schema for a storage node, including its name, status, and OSDs."""
+
     Name: str
     Status: str
     OSDs: Dict[str, List[str]]
@@ -74,6 +80,7 @@ class StorageNodeSchema(TypedDict, total=False):
 
 class CephNodeInfo(TypedDict):
     """Schema representing a node containing OSDs."""
+
     Name: str
     Status: str
     Osds: List[NodeSchema]
@@ -81,30 +88,35 @@ class CephNodeInfo(TypedDict):
 
 class ManagementMasterSchema(TypedDict, total=False):
     """Schema for management master nodes in a Kubernetes topology zone."""
+
     Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: List[NodeSchema]
 
 
 class ManagementWorkerSchema(TypedDict, total=False):
     """Schema for management worker nodes in a Kubernetes topology zone."""
+
     Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: List[NodeSchema]
 
 
 class k8sNodes(TypedDict, total=False):
     """Schema for Kubernetes nodes, including masters and workers."""
+
     masters: List[NodeSchema]
     workers: List[NodeSchema]
 
 
 class ManagementStorageSchema(TypedDict, total=False):
     """Schema for management storage nodes in a Ceph zone."""
+
     Type: Literal["CEPH_Zone"]
     Nodes: List[StorageNodeSchema]
 
 
 class ZoneDescribeSchema(TypedDict, total=False):
     """Schema for describing a zone, including its name and management details."""
+
     Zone_Name: str
     Management_Masters: int
     Management_Workers: int
@@ -119,6 +131,7 @@ class ZoneDescribeSchema(TypedDict, total=False):
 
 class CriticalServiceEntrySchema(TypedDict, total=False):
     """Schema for a critical service entry, including its name, type, and status."""
+
     name: str
     type: str
     status: str
@@ -127,17 +140,20 @@ class CriticalServiceEntrySchema(TypedDict, total=False):
 
 class CriticalServicesItem(TypedDict, total=False):
     """Schema for critical services grouped by namespace."""
+
     namespace: Dict[str, List[CriticalServiceEntrySchema]]
 
 
 class CriticalServicesListSchema(TypedDict, total=False):
     """Schema for a list of critical services."""
+
     critical_services: CriticalServicesItem
 
 
 # Pod Schema
 class PodSchema(TypedDict, total=False):
     """Schema for a pod, including its name, status, node, and zone."""
+
     Name: str
     Status: str
     Node: str
@@ -146,6 +162,7 @@ class PodSchema(TypedDict, total=False):
 
 class CriticalServiceDescribe(TypedDict, total=False):
     """Schema for describing a critical service, including its pods and instances."""
+
     Name: str
     Namespace: str
     Type: str
@@ -158,11 +175,13 @@ class CriticalServiceDescribe(TypedDict, total=False):
 
 class CriticalServiceDescribeSchema(TypedDict, total=False):
     """Schema for describing a critical service."""
+
     Critical_Service: CriticalServiceDescribe
 
 
 class CriticalServiceUpdateSchema(TypedDict, total=False):
     """Schema for updating critical services, including added and existing services."""
+
     Update: str
     Successfully_Added_Services: List[str]
     Already_Existing_Services: List[str]
