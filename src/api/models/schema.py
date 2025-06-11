@@ -43,8 +43,10 @@ class ZoneItemSchema(TypedDict, total=False):
     Kubernetes_Topology_Zone: KubernetesTopologyZoneSchema
     CEPH_Zone: CephZoneSchema
 
+
 class ZoneListSchema(TypedDict, total=False):
     Zones: List[ZoneItemSchema]
+
 
 # Zone Describe Schema
 
@@ -54,21 +56,19 @@ class NodeSchema(TypedDict, total=False):
     Status: str
 
 
-class OSDsSchema(TypedDict, total=False):
-    up: List[str]
-    down: List[str]
-
-
 class StorageNodeSchema(TypedDict, total=False):
     Name: str
     Status: str
-    OSDs: OSDsSchema
+    OSDs: Dict[str, List[str]]
+
 
 class CephNodeInfo(TypedDict):
     """TypedDict representing a node containing OSDs."""
+
     Name: str
     Status: str
     Osds: List[NodeSchema]
+
 
 class ManagementMasterSchema(TypedDict, total=False):
     Type: Literal["Kubernetes_Topology_Zone"]
@@ -79,9 +79,11 @@ class ManagementWorkerSchema(TypedDict, total=False):
     Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: List[NodeSchema]
 
+
 class k8sNodes(TypedDict, total=False):
     masters: List[NodeSchema]
     workers: List[NodeSchema]
+
 
 class ManagementStorageSchema(TypedDict, total=False):
     Type: Literal["CEPH_Zone"]

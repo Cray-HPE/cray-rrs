@@ -835,10 +835,7 @@ class k8sHelper:
                 logger.error("Failed to retrieve k8s nodes")
                 return "Unknown"
             for node in nodes:
-                if (
-                    node.metadata is not None
-                    and node.metadata.name == node_name
-                ):
+                if node.metadata is not None and node.metadata.name == node_name:
                     # If the node has conditions, we check the last one
                     if node.status is not None and node.status.conditions:
                         status = node.status.conditions[-1].status

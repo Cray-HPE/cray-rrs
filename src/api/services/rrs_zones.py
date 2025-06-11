@@ -38,10 +38,19 @@ from src.api.models.zones import (
     ZoneTopologyService,
     CephResultType,
     k8sResultType,
-    ErrorDict
+    ErrorDict,
 )
 from src.lib.rrs_logging import get_log_id
-from src.api.models.schema import (ZoneListSchema, ZoneItemSchema, KubernetesTopologyZoneSchema, ZoneDescribeSchema, StorageNodeSchema, OSDsSchema, NodeSchema, CephNodeInfo)
+from src.api.models.schema import (
+    ZoneListSchema,
+    ZoneItemSchema,
+    KubernetesTopologyZoneSchema,
+    ZoneDescribeSchema,
+    StorageNodeSchema,
+    NodeSchema,
+    CephNodeInfo,
+)
+
 
 class NodeDetail(TypedDict):
     """TypedDict for Kubernetes node details."""
@@ -72,6 +81,7 @@ class ZonesDict(TypedDict, total=False):
     Attributes:
         Zones: List of zone dictionaries containing zone details
     """
+
     Zones: List[Dict[str, Union[str, Dict[str, List[str]]]]]
 
 
@@ -127,14 +137,12 @@ class ZoneService:
         Returns:
             list: A list of node names.
         """
-        return [
-            node["Name"]
-            for node in node_list
-            if isinstance(node, dict) and isinstance(node.get("Name"), str)
-        ]
+        return [node["Name"] for node in node_list]
 
     @staticmethod
-    def map_zones(k8s_zones: k8sResultType, ceph_zones: CephResultType) -> ZoneListSchema:
+    def map_zones(
+        k8s_zones: k8sResultType, ceph_zones: CephResultType
+    ) -> ZoneListSchema:
         """
         Maps the Kubernetes and Ceph zones into a structured response.
 
@@ -161,9 +169,7 @@ class ZoneService:
             workers = ZoneService.get_node_names(k8s_zone_data.get("workers", []))
             storage = ZoneService.get_node_names(ceph_zone_data)
 
-            zone_data: ZoneItemSchema = {
-                "Zone_Name": zone_name
-            }
+            zone_data: ZoneItemSchema = {"Zone_Name": zone_name}
 
             if masters or workers:
                 k8s_topology: KubernetesTopologyZoneSchema = {}
@@ -235,8 +241,8 @@ class ZoneService:
         if storage:
             storage_nodes: List[StorageNodeSchema] = []
             for node in storage:
-                osd_status_map: OSDsSchema = {}
-                for osd in node.get("Osds", []): 
+                osd_status_map: Dict[str, List[str]] = {}
+                for osd in node.get("Osds", []):
                     osd_status_map.setdefault(osd["Status"], []).append(osd["Name"])
 
                 storage_node: StorageNodeSchema = {
