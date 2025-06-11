@@ -46,7 +46,7 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper, CriticalServiceType
 from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DYNAMIC_CM
-from src.lib.schema import (
+from src.api.models.schema import (
     PodSchema,
     CriticalServicesListSchema,
     CriticalServicesItem,

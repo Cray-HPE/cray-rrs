@@ -123,7 +123,7 @@ def zone_discovery() -> Tuple[
                 break
             updated_k8s_data[zone].append(
                 {
-                    "Status": k8sHelper.get_node_status(node_name, nodes),
+                    "status": k8sHelper.get_node_status(node_name, nodes),
                     "name": node_name,
                 }
             )

@@ -158,7 +158,7 @@ class CriticalServiceHelper:
     @staticmethod
     def fetch_service_list(
         cm_name: str, cm_namespace: str, cm_key: str
-    ) -> Union[CriticalServiceType]:
+    ) -> CriticalServiceType:
         """
         Fetch the list of services from a ConfigMap in the specified namespace.
 
@@ -168,7 +168,7 @@ class CriticalServiceHelper:
             cm_key (str): The key within the ConfigMap that contains the service list.
 
         Returns:
-            Union[CriticalServiceType, Exception]: A dictionary containing the service list if successful,
+            CriticalServiceType: A dictionary containing the service list if successful,
             or an error message if the operation fails.
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking

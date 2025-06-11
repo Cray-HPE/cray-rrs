@@ -103,7 +103,7 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
 
         for _, nodes in k8s_info.items():
             for node in nodes:
-                node["Status"] = k8sHelper.get_node_status(node["name"], None)
+                node["status"] = k8sHelper.get_node_status(node["name"], None)
 
         zone_info["k8s_zones"] = k8s_info
         ceph_info_old = zone_info.get("ceph_zones")

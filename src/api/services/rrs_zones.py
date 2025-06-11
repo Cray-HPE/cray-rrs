@@ -41,7 +41,7 @@ from src.api.models.zones import (
     ErrorDict,
 )
 from src.lib.rrs_logging import get_log_id
-from src.lib.schema import (
+from src.api.models.schema import (
     ZoneListSchema,
     ZoneItemSchema,
     KubernetesTopologyZoneSchema,
