@@ -78,10 +78,14 @@ class ZoneListResource(Resource):  # type: ignore[misc]
     def get(
         self,
     ) -> Union[
-        Tuple[Union[ZoneListSchema, InformationDict], Literal[HTTPStatus.OK]],
+        Tuple[ZoneListSchema, Literal[HTTPStatus.OK]],
         Tuple[
-            ErrorDict | InformationDict,
+            ErrorDict,
             Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND],
+        ],
+        Tuple[
+            InformationDict,
+            Literal[HTTPStatus.NOT_FOUND],
         ],
     ]:
         """
