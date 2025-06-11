@@ -38,9 +38,7 @@ from src.api.models.zones import (
     ZoneTopologyService,
     CephResultType,
     k8sResultType,
-    ErrorDict,
 )
-from src.lib.rrs_logging import get_log_id
 from src.api.models.schema import (
     ZoneListSchema,
     ZoneItemSchema,
@@ -49,7 +47,9 @@ from src.api.models.schema import (
     StorageNodeSchema,
     NodeSchema,
     CephNodeInfo,
+    ErrorDict,
 )
+from src.lib.rrs_logging import get_log_id
 
 
 class ZoneService:

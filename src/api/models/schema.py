@@ -185,3 +185,12 @@ class CriticalServiceUpdateSchema(TypedDict, total=False):
     Successfully_Added_Services: List[str]
     Already_Existing_Services: List[str]
     error: str
+
+
+# Error Schema
+class ErrorDict(TypedDict, total=False):
+    """Schema for error responses."""
+    
+    error: str
+    Information: str
+    exception: str

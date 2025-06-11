@@ -41,7 +41,6 @@ CM_NAME: str = os.getenv("dynamic_cm_name", "")
 
 
 CephResultType = Dict[str, List[CephNodeInfo]]
-ErrorDict = Dict[str, str]
 k8sResultType = Dict[str, k8sNodes]
 
 

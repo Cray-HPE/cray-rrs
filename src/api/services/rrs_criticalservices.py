@@ -52,9 +52,8 @@ from src.api.models.schema import (
     CriticalServicesItem,
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
+    ErrorDict,
 )
-
-ErrorDict = Dict[str, str]
 
 
 class CriticalServices:
