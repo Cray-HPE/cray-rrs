@@ -38,7 +38,7 @@ Usage:
 """
 
 import json
-from typing import Union, Optional
+from typing import Optional
 from datetime import datetime
 from flask import current_app as app
 from kubernetes import client
@@ -125,7 +125,7 @@ class CriticalServices:
     @staticmethod
     def describe_service(
         service_name: str,
-    ) -> Union[CriticalServiceDescribeSchema, ErrorDict]:
+    ) -> CriticalServiceDescribeSchema | ErrorDict:
         """
         Retrieve service details and return as a JSON response.
 
@@ -245,7 +245,7 @@ class CriticalServices:
     @staticmethod
     def update_critical_services(
         new_data: dict[str, str],
-    ) -> Union[CriticalServiceUpdateSchema, ErrorDict]:
+    ) -> CriticalServiceUpdateSchema | ErrorDict:
         """
         Function to update critical services in the ConfigMap.
 
@@ -323,7 +323,7 @@ class CriticalServicesStatus:
 
     @staticmethod
     def get_criticalservice_status_list() -> (
-        Union[CriticalServicesListSchema, ErrorDict]
+        CriticalServicesListSchema | ErrorDict
     ):
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
@@ -464,7 +464,7 @@ class CriticalServicesStatus:
     @staticmethod
     def describe_service_status(
         service_name: str,
-    ) -> Union[CriticalServiceDescribeSchema, ErrorDict]:
+    ) -> CriticalServiceDescribeSchema | ErrorDict:
         """
         Retrieve service details and return as a JSON response.
 

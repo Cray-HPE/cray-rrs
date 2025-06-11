@@ -32,7 +32,7 @@ Key functionalities:
 - Provide detailed zone descriptions including node names, status, and OSD mapping.
 """
 
-from typing import Union, Optional
+from typing import Optional
 from flask import current_app as app
 from src.api.models.zones import (
     ZoneTopologyService,
@@ -94,7 +94,7 @@ class ZoneService:
 
     @staticmethod
     def get_node_names(
-        node_list: Union[list[NodeSchema], list[CephNodeInfo]],
+        node_list: list[NodeSchema] | list[CephNodeInfo],
     ) -> list[str]:
         """
         Extracts node names from a list of node dictionaries.
@@ -160,7 +160,7 @@ class ZoneService:
         zone_name: str,
         k8s_zones: k8sResultType,
         ceph_zones: CephResultType,
-    ) -> Union[ZoneDescribeSchema, ErrorDict]:
+    ) -> ZoneDescribeSchema | ErrorDict:
         """
         Retrieves detailed information for a specific zone.
 
@@ -247,7 +247,7 @@ class ZoneService:
         return k8s_zones, ceph_zones
 
     @staticmethod
-    def list_zones() -> Union[ZoneListSchema, InformationDict]:
+    def list_zones() -> ZoneListSchema | InformationDict:
         """
         Returns a list of all zones with mapping between Kubernetes and Ceph.
 
@@ -269,7 +269,7 @@ class ZoneService:
     @staticmethod
     def describe_zone(
         zone_name: str,
-    ) -> Union[ZoneDescribeSchema, Union[ErrorDict, InformationDict]]:
+    ) -> ZoneDescribeSchema | ErrorDict | InformationDict:
         """
         Provides detailed information for a given zone including nodes and OSDs.
 

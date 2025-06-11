@@ -79,14 +79,8 @@ class ZoneListResource(Resource):  # type: ignore[misc]
         self,
     ) -> Union[
         tuple[ZoneListSchema, Literal[HTTPStatus.OK]],
-        tuple[
-            ErrorDict,
-            Literal[HTTPStatus.INTERNAL_SERVER_ERROR],
-        ],
-        tuple[
-            InformationDict,
-            Literal[HTTPStatus.NOT_FOUND],
-        ],
+        tuple[ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]],
+        tuple[InformationDict, Literal[HTTPStatus.NOT_FOUND]]
     ]:
         """
         Get the list of all zones.
