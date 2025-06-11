@@ -25,18 +25,29 @@
 Kubernetes Health and Liveness functions
 """
 
-from typing import Literal
+from typing import Literal, TypedDict, final
 from http import HTTPStatus
 from flask import current_app as app
 from flask_restful import Resource
 from src.lib.rrs_logging import get_log_id
 
 
+@final
+class EmptyDict(TypedDict):
+    """
+    The API spec dictates an empty dict response for calls to the Healthz endpoints
+    A final TypedDict with no keys covers this
+    """
+
+
+EMPTY_DICT = EmptyDict()
+
+
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
 class Ready(Resource):  # type: ignore[misc]
     """Return k8s readiness check"""
 
-    def get(self) -> tuple[dict[None, None], Literal[HTTPStatus.OK]]:
+    def get(self) -> tuple[EmptyDict, Literal[HTTPStatus.OK]]:
         """
         Return k8s readiness check
 
@@ -44,7 +55,7 @@ class Ready(Resource):  # type: ignore[misc]
         """
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
-        return {}, HTTPStatus.OK  # Return empty body with HTTP 200 OK
+        return EMPTY_DICT, HTTPStatus.OK  # Return empty body with HTTP 200 OK
 
 
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
@@ -59,4 +70,4 @@ class Live(Resource):  # type: ignore[misc]
         """
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
-        return {}, HTTPStatus.OK  # Return empty body with HTTP 200 OK
+        return EMPTY_DICT, HTTPStatus.OK  # Return empty body with HTTP 200 OK
