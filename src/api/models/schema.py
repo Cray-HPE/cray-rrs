@@ -25,7 +25,7 @@ This module defines various TypedDict schemas for cray-rrs-api
 related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
-from typing import TypedDict, List, Dict, Literal
+from typing import TypedDict, List, Dict, Literal, final
 
 # Zones Schemas
 ################################################
@@ -52,6 +52,7 @@ class ZoneItemSchema(TypedDict, total=False):
     CEPH_Zone: CephZoneSchema
 
 
+@final
 class ZoneListSchema(TypedDict, total=False):
     """Schema for a list of zones."""
 

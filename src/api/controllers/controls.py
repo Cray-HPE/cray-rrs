@@ -81,7 +81,7 @@ class ZoneListResource(Resource):  # type: ignore[misc]
         Tuple[ZoneListSchema, Literal[HTTPStatus.OK]],
         Tuple[
             ErrorDict,
-            Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND],
+            Literal[HTTPStatus.INTERNAL_SERVER_ERROR],
         ],
         Tuple[
             InformationDict,
