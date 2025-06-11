@@ -27,7 +27,6 @@ Provides a model to fetch zone topology details from both Ceph and Kubernetes.
 The data is retrieved from a ConfigMap and returned as structured dictionaries.
 """
 
-from typing import Dict, List
 import os
 import yaml
 from flask import current_app as app
@@ -40,8 +39,8 @@ CM_NAMESPACE: str = os.getenv("namespace", "")
 CM_NAME: str = os.getenv("dynamic_cm_name", "")
 
 
-CephResultType = Dict[str, List[CephNodeInfo]]
-k8sResultType = Dict[str, k8sNodes]
+CephResultType = dict[str, list[CephNodeInfo]]
+k8sResultType = dict[str, k8sNodes]
 
 
 class ZoneTopologyService:

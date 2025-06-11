@@ -38,7 +38,7 @@ Usage:
 """
 
 import json
-from typing import Dict, List, Union, Optional
+from typing import Union, Optional
 from datetime import datetime
 from flask import current_app as app
 from kubernetes import client
@@ -183,7 +183,7 @@ class CriticalServices:
 
     @staticmethod
     def update_configmap(
-        new_data: Dict[str, CriticalServiceType],
+        new_data: dict[str, CriticalServiceType],
         existing_data: CriticalServiceType,
         test: bool = False,
     ) -> CriticalServiceUpdateSchema:
@@ -196,7 +196,7 @@ class CriticalServices:
             test: Whether this is a test run (don't update ConfigMap if True)
 
         Returns:
-            Dict containing update status and details
+            dict containing update status and details
         """
         log_id = get_log_id()  # Generate a unique log ID for this operation
 
@@ -244,7 +244,7 @@ class CriticalServices:
 
     @staticmethod
     def update_critical_services(
-        new_data: Dict[str, str],
+        new_data: dict[str, str],
     ) -> Union[CriticalServiceUpdateSchema, ErrorDict]:
         """
         Function to update critical services in the ConfigMap.
@@ -383,7 +383,7 @@ class CriticalServicesStatus:
             )
 
             # Initialize variables for filtering pods and counting running pods
-            filtered_pods: List[PodSchema] = []
+            filtered_pods: list[PodSchema] = []
             running_pods: int = 0
             configured_instances: Optional[int] = None
 

@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Dict, List, Tuple, Union, Literal, Optional, TypedDict, NotRequired
+from typing import Union, Literal, Optional, TypedDict, NotRequired
 import requests
 import urllib3
 import yaml
@@ -70,7 +70,7 @@ class ExtraProperties(TypedDict, total=False):
     This represents ExtraProperties field from the SLS get command.
     """
 
-    Aliases: List[str]
+    Aliases: list[str]
     Role: str
 
 
@@ -87,7 +87,7 @@ class sls_entry_datatype(TypedDict):
     ExtraProperties: NotRequired[ExtraProperties]
 
 
-sls_datatype = List[sls_entry_datatype]
+sls_datatype = list[sls_entry_datatype]
 
 
 class component_type(TypedDict):
@@ -106,7 +106,7 @@ class hsm_datatype(TypedDict):
     This represents the entire output from HSM get command.
     """
 
-    Components: List[component_type]
+    Components: list[component_type]
 
 
 class ceph_tree_node_datatype(TypedDict, total=False):
@@ -153,10 +153,10 @@ class pod_info_type(TypedDict):
     Name: str
     Node: str
     Zone: str
-    labels: Dict[str, str]
+    labels: dict[str, str]
 
 
-pod_info_type_list = List[pod_info_type]
+pod_info_type_list = list[pod_info_type]
 
 
 def set_logger(custom_logger: Logger) -> None:
@@ -291,14 +291,14 @@ class Helper:
         return None
 
     @staticmethod
-    def get_hsm_sls_data(get_hsm: bool, get_sls: bool) -> Tuple[
+    def get_hsm_sls_data(get_hsm: bool, get_sls: bool) -> tuple[
         Optional[hsm_datatype],
         Optional[sls_datatype],
     ]:
         """
         Fetch data from HSM and SLS services.
         Returns:
-            Tuple[Optional[Dict], Optional[Dict]]:
+            tuple[Optional[dict], Optional[dict]]:
                 - hsm_data (dict or None): Parsed HSM response.
                 - sls_data (dict or None): Parsed SLS response.
         """
@@ -401,7 +401,7 @@ class Helper:
         Args:
             pod_node (str): Name of the node where the pod was previously running.
             pod_zone (str): Rack or zone where the pod was running.
-            sls_data (sls_datatype): List of SLS hardware components with xnames and aliases.
+            sls_data (sls_datatype): list of SLS hardware components with xnames and aliases.
             hsm_data (hsm_datatype): HSM component data filtered to relevant roles/subroles.
         Returns:
             None
@@ -571,12 +571,12 @@ class cephHelper:
         return ceph_healthy
 
     @staticmethod
-    def fetch_ceph_data() -> Tuple[ceph_tree_datatype, List[ceph_host_datatype]]:
+    def fetch_ceph_data() -> tuple[ceph_tree_datatype, list[ceph_host_datatype]]:
         """
         Fetch Ceph OSD and host details using SSH commands.
         This function retrieves the OSD tree and host status using ceph commands executed remotely.
         Returns:
-            Tuple: JSONs containing the Ceph OSD tree and host details.
+            tuple: JSONs containing the Ceph OSD tree and host details.
         """
         try:
             ceph_tree_cmd = (
@@ -598,7 +598,7 @@ class cephHelper:
             ceph_hosts = json.loads(host_output)
 
             logger.debug("CEPH OSD Tree Output: %s", ceph_tree)
-            logger.debug("CEPH Host List Output: %s", ceph_hosts)
+            logger.debug("CEPH Host list Output: %s", ceph_hosts)
 
             return ceph_tree, ceph_hosts
 
@@ -614,7 +614,7 @@ class cephHelper:
 
     @staticmethod
     def get_ceph_status() -> (
-        Tuple[Dict[str, List[Dict[str, Union[str, List[Dict[str, str]]]]]], bool]
+        tuple[dict[str, list[dict[str, Union[str, list[dict[str, str]]]]]], bool]
     ):
         """
         Fetch Ceph storage nodes and their OSD statuses.
@@ -625,15 +625,15 @@ class cephHelper:
             if not ceph_tree or not ceph_hosts:
                 return {}, False
 
-            host_status_map: Dict[str, str] = {}
+            host_status_map: dict[str, str] = {}
             for host in ceph_hosts:
                 if "hostname" in host and "status" in host:
                     host_status_map[host["hostname"]] = host["status"]
 
-            final_output: Dict[
-                str, List[Dict[str, Union[str, List[Dict[str, str]]]]]
+            final_output: dict[
+                str, list[dict[str, Union[str, list[dict[str, str]]]]]
             ] = {}
-            failed_hosts: List[str] = []
+            failed_hosts: list[str] = []
 
             for item in ceph_tree.get("nodes", []):
                 if "type" not in item or "name" not in item or item["type"] != "rack":
@@ -641,7 +641,7 @@ class cephHelper:
 
                 rack_name = item["name"]
 
-                storage_nodes: List[Dict[str, Union[str, List[Dict[str, str]]]]] = []
+                storage_nodes: list[dict[str, Union[str, list[dict[str, str]]]]] = []
                 children = item.get("children")
                 nodes = ceph_tree.get("nodes")
                 if children is None or nodes is None:
@@ -672,7 +672,7 @@ class cephHelper:
                             if osd.get("id") in osd_ids and osd.get("type") == "osd"
                         ]
 
-                    osd_status_list: List[Dict[str, str]] = []
+                    osd_status_list: list[dict[str, str]] = []
                     for osd in osds:
                         osd_name = osd.get("name", "")
                         osd_status = osd.get("status", "")
@@ -795,16 +795,16 @@ class k8sHelper:
         return None
 
     @staticmethod
-    def get_k8s_nodes() -> Optional[List[V1Node]]:
+    def get_k8s_nodes() -> Optional[list[V1Node]]:
         """Retrieve all Kubernetes nodes
         Returns:
-            Optional[List[V1Node]]:
+            Optional[list[V1Node]]:
                 - A list of V1Node objects representing Kubernetes nodes if successful or None.
         """
         ConfigMapHelper.load_k8s_config()
         v1 = client.CoreV1Api()
         try:
-            nodes: List[V1Node] = v1.list_node().items
+            nodes: list[V1Node] = v1.list_node().items
             return nodes
         except client.exceptions.ApiException as e:
             logger.exception("API error while fetching k8s nodes: %s ", str(e))
@@ -815,13 +815,13 @@ class k8sHelper:
 
     @staticmethod
     def get_node_status(
-        node_name: str, nodes: Optional[List[V1Node]]
+        node_name: str, nodes: Optional[list[V1Node]]
     ) -> Literal["Ready"] | Literal["NotReady"] | Literal["Unknown"]:
         """
         Extract and return the status of a Kubernetes node
         Args:
             node_name (str): The name of the node to check.
-            nodes (Optional[List[V1Node]]): List of V1Node objects to search. If None, fetches nodes via k8sHelper.
+            nodes (Optional[list[V1Node]]): list of V1Node objects to search. If None, fetches nodes via k8sHelper.
         Returns:
             Literal["Ready", "NotReady", "Unknown"]: Node readiness status.
         """
@@ -849,12 +849,12 @@ class k8sHelper:
 
     @staticmethod
     def get_k8s_nodes_data() -> (
-        Optional[Union[Dict[str, Dict[str, List[Dict[str, str]]]], Dict[str, str], str]]
+        Optional[Union[dict[str, dict[str, list[dict[str, str]]]], dict[str, str], str]]
     ):
         """
         Fetch Kubernetes nodes and organize them by topology zone.
         Returns:
-            Optional[Dict[str, Dict[str, List[Dict[str, str]]]]]:
+            Optional[dict[str, dict[str, list[dict[str, str]]]]]:
                 - A dictionary organized by zone with 'masters' and 'workers' lists.
                 - Returns None if nodes cannot be retrieved or no zone information is found.
         """
@@ -864,7 +864,7 @@ class k8sHelper:
                 logger.debug("Failed to retrieve k8s nodes")
                 return None
 
-            zone_mapping: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
+            zone_mapping: dict[str, dict[str, list[dict[str, str]]]] = {}
 
             for node in nodes:
                 if node.metadata is None:
@@ -922,7 +922,7 @@ class k8sHelper:
                 logger.debug("Cannot fetch k8s node data or data format is not valid")
                 return None
 
-            node_zone_map: Dict[str, str] = {}
+            node_zone_map: dict[str, str] = {}
             for zone, node_types in nodes_data.items():
                 if not isinstance(node_types, dict):
                     continue  # Skip if node_types is not a dictionary
@@ -973,20 +973,20 @@ class criticalServicesHelper:
     """
 
     @staticmethod
-    def check_skew(service_name: str, pods: pod_info_type_list) -> Dict[str, str]:
+    def check_skew(service_name: str, pods: pod_info_type_list) -> dict[str, str]:
         """
         Check whether pod replicas of a service are evenly distributed across zones.
         Args:
             service_name (str): Name of the service being evaluated.
-            pods (pod_info_type_list): List of pod metadata containing Zone, Node, and Name.
+            pods (pod_info_type_list): list of pod metadata containing Zone, Node, and Name.
         Returns:
-            Dict[str, str]:
+            dict[str, str]:
                 - service-name: the name of the service
                 - balanced: "true" or "false" depending on replica distribution
                 - status: "no replicas found"
         """
         try:
-            zone_pod_map: Dict[str, Dict[str, List[str]]] = {}
+            zone_pod_map: dict[str, dict[str, list[str]]] = {}
 
             for pod in pods:
                 zone = pod.get("Zone")
@@ -1024,7 +1024,7 @@ class criticalServicesHelper:
     @staticmethod
     def get_service_status(
         service_name: str, service_namespace: str, service_type: str
-    ) -> Tuple[Optional[int], Optional[int], Optional[Dict[str, str]]]:
+    ) -> tuple[Optional[int], Optional[int], Optional[dict[str, str]]]:
         """
         Fetch the status of a Kubernetes service (Deployment, StatefulSet, or DaemonSet).
         Args:
@@ -1032,7 +1032,7 @@ class criticalServicesHelper:
             service_namespace (str): Namespace where the service is deployed.
             service_type (str): Type of the service ("Deployment", "StatefulSet", or "DaemonSet").
         Returns:
-            Tuple:
+            tuple:
                 - desired replicas (int or None)
                 - ready replicas (int or None)
                 - label selector (dict or None)
@@ -1105,13 +1105,13 @@ class criticalServicesHelper:
 
     @staticmethod
     def _filter_pods_by_labels(
-        all_pods: pod_info_type_list, labels: Dict[str, str]
+        all_pods: pod_info_type_list, labels: dict[str, str]
     ) -> pod_info_type_list:
         """
         Filter pods based on matching labels.
         Args:
-            all_pods (pod_info_type_list): List of all pods
-            labels (Dict[str, str]): Labels to match against
+            all_pods (pod_info_type_list): list of all pods
+            labels (dict[str, str]): Labels to match against
         Returns:
             pod_info_type_list: Filtered list of pods matching the labels
         """
@@ -1131,14 +1131,14 @@ class criticalServicesHelper:
 
     @staticmethod
     def get_critical_services_status(
-        services_data: Dict[str, Dict[str, Dict[str, str]]],
-    ) -> Dict[str, Dict[str, Dict[str, str]]]:
+        services_data: dict[str, dict[str, dict[str, str]]],
+    ) -> dict[str, dict[str, dict[str, str]]]:
         """
         Update critical service info with status and balanced values
         Args:
-            services_data (Dict[str, Dict[str, Dict[str, str]]]): The critical-services section from config.
+            services_data (dict[str, dict[str, dict[str, str]]]): The critical-services section from config.
         Returns:
-            Dict[str, Dict[str, Dict[str, str]]]:
+            dict[str, dict[str, dict[str, str]]]:
             Updated services_data with 'status' and 'balanced' flags added per service.
         """
         try:
@@ -1149,9 +1149,9 @@ class criticalServicesHelper:
 
             critical_services = services_data.get("critical-services", {})
             logger.info("Number of critical services are - %d", len(critical_services))
-            imbalanced_services: List[str] = []
-            unconfigured_services: List[str] = []
-            partially_configured_services: List[str] = []
+            imbalanced_services: list[str] = []
+            unconfigured_services: list[str] = []
+            partially_configured_services: list[str] = []
 
             for service_name, service_info in critical_services.items():
                 service_namespace = service_info["namespace"]
@@ -1209,16 +1209,16 @@ class criticalServicesHelper:
 
             if partially_configured_services:
                 logger.warning(
-                    "List of partially configured services are - %s",
+                    "list of partially configured services are - %s",
                     partially_configured_services,
                 )
             if imbalanced_services:
                 logger.warning(
-                    "List of imbalanced services are - %s", imbalanced_services
+                    "list of imbalanced services are - %s", imbalanced_services
                 )
             if unconfigured_services:
                 logger.warning(
-                    "List of unconfigured services are - %s", unconfigured_services
+                    "list of unconfigured services are - %s", unconfigured_services
                 )
 
             return services_data

@@ -38,7 +38,7 @@ import json
 import copy
 import threading
 from logging import Logger
-from typing import List, Optional
+from typing import Optional
 from flask import Flask, current_app as app
 import yaml
 from src.lib import lib_rms
@@ -241,8 +241,8 @@ class RMSMonitor:
             )
             start = time.time()
             latest_services_json = None
-            unrecovered_services: List[str] = []
-            unconfigured_services: List[str] = []
+            unrecovered_services: list[str] = []
+            unconfigured_services: list[str] = []
             while time.time() - start < total_time:
                 app.logger.info("Checking k8s services")
                 # Retrieve and update critical services status

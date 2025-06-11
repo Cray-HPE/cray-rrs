@@ -42,7 +42,7 @@ Usage:
 """
 
 import json
-from typing import Literal, Tuple, Union
+from typing import Literal, Union
 from http import HTTPStatus
 import yaml
 from flask import request
@@ -78,12 +78,12 @@ class ZoneListResource(Resource):  # type: ignore[misc]
     def get(
         self,
     ) -> Union[
-        Tuple[ZoneListSchema, Literal[HTTPStatus.OK]],
-        Tuple[
+        tuple[ZoneListSchema, Literal[HTTPStatus.OK]],
+        tuple[
             ErrorDict,
             Literal[HTTPStatus.INTERNAL_SERVER_ERROR],
         ],
-        Tuple[
+        tuple[
             InformationDict,
             Literal[HTTPStatus.NOT_FOUND],
         ],
@@ -127,7 +127,7 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
     particular zone, identified by its name.
     """
 
-    def get(self, zone_name: str) -> Tuple[
+    def get(self, zone_name: str) -> tuple[
         Union[ZoneDescribeSchema, InformationDict | ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
     ]:
@@ -175,7 +175,7 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc]
 
     def get(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Union[CriticalServicesListSchema, ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.OK, HTTPStatus.NOT_FOUND],
     ]:
@@ -219,7 +219,7 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc]
     particular critical service, identified by its name.
     """
 
-    def get(self, service_name: str) -> Tuple[
+    def get(self, service_name: str) -> tuple[
         Union[CriticalServiceDescribeSchema, ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
     ]:
@@ -266,7 +266,7 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
 
     def patch(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Union[CriticalServiceUpdateSchema, ErrorDict],
         Literal[
             HTTPStatus.BAD_REQUEST,
@@ -321,7 +321,7 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
 
     def get(
         self,
-    ) -> Tuple[
+    ) -> tuple[
         Union[CriticalServicesListSchema, ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.OK, HTTPStatus.NOT_FOUND],
     ]:
@@ -364,7 +364,7 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc]
     particular critical service, identified by its name.
     """
 
-    def get(self, service_name: str) -> Tuple[
+    def get(self, service_name: str) -> tuple[
         Union[CriticalServiceDescribeSchema, ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
     ]:

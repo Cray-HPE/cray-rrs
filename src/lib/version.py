@@ -25,7 +25,7 @@
 Rack Resiliency Service Version API
 """
 
-from typing import Tuple, Dict, Literal
+from typing import Literal
 from http import HTTPStatus
 from flask import current_app as app
 from flask_restful import Resource
@@ -36,7 +36,7 @@ from src.lib.rrs_logging import get_log_id
 class Version(Resource):  # type: ignore[misc]
     """Return RRS version information"""
 
-    def get(self) -> Tuple[Dict[str, str], Literal[HTTPStatus.OK]]:
+    def get(self) -> tuple[dict[str, str], Literal[HTTPStatus.OK]]:
         """Return RRS version information"""
 
         # Generate or fetch a unique log ID for traceability

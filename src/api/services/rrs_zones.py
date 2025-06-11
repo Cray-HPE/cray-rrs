@@ -32,7 +32,7 @@ Key functionalities:
 - Provide detailed zone descriptions including node names, status, and OSD mapping.
 """
 
-from typing import Dict, List, Union, Optional, Tuple
+from typing import Union, Optional
 from flask import current_app as app
 from src.api.models.zones import (
     ZoneTopologyService,
@@ -94,13 +94,13 @@ class ZoneService:
 
     @staticmethod
     def get_node_names(
-        node_list: Union[List[NodeSchema], List[CephNodeInfo]],
-    ) -> List[str]:
+        node_list: Union[list[NodeSchema], list[CephNodeInfo]],
+    ) -> list[str]:
         """
         Extracts node names from a list of node dictionaries.
 
         Args:
-            node_list (list): List of node dictionaries containing 'name' keys.
+            node_list (list): list of node dictionaries containing 'name' keys.
 
         Returns:
             list: A list of node names.
@@ -124,14 +124,14 @@ class ZoneService:
         log_id = get_log_id()
         app.logger.info(f"[{log_id}] Mapping Kubernetes and Ceph zones")
 
-        zones_list: List[ZoneItemSchema] = []
+        zones_list: list[ZoneItemSchema] = []
         all_zone_names = set(k8s_zones.keys()) | set(ceph_zones.keys())
         app.logger.info(f"[{log_id}] All zone names: {all_zone_names}")
 
         for zone_name in all_zone_names:
             app.logger.info(f"[{log_id}] Processing zone: {zone_name}")
             k8s_zone_data = k8s_zones.get(zone_name, {})
-            ceph_zone_data: List[CephNodeInfo] = ceph_zones.get(zone_name, [])
+            ceph_zone_data: list[CephNodeInfo] = ceph_zones.get(zone_name, [])
 
             masters = ZoneService.get_node_names(k8s_zone_data.get("masters", []))
             workers = ZoneService.get_node_names(k8s_zone_data.get("workers", []))
@@ -207,9 +207,9 @@ class ZoneService:
             }
 
         if storage:
-            storage_nodes: List[StorageNodeSchema] = []
+            storage_nodes: list[StorageNodeSchema] = []
             for node in storage:
-                osd_status_map: Dict[str, List[str]] = {}
+                osd_status_map: dict[str, list[str]] = {}
                 for osd in node.get("osds", []):
                     osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
@@ -231,7 +231,7 @@ class ZoneService:
         return zone_data
 
     @staticmethod
-    def fetch_zones() -> Tuple[k8sResultType, CephResultType]:
+    def fetch_zones() -> tuple[k8sResultType, CephResultType]:
         """
         Fetches zone information from the Kubernetes and Ceph zone providers.
 

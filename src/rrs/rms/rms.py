@@ -38,7 +38,7 @@ import sys
 import time
 import logging
 from datetime import datetime
-from typing import List, Tuple, Optional, Literal
+from typing import Optional, Literal
 from http import HTTPStatus
 import yaml
 from flask import Flask, request, jsonify, Response
@@ -99,7 +99,7 @@ monitor = RMSMonitor(state_manager, app)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-def check_failure_type(components: List[str]) -> None:
+def check_failure_type(components: list[str]) -> None:
     """Check if it is a rack or node failure"""
     app.logger.debug(
         "Checking failure type i.e., node or rack failure upon recieving SCN ..."
@@ -173,8 +173,8 @@ api.add_resource(Version, "/version")
 
 @app.route("/api-ts", methods=["POST"])
 def update_api_timestamp() -> (
-    Tuple[Literal["API timestamp updated successfully"], Literal[HTTPStatus.OK]]
-    | Tuple[
+    tuple[Literal["API timestamp updated successfully"], Literal[HTTPStatus.OK]]
+    | tuple[
         Literal["Failed to update API timestamp"],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR],
     ]
@@ -182,7 +182,7 @@ def update_api_timestamp() -> (
     """
     Endpoint to update the API server start timestamp in dynamic configmap.
     Returns:
-        Tuple[str, int]: A success message and HTTP status code.
+        tuple[str, int]: A success message and HTTP status code.
     """
     app.logger.info("Request received from API server, updating API start timestamp")
     try:
@@ -196,7 +196,7 @@ def update_api_timestamp() -> (
 
 
 @app.route("/scn", methods=["POST"])
-def handleSCN() -> Tuple[
+def handleSCN() -> tuple[
     Response,
     Literal[HTTPStatus.BAD_REQUEST, HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.OK],
 ]:
@@ -204,7 +204,7 @@ def handleSCN() -> Tuple[
     Handle incoming POST requests from HMNFD (Hardware Management Notification Framework Daemon).
     This endpoint processes system component notifications and initiates monitoring accordingly.
     Returns:
-        Tuple[Response, int]: A JSON response message and HTTP status code.
+        tuple[Response, int]: A JSON response message and HTTP status code.
         - 200 for successful processing
         - 400 for bad requests (missing data)
         - 500 for internal server errors
@@ -257,7 +257,7 @@ def handleSCN() -> Tuple[
         )
 
 
-def get_management_xnames() -> Optional[List[str]]:
+def get_management_xnames() -> Optional[list[str]]:
     """Get xnames for all the management nodes from HSM"""
     app.logger.debug("Getting xnames for all the management nodes from HSM ...")
     hsm_data, _ = Helper.get_hsm_sls_data(True, False)

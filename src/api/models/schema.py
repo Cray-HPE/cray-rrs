@@ -25,7 +25,7 @@ This module defines various TypedDict schemas for cray-rrs-api
 related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
-from typing import TypedDict, List, Dict, Literal, final
+from typing import TypedDict, Literal, final
 
 # Zones Schemas
 ################################################
@@ -34,14 +34,14 @@ from typing import TypedDict, List, Dict, Literal, final
 class KubernetesTopologyZoneSchema(TypedDict, total=False):
     """Schema for Kubernetes topology zone, including master and worker nodes."""
 
-    Management_Master_Nodes: List[str]
-    Management_Worker_Nodes: List[str]
+    Management_Master_Nodes: list[str]
+    Management_Worker_Nodes: list[str]
 
 
 class CephZoneSchema(TypedDict, total=False):
     """Schema for Ceph zone, including storage nodes."""
 
-    Management_Storage_Nodes: List[str]
+    Management_Storage_Nodes: list[str]
 
 
 class ZoneItemSchema(TypedDict, total=False):
@@ -56,7 +56,7 @@ class ZoneItemSchema(TypedDict, total=False):
 class ZoneListSchema(TypedDict, total=False):
     """Schema for a list of zones."""
 
-    Zones: List[ZoneItemSchema]
+    Zones: list[ZoneItemSchema]
 
 
 # Zone Describe Schema
@@ -75,7 +75,7 @@ class StorageNodeSchema(TypedDict, total=False):
 
     name: str
     status: str
-    osds: Dict[str, List[str]]
+    osds: dict[str, list[str]]
 
 
 class CephNodeInfo(TypedDict):
@@ -83,35 +83,35 @@ class CephNodeInfo(TypedDict):
 
     name: str
     status: str
-    osds: List[NodeSchema]
+    osds: list[NodeSchema]
 
 
 class ManagementMasterSchema(TypedDict, total=False):
     """Schema for management master nodes in a Kubernetes topology zone."""
 
     Type: Literal["Kubernetes_Topology_Zone"]
-    Nodes: List[NodeSchema]
+    Nodes: list[NodeSchema]
 
 
 class ManagementWorkerSchema(TypedDict, total=False):
     """Schema for management worker nodes in a Kubernetes topology zone."""
 
     Type: Literal["Kubernetes_Topology_Zone"]
-    Nodes: List[NodeSchema]
+    Nodes: list[NodeSchema]
 
 
 class k8sNodes(TypedDict, total=False):
     """Schema for Kubernetes nodes, including masters and workers."""
 
-    masters: List[NodeSchema]
-    workers: List[NodeSchema]
+    masters: list[NodeSchema]
+    workers: list[NodeSchema]
 
 
 class ManagementStorageSchema(TypedDict, total=False):
     """Schema for management storage nodes in a Ceph zone."""
 
     Type: Literal["CEPH_Zone"]
-    Nodes: List[StorageNodeSchema]
+    Nodes: list[StorageNodeSchema]
 
 
 class ZoneDescribeSchema(TypedDict, total=False):
@@ -141,7 +141,7 @@ class CriticalServiceEntrySchema(TypedDict, total=False):
 class CriticalServicesItem(TypedDict, total=False):
     """Schema for critical services grouped by namespace."""
 
-    namespace: Dict[str, List[CriticalServiceEntrySchema]]
+    namespace: dict[str, list[CriticalServiceEntrySchema]]
 
 
 class CriticalServicesListSchema(TypedDict, total=False):
@@ -170,7 +170,7 @@ class CriticalServiceDescribe(TypedDict, total=False):
     Balanced: str
     Configured_Instances: int | None
     Currently_Running_Instances: int
-    Pods: List[PodSchema]
+    Pods: list[PodSchema]
 
 
 class CriticalServiceDescribeSchema(TypedDict, total=False):
@@ -183,8 +183,8 @@ class CriticalServiceUpdateSchema(TypedDict, total=False):
     """Schema for updating critical services, including added and existing services."""
 
     Update: str
-    Successfully_Added_Services: List[str]
-    Already_Existing_Services: List[str]
+    Successfully_Added_Services: list[str]
+    Already_Existing_Services: list[str]
     error: str
 
 

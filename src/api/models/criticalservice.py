@@ -29,7 +29,6 @@ Classes:
     - CriticalServiceHelper: Static methods to retrieve pods and ConfigMap data.
 """
 
-from typing import Dict, Tuple, List
 import json
 from flask import current_app as app
 from kubernetes import client
@@ -39,7 +38,7 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.api.models.schema import PodSchema
 
 # This is for the format present in the configmap
-CriticalServiceType = Dict[str, Dict[str, str]]
+CriticalServiceType = dict[str, dict[str, str]]
 
 
 class CriticalServiceHelper:
@@ -47,17 +46,17 @@ class CriticalServiceHelper:
 
     @staticmethod
     def get_namespaced_pods(
-        service_info: Dict[str, str], service_name: str
-    ) -> Tuple[List[PodSchema], int]:
+        service_info: dict[str, str], service_name: str
+    ) -> tuple[list[PodSchema], int]:
         """
         Fetch the pods in a namespace and the number of instances using Kube-config.
 
         Args:
-            service_info (Dict[str, str]): A dictionary containing service information: name, namespace and type,
+            service_info (dict[str, str]): A dictionary containing service information: name, namespace and type,
             service_name (str): The name of the service for which pods are being fetched.
 
         Returns:
-            Tuple[List[Dict[str, str]], int]:
+            tuple[list[dict[str, str]], int]:
                 - A list of dictionaries, where each dictionary contains details about a pod.
                   Example: {"name": "pod-1", "status": "Running", "node": "node-1", "zone": "zone-1"}
                 - An integer representing the total number of pod instances running.
@@ -96,7 +95,7 @@ class CriticalServiceHelper:
             raise
 
         running_pods = 0
-        result: List[PodSchema] = []
+        result: list[PodSchema] = []
         expected_owner_kind = CriticalServiceHelper.resolve_owner_kind(resource_type)
 
         for pod in pod_list.items:
@@ -175,7 +174,7 @@ class CriticalServiceHelper:
             cm_data = ConfigMapHelper.read_configmap(cm_namespace, cm_name)
             if "error" in cm_data:
                 raise ValueError(cm_data["error"])
-            config_data: Dict[str, CriticalServiceType] = {}
+            config_data: dict[str, CriticalServiceType] = {}
             if cm_key in cm_data:
                 config_data = json.loads(cm_data[cm_key])
 

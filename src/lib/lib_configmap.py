@@ -33,7 +33,7 @@ from datetime import datetime
 import sys
 import logging
 from logging import Logger
-from typing import Dict, Optional
+from typing import Optional
 import yaml
 from kubernetes import client, config
 from kubernetes.client.exceptions import ApiException
@@ -188,7 +188,7 @@ class ConfigMapHelper:
 
     @staticmethod
     def update_configmap_data(
-        configmap_data: Optional[Dict[str, str]],
+        configmap_data: Optional[dict[str, str]],
         key: str,
         new_data: str,
         namespace: str = NAMESPACE,
@@ -197,7 +197,7 @@ class ConfigMapHelper:
         """
         Update a ConfigMap in Kubernetes
         Args:
-            configmap_data (Optional[Dict[str, str]):
+            configmap_data (Optional[dict[str, str]):
                 The current ConfigMap data. If None, the ConfigMap will be fetched before updating.
             key (str):
                 The key within the ConfigMap's data field to update or add.
@@ -269,14 +269,14 @@ class ConfigMapHelper:
     def read_configmap(
         namespace: str,
         configmap_name: str,
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         """
         Fetch data from a Kubernetes ConfigMap
         Args:
             namespace (str): The Kubernetes namespace where the ConfigMap is located.
             configmap_name (str): The name of the ConfigMap to read.
         Returns:
-            Dict[str, str]:
+            dict[str, str]:
                 - If successful, returns the `.data` field of the ConfigMap as a dictionary.
                 - If an error occurs, returns a dictionary with an "error" key and error message.
         """
