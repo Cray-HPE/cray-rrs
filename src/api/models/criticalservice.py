@@ -29,7 +29,7 @@ Classes:
     - CriticalServiceHelper: Static methods to retrieve pods and ConfigMap data.
 """
 
-from typing import Dict, Tuple, List, Union
+from typing import Dict, Tuple, List
 import json
 from flask import current_app as app
 from kubernetes import client
