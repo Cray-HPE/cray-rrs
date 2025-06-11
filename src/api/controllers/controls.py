@@ -57,6 +57,7 @@ from src.api.models.schema import (
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
     ErrorDict,
+    InformationDict,
 )
 from src.api.services.rrs_criticalservices import (
     CriticalServices,
@@ -76,9 +77,12 @@ class ZoneListResource(Resource):  # type: ignore[misc]
 
     def get(
         self,
-    ) -> Tuple[
-        Union[ZoneListSchema, ErrorDict],
-        Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
+    ) -> Union[
+        Tuple[Union[ZoneListSchema, InformationDict], Literal[HTTPStatus.OK]],
+        Tuple[
+            ErrorDict | InformationDict,
+            Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND],
+        ],
     ]:
         """
         Get the list of all zones.
@@ -93,12 +97,12 @@ class ZoneListResource(Resource):  # type: ignore[misc]
             zones = ZoneService.list_zones()
         except yaml.YAMLError as e:
             return (
-                {"error": f"YAML parsing error: {e}"},
+                ErrorDict(error=f"YAML parsing error: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         except TypeError as e:
             return (
-                {"error": f"Invalid type passed to safe_load: {e}"},
+                ErrorDict(error=f"Invalid type passed to safe_load: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "Information" in zones:
@@ -118,7 +122,7 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
     """
 
     def get(self, zone_name: str) -> Tuple[
-        Union[ZoneDescribeSchema, ErrorDict],
+        Union[ZoneDescribeSchema, InformationDict | ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
     ]:
         """
@@ -137,12 +141,12 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
             zone = ZoneService.describe_zone(zone_name)
         except yaml.YAMLError as e:
             return (
-                {"error": f"YAML parsing error: {e}"},
+                ErrorDict(error=f"YAML parsing error: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         except TypeError as e:
             return (
-                {"error": f"Invalid type passed to safe_load: {e}"},
+                ErrorDict(error=f"Invalid type passed to safe_load: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "Information" in zone:
@@ -179,15 +183,15 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc]
             # Retrieve the list of critical services
             critical_services = CriticalServices.get_critical_service_list()
         except KeyError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except TypeError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except client.exceptions.ApiException as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except json.JSONDecodeError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=str(e)), HTTPStatus.INTERNAL_SERVER_ERROR
         if "error" in critical_services:
             log_event(f"{critical_services}", level="ERROR")
             return critical_services, HTTPStatus.NOT_FOUND
@@ -273,18 +277,18 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
             # If no data is provided, return an error
             if not new_data:
                 log_event("No data provided for update", level="ERROR")
-                return {"error": "No data provided"}, HTTPStatus.BAD_REQUEST
+                return ErrorDict(error="No data provided"), HTTPStatus.BAD_REQUEST
             updated_services = CriticalServices.update_critical_services(new_data)
         except KeyError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except TypeError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except json.JSONDecodeError as json_err:
-            return {"error": f"{str(json_err)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(json_err)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except client.exceptions.ApiException as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
+            return ErrorDict(error=str(e)), HTTPStatus.INTERNAL_SERVER_ERROR
         if "error" in updated_services:
             log_event(f"{updated_services}", level="ERROR")
             return updated_services, HTTPStatus.NOT_FOUND

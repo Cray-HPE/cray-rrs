@@ -151,7 +151,7 @@ class CriticalServices:
             app.logger.warning(
                 f"[{log_id}] Service '{service_name}' not found in the ConfigMap."
             )
-            return {"error": "Service not found"}
+            return ErrorDict(error="Service not found")
         # Use another helper to get the details of the service
         data = CriticalServicesStatus.get_service_details(services, service_name)
 
@@ -245,7 +245,7 @@ class CriticalServices:
     @staticmethod
     def update_critical_services(
         new_data: Dict[str, str],
-    ) -> CriticalServiceUpdateSchema:
+    ) -> Union[CriticalServiceUpdateSchema, ErrorDict]:
         """
         Function to update critical services in the ConfigMap.
 
@@ -263,7 +263,7 @@ class CriticalServices:
             # Check if 'critical-services' key is present in the parsed data
             if "critical-services" not in new_services:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
-                return {"error": "Missing 'critical-services' in payload"}
+                return ErrorDict(error="Missing 'critical-services' in payload")
 
             # Fetch the current ConfigMap data
             existing_data = CriticalServiceHelper.fetch_service_list(
@@ -345,7 +345,7 @@ class CriticalServicesStatus:
             app.logger.warning(
                 f"[{log_id}] No 'critical-services' found in the ConfigMap"
             )
-            return {"error": "'critical-services' not found in the ConfigMap"}
+            return ErrorDict(error="'critical-services' not found in the ConfigMap")
 
         # Return the critical services grouped by namespace
         return {
@@ -481,18 +481,13 @@ class CriticalServicesStatus:
         services = CriticalServiceHelper.fetch_service_list(
             DYNAMIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
         )
-        # if isinstance(services, Exception):
-        #     app.logger.warning(f"[{log_id}] Could not fetch critical services.")
-        #     return {
-        #         "exception": f"Unexpected error {str(services)} occured while fetching criticalservices"
-        #     }
 
         # Check if the service exists in the services dictionary
         if service_name not in services:
             app.logger.warning(
                 f"[{log_id}] Service '{service_name}' not found in the ConfigMap."
             )
-            return {"error": "Service not found"}
+            return ErrorDict(error="Service not found")
 
         data = CriticalServicesStatus.get_service_details(services, service_name)
 

@@ -187,10 +187,14 @@ class CriticalServiceUpdateSchema(TypedDict, total=False):
     error: str
 
 
-# Error Schema
-class ErrorDict(TypedDict, total=False):
+# Error Response Schemas
+class ErrorDict(TypedDict):
     """Schema for error responses."""
 
     error: str
+
+
+class InformationDict(TypedDict):
+    """Schema for informational responses."""
+
     Information: str
-    exception: str

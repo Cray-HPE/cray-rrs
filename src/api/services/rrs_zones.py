@@ -48,6 +48,7 @@ from src.api.models.schema import (
     NodeSchema,
     CephNodeInfo,
     ErrorDict,
+    InformationDict,
 )
 from src.lib.rrs_logging import get_log_id
 
@@ -58,7 +59,7 @@ class ZoneService:
     @staticmethod
     def zone_exist(
         k8s_zones: k8sResultType, ceph_zones: CephResultType
-    ) -> Optional[ErrorDict]:
+    ) -> Optional[InformationDict]:
         """
         Checks whether Kubernetes and/or Ceph zones are configured.
 
@@ -76,17 +77,17 @@ class ZoneService:
             app.logger.warning(
                 f"[{log_id}] No zones (K8s topology and Ceph) configured"
             )
-            return {
-                "Information": "No zones (K8s topology and Ceph) configured",
-            }
+            return InformationDict(
+                Information="No zones (K8s topology and Ceph) configured"
+            )
 
         if not k8s_zones:
             app.logger.warning(f"[{log_id}] No K8s topology zones configured")
-            return {"Information": "No K8s topology zones configured"}
+            return InformationDict(Information="No K8s topology zones configured")
 
         if not ceph_zones:
             app.logger.warning(f"[{log_id}] No CEPH zones configured")
-            return {"Information": "No CEPH zones configured"}
+            return InformationDict(Information="No CEPH zones configured")
 
         app.logger.info(f"[{log_id}] Zones found")
         return None
@@ -180,7 +181,7 @@ class ZoneService:
 
         if not (masters or workers or storage):
             app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
-            return {"error": "Zone not found"}
+            return ErrorDict(error="Zone not found")
 
         zone_data: ZoneDescribeSchema = {
             "Zone_Name": zone_name,
@@ -246,7 +247,7 @@ class ZoneService:
         return k8s_zones, ceph_zones
 
     @staticmethod
-    def list_zones() -> Union[ZoneListSchema, ErrorDict]:
+    def list_zones() -> Union[ZoneListSchema, InformationDict]:
         """
         Returns a list of all zones with mapping between Kubernetes and Ceph.
 
@@ -268,7 +269,7 @@ class ZoneService:
     @staticmethod
     def describe_zone(
         zone_name: str,
-    ) -> Union[ZoneDescribeSchema, ErrorDict]:
+    ) -> Union[ZoneDescribeSchema, Union[ErrorDict, InformationDict]]:
         """
         Provides detailed information for a given zone including nodes and OSDs.
 
