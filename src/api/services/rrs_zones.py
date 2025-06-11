@@ -41,7 +41,7 @@ from src.api.models.zones import (
     ErrorDict,
 )
 from src.lib.rrs_logging import get_log_id
-from src.api.models.schema import (
+from src.lib.schema import (
     ZoneListSchema,
     ZoneItemSchema,
     KubernetesTopologyZoneSchema,
@@ -104,7 +104,7 @@ class ZoneService:
         Returns:
             list: A list of node names.
         """
-        return [node["Name"] for node in node_list]
+        return [node["name"] for node in node_list]
 
     @staticmethod
     def map_zones(
@@ -193,7 +193,7 @@ class ZoneService:
             zone_data["Management_Master"] = {
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
-                    {"Name": node["Name"], "Status": node["Status"]} for node in masters
+                    {"Name": node["name"], "Status": node["status"]} for node in masters
                 ],
             }
 
@@ -201,7 +201,7 @@ class ZoneService:
             zone_data["Management_Worker"] = {
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
-                    {"Name": node["Name"], "Status": node["Status"]} for node in workers
+                    {"Name": node["name"], "Status": node["status"]} for node in workers
                 ],
             }
 
@@ -209,12 +209,12 @@ class ZoneService:
             storage_nodes: List[StorageNodeSchema] = []
             for node in storage:
                 osd_status_map: Dict[str, List[str]] = {}
-                for osd in node.get("Osds", []):
-                    osd_status_map.setdefault(osd["Status"], []).append(osd["Name"])
+                for osd in node.get("osds", []):
+                    osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
                 storage_node: StorageNodeSchema = {
-                    "Name": node["Name"],
-                    "Status": node["Status"],
+                    "Name": node["name"],
+                    "Status": node["status"],
                     "OSDs": osd_status_map,
                 }
                 storage_nodes.append(storage_node)

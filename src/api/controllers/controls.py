@@ -51,7 +51,7 @@ from kubernetes import client
 from src.lib.rrs_logging import log_event
 from src.api.services.rrs_zones import ZoneService
 from src.api.models.zones import ErrorDict
-from src.api.models.schema import (
+from src.lib.schema import (
     ZoneListSchema,
     ZoneDescribeSchema,
     CriticalServicesListSchema,

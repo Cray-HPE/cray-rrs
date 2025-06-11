@@ -83,8 +83,8 @@ MOCK_ALREADY_EXISTING_FILE = """{
 # Mock Kubernetes response
 MOCK_K8S_RESPONSE: k8sResultType = {
     "x3002": {
-        "masters": [{"Name": "ncn-m003", "Status": "Ready"}],
-        "workers": [{"Name": "ncn-w003", "Status": "Ready"}],
+        "masters": [{"name": "ncn-m003", "status": "Ready"}],
+        "workers": [{"name": "ncn-w003", "status": "Ready"}],
     }
 }
 
@@ -92,11 +92,11 @@ MOCK_K8S_RESPONSE: k8sResultType = {
 MOCK_CEPH_RESPONSE: CephResultType = {
     "x3002": [
         {
-            "Name": "ncn-s005",
-            "Status": "Ready",
-            "Osds": [
-                {"Name": "osd.0", "Status": "down"},
-                {"Name": "osd.5", "Status": "down"},
+            "name": "ncn-s005",
+            "status": "Ready",
+            "osds": [
+                {"name": "osd.0", "status": "down"},
+                {"name": "osd.5", "status": "down"},
             ],
         }
     ]

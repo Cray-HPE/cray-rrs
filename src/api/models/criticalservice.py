@@ -36,7 +36,7 @@ from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
-from src.api.models.schema import PodSchema
+from src.lib.schema import PodSchema
 
 # This is for the format present in the configmap
 CriticalServiceType = Dict[str, Dict[str, str]]
@@ -90,7 +90,7 @@ class CriticalServiceHelper:
                 if not isinstance(node_list, list):
                     continue
 
-                valid_nodes = {node["Name"]: zone for node in node_list}
+                valid_nodes = {node["name"]: zone for node in node_list}
                 node_zone_map.update(valid_nodes)
 
         try:
