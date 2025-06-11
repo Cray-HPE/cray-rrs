@@ -45,7 +45,7 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 
 # Development and testing stage
 FROM base AS dev
-RUN pip3 install --no-cache-dir nox~=2025.2.9
+RUN pip3 install --no-cache-dir nox~=2025.5.1
 
 # Copy application source code and test files
 COPY . /app/

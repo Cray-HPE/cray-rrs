@@ -38,10 +38,10 @@ info:
     ## Resources
 
       ### GET /zones
-        Retrieve aggregated zone configuration showing Kubernetes Topology Zones and CEPH Zones including:
-          - Management Master Nodes
-          - Management Worker Nodes
-          - Management Storage Nodes
+        Retrieve aggregated zone configuration showing Kubernetes_Topology_Zones and CEPH_Zones including:
+          - Management_Master_Nodes
+          - Management_Worker_Nodes
+          - Management_Storage_Nodes
 
         Alternatively, if zones are not configured, one of the following informational messages is returned:
           - "No K8s Topology/Ceph Zones configured"
@@ -51,9 +51,9 @@ info:
       ### GET /zones/{zone_name}
         Retrieve detailed information for a specific zone including:
           - Zone Name
-          - Management Master Nodes
-          - Management Worker Nodes
-          - Management Storage Nodes
+          - Management_Master_Nodes
+          - Management_Worker_Nodes
+          - Management_Storage_Nodes
           - Node status and OSD information
 
       ### GET /criticalservices
@@ -110,11 +110,11 @@ paths:
       description: >
         Returns an object with a property "Zones" that is an array of zones. Each zone contains:
           - Zone Name: the name of the zone
-          - Kubernetes Topology Zone: contains:
-              Management Master Nodes: list of master node names
-              Management Worker Nodes: list of worker node names
-          - CEPH Zone: contains:
-              Management Storage Nodes: list of storage node names
+          - Kubernetes_Topology_Zone: contains:
+              Management_Master_Nodes: list of master node names
+              Management_Worker_Nodes: list of worker node names
+          - CEPH_Zone: contains:
+              Management_Storage_Nodes: list of storage node names
       operationId: getZones
       responses:
         '200':
@@ -128,35 +128,35 @@ paths:
                   value:
                     Zones:
                       - Zone Name: cscs-rack-x3001
-                        Kubernetes Topology Zone:
-                          Management Master Nodes:
+                        Kubernetes_Topology_Zone:
+                          Management_Master_Nodes:
                             - ncn-m002
-                          Management Worker Nodes:
+                          Management_Worker_Nodes:
                             - ncn-w002
                             - ncn-w004
-                        CEPH Zone:
-                          Management Storage Nodes:
+                        CEPH_Zone:
+                          Management_Storage_Nodes:
                             - ncn-s004
                             - ncn-s003
                       - Zone Name: cscs-rack-x3002
-                        Kubernetes Topology Zone:
-                          Management Master Nodes:
+                        Kubernetes_Topology_Zone:
+                          Management_Master_Nodes:
                             - ncn-m003
-                          Management Worker Nodes:
+                          Management_Worker_Nodes:
                             - ncn-w003
-                        CEPH Zone:
-                          Management Storage Nodes:
+                        CEPH_Zone:
+                          Management_Storage_Nodes:
                             - ncn-s005
                             - ncn-s002
                       - Zone Name: cscs-rack-x3000
-                        Kubernetes Topology Zone:
-                          Management Master Nodes:
+                        Kubernetes_Topology_Zone:
+                          Management_Master_Nodes:
                             - ncn-m001
-                          Management Worker Nodes:
+                          Management_Worker_Nodes:
                             - ncn-w001
                             - ncn-w005
-                        CEPH Zone:
-                          Management Storage Nodes:
+                        CEPH_Zone:
+                          Management_Storage_Nodes:
                             - ncn-s001
         '404':
           description: Zones not found
@@ -173,12 +173,12 @@ paths:
         Returns detailed information for a specific zone.
         The response includes:
           - Zone Name: the name of the zone
-          - Management Masters: count of master nodes
-          - Management Workers: count of worker nodes
-          - Management Storages: count of storage nodes
-          - Management Master: an object with Nodes (array of node objects with Name and Status) and Type
-          - Management Worker: an object with Nodes (array of node objects with Name and Status) and Type
-          - Management Storage: an object with Nodes (array of node objects with Name, Status, and OSDs) and Type
+          - Management_Masters: count of master nodes
+          - Management_Workers: count of worker nodes
+          - Management_Storages: count of storage nodes
+          - Management_Master: an object with Nodes (array of node objects with Name and Status) and Type
+          - Management_Worker: an object with Nodes (array of node objects with Name and Status) and Type
+          - Management_Storage: an object with Nodes (array of node objects with Name, Status, and OSDs) and Type
       operationId: getZoneDetails
       parameters:
         - name: zone_name
@@ -198,23 +198,23 @@ paths:
                 zoneDetail:
                   value:
                     Zone Name: cscs-rack-x3001
-                    Management Masters: 1
-                    Management Workers: 2
-                    Management Storages: 2
-                    Management Master:
-                      Type: Kubernetes Topology Zone
+                    Management_Masters: 1
+                    Management_Workers: 2
+                    Management_Storages: 2
+                    Management_Master:
+                      Type: Kubernetes_Topology_Zone
                       Nodes:
                         - Name: ncn-m002
                           Status: Ready
-                    Management Worker:
-                      Type: Kubernetes Topology Zone
+                    Management_Worker:
+                      Type: Kubernetes_Topology_Zone
                       Nodes:
                         - Name: ncn-w002
                           Status: Ready
                         - Name: ncn-w004
                           Status: Ready
-                    Management Storage:
-                      Type: CEPH Zone
+                    Management_Storage:
+                      Type: CEPH_Zone
                       Nodes:
                         - Name: ncn-s004
                           Status: Ready
@@ -582,21 +582,21 @@ components:
       properties:
         Zone Name:
           type: string
-        Kubernetes Topology Zone:
+        Kubernetes_Topology_Zone:
           type: object
           properties:
-            Management Master Nodes:
+            Management_Master_Nodes:
               type: array
               items:
                 type: string
-            Management Worker Nodes:
+            Management_Worker_Nodes:
               type: array
               items:
                 type: string
-        CEPH Zone:
+        CEPH_Zone:
           type: object
           properties:
-            Management Storage Nodes:
+            Management_Storage_Nodes:
               type: array
               items:
                 type: string
@@ -605,44 +605,44 @@ components:
       properties:
         Zone Name:
           type: string
-        Management Masters:
+        Management_Masters:
           type: integer
           minimum: 0
-        Management Workers:
+        Management_Workers:
           type: integer
           minimum: 0
-        Management Storages:
+        Management_Storages:
           type: integer
           minimum: 0
-        Management Master:
+        Management_Master:
           type: object
           properties:
             Type:
               type: string
               enum:
-                - "Kubernetes Topology Zone"
+                - "Kubernetes_Topology_Zone"
             Nodes:
               type: array
               items:
                 $ref: '#/components/schemas/NodeDetail'
-        Management Worker:
+        Management_Worker:
           type: object
           properties:
             Type:
               type: string
               enum:
-                - "Kubernetes Topology Zone"
+                - "Kubernetes_Topology_Zone"
             Nodes:
               type: array
               items:
                 $ref: '#/components/schemas/NodeDetail'
-        Management Storage:
+        Management_Storage:
           type: object
           properties:
             Type:
               type: string
               enum:
-                - "CEPH Zone"
+                - "CEPH_Zone"
             Nodes:
               type: array
               items:

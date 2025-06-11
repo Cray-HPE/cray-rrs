@@ -44,6 +44,6 @@ jobs:
       env:
         GIT_REPO_NAME: "${GITHUB_REPOSITORY#*/}"
       run: |
-        pip install nox~=2025.2.9
+        pip install nox~=2025.5.1
         nox -s lint
         nox -s type_check

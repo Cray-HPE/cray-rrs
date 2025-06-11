@@ -118,7 +118,7 @@ def check_failure_type(components: List[str]) -> None:
             rack_id = ""
             for component in hsm_data.get("Components", []):
                 comp_id = component["ID"]
-                if comp_id == component_xname and isinstance(comp_id, str):
+                if comp_id == component_xname:
                     rack_id = comp_id.split("c")[
                         0
                     ]  # Extract "x3000" from "x3000c0s1b75n75"
@@ -132,18 +132,14 @@ def check_failure_type(components: List[str]) -> None:
             rack_components = [
                 {"ID": component["ID"], "State": component["State"]}
                 for component in hsm_data.get("Components", [])
-                if (comp_id := component["ID"])
-                and isinstance(comp_id, str)
-                and comp_id.startswith(rack_id)
+                if (comp_id := component["ID"]) and comp_id.startswith(rack_id)
             ]
 
             rack_failure = True
-            for component in rack_components:
-                if component["State"] in ["On", "Ready", "Populated"]:
+            for comp in rack_components:
+                if comp["State"] in ["On", "Ready", "Populated"]:
                     rack_failure = False
-                app.logger.debug(
-                    "ID: %s, State: %s", component["ID"], component["State"]
-                )
+                app.logger.debug("ID: %s, State: %s", comp["ID"], comp["State"])
             if rack_failure:
                 app.logger.info(
                     "All the nodes in the rack %s are not healthy - RACK FAILURE",
@@ -270,9 +266,7 @@ def get_management_xnames() -> Optional[List[str]]:
         return None
     try:
         management_xnames = {
-            component["ID"]
-            for component in hsm_data.get("Components", [])
-            if isinstance(component["ID"], str)
+            component["ID"] for component in hsm_data.get("Components", [])
         }
         app.logger.debug(list(management_xnames))
         return list(management_xnames)
@@ -478,7 +472,6 @@ if __name__ == "__main__":
             )
             sys.exit(1)
         launch_monitoring = initial_check_and_update()
-        # check daemon=True
         flask_thread = threading.Thread(target=run_flask, daemon=True)
         flask_thread.start()
         check_and_create_hmnfd_subscription()

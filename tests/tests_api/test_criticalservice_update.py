@@ -30,11 +30,10 @@ These tests validate the update behavior of critical services in a ConfigMap.
 
 import unittest
 import json
-from typing import cast, Dict
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
-from tests.tests_models.mock_data import (
-    MOCK_ERROR_CRT_SVC,
+from tests.tests_api.mock_data import (
+    ERR_FILE,
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,
     MOCK_CRITICAL_SERVICES_RESPONSE,
     MOCK_ALREADY_EXISTING_FILE,
@@ -70,8 +69,8 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         )
 
         self.assertEqual(result["Update"], "Successful")
-        self.assertEqual(result["Successfully Added Services"], ["xyz"])
-        self.assertEqual(result["Already Existing Services"], ["kube-proxy"])
+        self.assertEqual(result["Successfully_Added_Services"], ["xyz"])
+        self.assertEqual(result["Already_Existing_Services"], ["kube-proxy"])
 
     def test_update_critical_service_success_already_exist(self) -> None:
         """
@@ -86,7 +85,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         )
         self.app.logger.info(result)
         self.assertEqual(result["Update"], "Services Already Exist")
-        self.assertEqual(result["Already Existing Services"], ["kube-proxy"])
+        self.assertEqual(result["Already_Existing_Services"], ["kube-proxy"])
 
     def test_update_critical_service_failure(self) -> None:
         """
@@ -94,12 +93,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         Ensures that an error key is present in the response.
         """
-        # Convert the dict to a string as expected by the update_configmap method
-        error_data = cast(Dict[str, object], MOCK_ERROR_CRT_SVC)
-
-        result = CriticalServices.update_configmap(
-            error_data, MOCK_CRITICAL_SERVICES_RESPONSE, True
-        )
+        result = CriticalServices.update_critical_services(ERR_FILE)
         self.assertIn("error", result)
 
 

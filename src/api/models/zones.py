@@ -27,38 +27,22 @@ Provides a model to fetch zone topology details from both Ceph and Kubernetes.
 The data is retrieved from a ConfigMap and returned as structured dictionaries.
 """
 
-from typing import Dict, List, Union, TypedDict
+from typing import Dict, List
 import os
 import yaml
 from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.lib.rrs_constants import DYNAMIC_DATA_KEY
+from src.api.models.schema import k8sNodes, CephNodeInfo, NodeSchema
 
 CM_NAMESPACE: str = os.getenv("namespace", "")
 CM_NAME: str = os.getenv("dynamic_cm_name", "")
 
 
-class OsdInfo(TypedDict):
-    """TypedDict representing a Ceph OSD (Object Storage Daemon)."""
-
-    name: str
-    status: str
-
-
-class CephNodeInfo(TypedDict):
-    """TypedDict representing a node containing OSDs."""
-
-    name: str
-    status: str
-    osds: List[OsdInfo]
-
-
-k8sNodeType = Dict[str, Dict[str, List[Dict[str, str]]]]
-ZoneMapping = Dict[str, List[CephNodeInfo]]
+CephResultType = Dict[str, List[CephNodeInfo]]
 ErrorDict = Dict[str, str]
-k8sResultType = Union[k8sNodeType, Exception]
-CephResultType = Union[ZoneMapping, Exception]
+k8sResultType = Dict[str, k8sNodes]
 
 
 class ZoneTopologyService:
@@ -88,36 +72,40 @@ class ZoneTopologyService:
 
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
+            if "error" in configmap_yaml:
+                raise ValueError(configmap_yaml["error"])
             parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
-            ceph_zones = parsed_data["zone"]["ceph_zones"]
+        except yaml.YAMLError as e:
+            app.logger.exception(f"[{log_id}] YAML parsing error: {e}")
+            raise yaml.YAMLError(f"YAML parsing error: {e}") from e
+        except TypeError as e:
+            app.logger.exception(f"[{log_id}] Invalid type passed to safe_load: {e}")
+            raise TypeError(f"Invalid type passed to safe_load: {e}") from e
 
-            zone_mapping: ZoneMapping = {
-                zone_name: [
-                    CephNodeInfo(
-                        name=node["name"],
-                        status=node["status"],
-                        osds=[
-                            OsdInfo(name=osd["name"], status=osd["status"])
-                            for osd in node["osds"]
-                        ],
-                    )
-                    for node in nodes
-                ]
-                for zone_name, nodes in ceph_zones.items()
-            }
+        # Parsing the data
+        ceph_zones = parsed_data["zone"]["ceph_zones"]
 
-            if zone_mapping:
-                app.logger.info(f"[{log_id}] Successfully parsed Ceph zones.")
-                return zone_mapping
+        zone_mapping: CephResultType = {
+            zone_name: [
+                {
+                    "name": node["name"],
+                    "status": node["status"],
+                    "osds": [
+                        {"name": osd["name"], "status": osd["status"]}
+                        for osd in node["osds"]
+                    ],
+                }
+                for node in nodes
+            ]
+            for zone_name, nodes in ceph_zones.items()
+        }
 
-            app.logger.warning(f"[{log_id}] No Ceph zones found.")
-            return {}
+        if zone_mapping:
+            app.logger.info(f"[{log_id}] Successfully parsed Ceph zones.")
+            return zone_mapping
 
-        except Exception as e:
-            app.logger.exception(
-                f"[{log_id}] Unexpected error while parsing Ceph zones."
-            )
-            return e
+        app.logger.warning(f"[{log_id}] No Ceph zones found.")
+        return {}
 
     @staticmethod
     def fetch_k8s_zones() -> k8sResultType:
@@ -134,32 +122,36 @@ class ZoneTopologyService:
 
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
+            if "error" in configmap_yaml:
+                raise ValueError(configmap_yaml["error"])
             parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
-            k8s_zones = parsed_data["zone"]["k8s_zones"]
+        except yaml.YAMLError as e:
+            app.logger.exception(f"[{log_id}] YAML parsing error: {e}")
+            raise yaml.YAMLError(f"YAML parsing error: {e}") from e
+        except TypeError as e:
+            app.logger.exception(f"[{log_id}] Invalid type passed to safe_load: {e}")
+            raise TypeError(f"Invalid type passed to safe_load: {e}") from e
 
-            zone_mapping: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
+        # Parsing the data
+        k8s_zones = parsed_data["zone"]["k8s_zones"]
 
-            for zone_name, nodes in k8s_zones.items():
-                zone_mapping[zone_name] = {"masters": [], "workers": []}
-                for node in nodes:
-                    node_name = node["name"]
-                    node_status = node["Status"]
-                    node_info = {"name": node_name, "status": node_status}
+        zone_mapping: k8sResultType = {}
 
-                    if node_name.startswith("ncn-m"):
-                        zone_mapping[zone_name]["masters"].append(node_info)
-                    else:
-                        zone_mapping[zone_name]["workers"].append(node_info)
+        for zone_name, nodes in k8s_zones.items():
+            zone_mapping[zone_name] = {"masters": [], "workers": []}
+            for node in nodes:
+                node_name = node["name"]
+                node_status = node["status"]
+                node_info: NodeSchema = {"name": node_name, "status": node_status}
 
-            if zone_mapping:
-                app.logger.info(
-                    f"[{log_id}] Successfully parsed Kubernetes zone details."
-                )
-                return zone_mapping
-            # Return empty dict of type k8sResultType
-            app.logger.warning(f"[{log_id}] No Kubernetes zones present.")
-            return {}
+                if node_name.startswith("ncn-m"):
+                    zone_mapping[zone_name]["masters"].append(node_info)
+                else:
+                    zone_mapping[zone_name]["workers"].append(node_info)
 
-        except Exception as e:
-            app.logger.exception(f"[{log_id}] Failed to parse Kubernetes zone details")
-            return e
+        if zone_mapping:
+            app.logger.info(f"[{log_id}] Successfully parsed Kubernetes zone details.")
+            return zone_mapping
+        # Return empty dict of type k8sResultType
+        app.logger.warning(f"[{log_id}] No Kubernetes zones present.")
+        return {}
