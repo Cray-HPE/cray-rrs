@@ -31,6 +31,7 @@ from typing import TypedDict, Literal, final
 ################################################
 
 
+@final
 class KubernetesTopologyZoneSchema(TypedDict, total=False):
     """Schema for Kubernetes topology zone, including master and worker nodes."""
 
@@ -38,12 +39,14 @@ class KubernetesTopologyZoneSchema(TypedDict, total=False):
     Management_Worker_Nodes: list[str]
 
 
+@final
 class CephZoneSchema(TypedDict, total=False):
     """Schema for Ceph zone, including storage nodes."""
 
     Management_Storage_Nodes: list[str]
 
 
+@final
 class ZoneItemSchema(TypedDict, total=False):
     """Schema for a single zone item, including its name and associated zones."""
 
@@ -63,6 +66,7 @@ class ZoneListSchema(TypedDict, total=False):
 ################################################
 
 
+@final
 class NodeSchema(TypedDict, total=False):
     """Schema for a node, including its name and status."""
 
@@ -70,6 +74,7 @@ class NodeSchema(TypedDict, total=False):
     status: str
 
 
+@final
 class StorageNodeSchema(TypedDict, total=False):
     """Schema for a storage node, including its name, status, and OSDs."""
 
@@ -78,6 +83,7 @@ class StorageNodeSchema(TypedDict, total=False):
     osds: dict[str, list[str]]
 
 
+@final
 class CephNodeInfo(TypedDict):
     """Schema representing a node containing OSDs."""
 
@@ -86,6 +92,7 @@ class CephNodeInfo(TypedDict):
     osds: list[NodeSchema]
 
 
+@final
 class ManagementMasterSchema(TypedDict, total=False):
     """Schema for management master nodes in a Kubernetes topology zone."""
 
@@ -93,6 +100,7 @@ class ManagementMasterSchema(TypedDict, total=False):
     Nodes: list[NodeSchema]
 
 
+@final
 class ManagementWorkerSchema(TypedDict, total=False):
     """Schema for management worker nodes in a Kubernetes topology zone."""
 
@@ -100,6 +108,7 @@ class ManagementWorkerSchema(TypedDict, total=False):
     Nodes: list[NodeSchema]
 
 
+@final
 class k8sNodes(TypedDict, total=False):
     """Schema for Kubernetes nodes, including masters and workers."""
 
@@ -107,6 +116,7 @@ class k8sNodes(TypedDict, total=False):
     workers: list[NodeSchema]
 
 
+@final
 class ManagementStorageSchema(TypedDict, total=False):
     """Schema for management storage nodes in a Ceph zone."""
 
@@ -130,6 +140,7 @@ class ZoneDescribeSchema(TypedDict, total=False):
 # Critical Service Schemas
 
 
+@final
 class CriticalServiceEntrySchema(TypedDict, total=False):
     """Schema for a critical service entry, including its name, type, and status."""
 
@@ -139,12 +150,14 @@ class CriticalServiceEntrySchema(TypedDict, total=False):
     balanced: str
 
 
+@final
 class CriticalServicesItem(TypedDict, total=False):
     """Schema for critical services grouped by namespace."""
 
     namespace: dict[str, list[CriticalServiceEntrySchema]]
 
 
+@final
 class CriticalServicesListSchema(TypedDict, total=False):
     """Schema for a list of critical services."""
 
@@ -152,6 +165,7 @@ class CriticalServicesListSchema(TypedDict, total=False):
 
 
 # Pod Schema
+@final
 class PodSchema(TypedDict, total=False):
     """Schema for a pod, including its name, status, node, and zone."""
 
@@ -161,6 +175,7 @@ class PodSchema(TypedDict, total=False):
     Zone: str
 
 
+@final
 class CriticalServiceDescribe(TypedDict, total=False):
     """Schema for describing a critical service, including its pods and instances."""
 
@@ -174,12 +189,14 @@ class CriticalServiceDescribe(TypedDict, total=False):
     Pods: list[PodSchema]
 
 
+@final
 class CriticalServiceDescribeSchema(TypedDict, total=False):
     """Schema for describing a critical service."""
 
     Critical_Service: CriticalServiceDescribe
 
 
+@final
 class CriticalServiceUpdateSchema(TypedDict, total=False):
     """Schema for updating critical services, including added and existing services."""
 

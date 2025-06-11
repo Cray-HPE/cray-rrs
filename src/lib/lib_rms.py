@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Union, Literal, Optional, TypedDict, NotRequired
+from typing import Union, Literal, Optional, TypedDict, NotRequired, final
 import requests
 import urllib3
 import yaml
@@ -65,6 +65,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
 
 
+@final
 class ExtraProperties(TypedDict, total=False):
     """
     This represents ExtraProperties field from the SLS get command.
@@ -74,6 +75,7 @@ class ExtraProperties(TypedDict, total=False):
     Role: str
 
 
+@final
 class sls_entry_datatype(TypedDict):
     """
     This represents one of the entries in the output of the SLS get command.
@@ -90,6 +92,7 @@ class sls_entry_datatype(TypedDict):
 sls_datatype = list[sls_entry_datatype]
 
 
+@final
 class component_type(TypedDict):
     """
     This represents one of the entries in the output of the HSM get command.
@@ -101,6 +104,7 @@ class component_type(TypedDict):
     State: str
 
 
+@final
 class hsm_datatype(TypedDict):
     """
     This represents the entire output from HSM get command.
@@ -109,6 +113,7 @@ class hsm_datatype(TypedDict):
     Components: list[component_type]
 
 
+@final
 class ceph_tree_node_datatype(TypedDict, total=False):
     """
     This represents one of the entries in the nodes list in the output of the "ceph osd tree -f json" command
@@ -123,6 +128,7 @@ class ceph_tree_node_datatype(TypedDict, total=False):
     status: str
 
 
+@final
 class ceph_tree_datatype(TypedDict, total=False):
     """
     This represents the output of the "ceph osd tree -f json" command
@@ -134,6 +140,7 @@ class ceph_tree_datatype(TypedDict, total=False):
     nodes: list[ceph_tree_node_datatype]
 
 
+@final
 class ceph_host_datatype(TypedDict, total=False):
     """
     This represents one of the entries in the list in the output of the "ceph orch host ls -f json" command
@@ -145,6 +152,7 @@ class ceph_host_datatype(TypedDict, total=False):
     status: str
 
 
+@final
 class pod_info_type(TypedDict):
     """
     This represents one of the entries in the list that is maintained internally to store pod details.
