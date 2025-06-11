@@ -154,7 +154,7 @@ cray-service:
       path: /root/.ssh
       type: Directory
   ingress:
-    enabled: enable
+    enabled: true
     ui: false
     gateways:
       - services/services-gateway
