@@ -324,6 +324,10 @@ data:
           "namespace": "services",
           "type": "Deployment"
         },
+        "cray-ims": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
         "cray-bos-db": {
           "namespace": "services",
           "type": "Deployment"
@@ -479,58 +483,6 @@ data:
         "gitea-vcs-postgres": {
           "namespace": "services",
           "type": "StatefulSet"
-        },
-        "cray-k8s-encryption": {
-          "namespace": "kube-system",
-          "type": "DaemonSet"
-        },
-        "kube-proxy": {
-          "namespace": "kube-system",
-          "type": "DaemonSet"
-        },
-        "cray-ceph-csi-cephfs-nodeplugin": {
-          "namespace": "ceph-cephfs",
-          "type": "DaemonSet"
-        },
-        "cray-ceph-csi-rbd-nodeplugin": {
-          "namespace": "ceph-rbd",
-          "type": "DaemonSet"
-        },
-        "cray-spire-agent": {
-          "namespace": "spire",
-          "type": "DaemonSet"
-        },
-        "spire-agent": {
-          "namespace": "spire",
-          "type": "DaemonSet"
-        },
-        "cilium": {
-          "namespace": "kube-system",
-          "type": "DaemonSet"
-        },
-        "cilium-envoy": {
-          "namespace": "kube-system",
-          "type": "DaemonSet"
-        },
-        "cray-opa-ingressgateway": {
-          "namespace": "opa",
-          "type": "DaemonSet"
-        },
-        "cray-opa-ingressgateway-customer-admin": {
-          "namespace": "opa",
-          "type": "DaemonSet"
-        },
-        "cray-opa-ingressgateway-customer-user": {
-          "namespace": "opa",
-          "type": "DaemonSet"
-        },
-        "cray-opa-ingressgateway-hmn": {
-          "namespace": "opa",
-          "type": "DaemonSet"
-        },
-        "cray-tftp-modprobe": {
-          "namespace": "services",
-          "type": "DaemonSet"
         },
         "kube-apiserver": {
           "namespace": "kube-system",
