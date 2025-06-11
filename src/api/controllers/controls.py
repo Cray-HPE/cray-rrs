@@ -91,6 +91,8 @@ class ZoneListResource(Resource):  # type: ignore[misc]
         """
         Get the list of all zones.
 
+        OAS: #/paths/zones (get)
+
         Returns:
             JSON response with the list of zones.
         """
@@ -131,6 +133,8 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
     ]:
         """
         Get the description of a specific zone by its name.
+
+        OAS: #/paths/zones/{zone_name} (get)
 
         Args:
             zone_name (str): The name of the zone to describe.
@@ -178,6 +182,8 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc]
         """
         Get the list of all critical services.
 
+        OAS: #/paths/criticalservices (get)
+
         Returns:
             JSON response with the list of critical services.
         """
@@ -219,6 +225,8 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc]
     ]:
         """
         Get the description of a specific critical service status by its name.
+
+        OAS: #/paths/criticalservices/{critical_service_name} (get)
 
         Args:
             service_name (str): The name of the critical service to describe.
@@ -270,6 +278,8 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
         """
         Update the list of critical services.
 
+        OAS: #/paths/criticalservices (patch)
+
         Returns:
             JSON response with the updated list of critical services.
         """
@@ -318,6 +328,8 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
         """
         Get the status of all critical services.
 
+        OAS: #/paths/criticalservices/status (get)
+
         Returns:
             JSON response with the status of critical services.
         """
@@ -358,6 +370,8 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc]
     ]:
         """
         Get the description of a specific critical service status by its name.
+
+        OAS: #/paths/criticalservices/status/{critical_service_name} (get)
 
         Args:
             service_name (str): The name of the critical service to describe.

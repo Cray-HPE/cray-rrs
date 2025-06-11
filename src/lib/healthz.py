@@ -37,7 +37,11 @@ class Ready(Resource):  # type: ignore[misc]
     """Return k8s readiness check"""
 
     def get(self) -> Tuple[Dict[None, None], Literal[HTTPStatus.OK]]:
-        """Return k8s readiness check"""
+        """
+        Return k8s readiness check
+
+        OAS: #/paths/healthz/ready (get)
+        """
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
         return {}, HTTPStatus.OK  # Return empty body with HTTP 200 OK
@@ -48,7 +52,11 @@ class Live(Resource):  # type: ignore[misc]
     """Return k8s liveness check"""
 
     def get(self) -> Tuple[Dict[None, None], Literal[HTTPStatus.OK]]:
-        """Return k8s liveness check"""
+        """
+        Return k8s liveness check
+
+        OAS: #/paths/healthz/live (get)
+        """
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
         return {}, HTTPStatus.OK  # Return empty body with HTTP 200 OK
