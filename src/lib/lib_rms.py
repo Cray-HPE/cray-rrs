@@ -63,8 +63,6 @@ from src.lib.rrs_constants import (
 # disables only the InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
-# hsm_datatype = Dict[str, List[Dict[str, Union[str, bool, int]]]]
-# sls_datatype = List[Dict[str, Union[str, int, Dict[str, Union[str, int, List[str]]]]]]
 
 
 class ExtraProperties(TypedDict, total=False):
@@ -374,11 +372,9 @@ class Helper:
                 return None
             for item in sls_data:
                 extraProps = item.get("ExtraProperties", {})
-                # if isinstance(extraProps, dict):
                 aliases = extraProps.get("Aliases", [])
                 if node_name in aliases:
                     rack_xname = item.get("Xname")
-                    # if isinstance(rack_xname, str):
                     logger.debug(
                         "Found rack xname '%s' for node '%s'",
                         rack_xname,
@@ -417,13 +413,9 @@ class Helper:
                 extraProps = sls_entry.get("ExtraProperties", None)
                 if extraProps is None:
                     return
-                # extraProps = sls_entry["ExtraProperties"]
-                # if isinstance(extraProps, dict):
                 aliases = extraProps.get("Aliases", None)
                 if aliases is None:
                     return
-                # aliases = extraProps["Aliases"]
-                # if isinstance(aliases, List):
                 alias = aliases[0]
                 if pod_node not in alias:
                     continue
@@ -432,7 +424,6 @@ class Helper:
                     comp_id = component["ID"]
                     if sls_entry["Xname"] != comp_id:
                         continue
-                    # if isinstance(comp_id, str):
                     rack_id = comp_id.split("c")[
                         0
                     ]  # Extract "x3000" from "x3000c0s1b75n75"
@@ -1004,11 +995,6 @@ class criticalServicesHelper:
 
                 if not zone or not node or not pod_name:
                     continue  # skip invalid pod entries
-                # if (
-                #    isinstance(pod_name, str)
-                #    and isinstance(zone, str)
-                #    and isinstance(node, str)
-                # ):
                 zone_pod_map.setdefault(zone, {}).setdefault(node, []).append(pod_name)
 
             counts = [

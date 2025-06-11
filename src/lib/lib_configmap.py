@@ -197,7 +197,7 @@ class ConfigMapHelper:
         """
         Update a ConfigMap in Kubernetes
         Args:
-            configmap_data (Union[Dict[str, str], None]):
+            configmap_data (Optional[Dict[str, str]):
                 The current ConfigMap data. If None, the ConfigMap will be fetched before updating.
             key (str):
                 The key within the ConfigMap's data field to update or add.
@@ -261,7 +261,7 @@ class ConfigMapHelper:
                     namespace,
                 )
                 sys.exit(1)
-        except Exception as e:
+        except Exception:
             logger.exception("Unhandled exception in update_configmap_data")
             raise
 

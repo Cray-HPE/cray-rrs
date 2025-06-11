@@ -132,9 +132,7 @@ def check_failure_type(components: List[str]) -> None:
             rack_components = [
                 {"ID": component["ID"], "State": component["State"]}
                 for component in hsm_data.get("Components", [])
-                if (comp_id := component["ID"])
-                # and isinstance(comp_id, str)
-                and comp_id.startswith(rack_id)
+                if (comp_id := component["ID"]) and comp_id.startswith(rack_id)
             ]
 
             rack_failure = True
@@ -268,9 +266,7 @@ def get_management_xnames() -> Optional[List[str]]:
         return None
     try:
         management_xnames = {
-            component["ID"]
-            for component in hsm_data.get("Components", [])
-            # if isinstance(component["ID"], str)
+            component["ID"] for component in hsm_data.get("Components", [])
         }
         app.logger.debug(list(management_xnames))
         return list(management_xnames)
@@ -476,7 +472,6 @@ if __name__ == "__main__":
             )
             sys.exit(1)
         launch_monitoring = initial_check_and_update()
-        # check daemon=True
         flask_thread = threading.Thread(target=run_flask, daemon=True)
         flask_thread.start()
         check_and_create_hmnfd_subscription()
