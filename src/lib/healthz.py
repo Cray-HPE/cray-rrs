@@ -62,7 +62,7 @@ class Ready(Resource):  # type: ignore[misc]
 class Live(Resource):  # type: ignore[misc]
     """Return k8s liveness check"""
 
-    def get(self) -> tuple[dict[None, None], Literal[HTTPStatus.OK]]:
+    def get(self) -> tuple[EmptyDict, Literal[HTTPStatus.OK]]:
         """
         Return k8s liveness check
 
