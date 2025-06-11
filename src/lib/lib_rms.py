@@ -824,7 +824,7 @@ class k8sHelper:
     @staticmethod
     def get_node_status(
         node_name: str, nodes: Optional[list[V1Node]]
-    ) -> Literal["Ready"] | Literal["NotReady"] | Literal["Unknown"]:
+    ) -> Literal["Ready", "NotReady", "Unknown"]:
         """
         Extract and return the status of a Kubernetes node
         Args:
