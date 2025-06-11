@@ -32,7 +32,7 @@ Key functionalities:
 - Provide detailed zone descriptions including node names, status, and OSD mapping.
 """
 
-from typing import Dict, List, Union, Optional, TypedDict, Tuple, Sequence
+from typing import Dict, List, Union, Optional, Tuple
 from flask import current_app as app
 from src.api.models.zones import (
     ZoneTopologyService,
@@ -50,39 +50,6 @@ from src.api.models.schema import (
     NodeSchema,
     CephNodeInfo,
 )
-
-
-class NodeDetail(TypedDict):
-    """TypedDict for Kubernetes node details."""
-
-    Name: str
-    Status: str
-
-
-class StorageNodeDetail(TypedDict):
-    """TypedDict for Ceph storage node details including OSDs."""
-
-    Name: str
-    Status: str
-    OSDs: Dict[str, List[str]]
-
-
-class ZoneSection(TypedDict):
-    """TypedDict for zone section containing node type and list of nodes."""
-
-    Type: str
-    Nodes: Sequence[Union[NodeDetail, StorageNodeDetail]]
-
-
-class ZonesDict(TypedDict, total=False):
-    """
-    TypedDict representing zone information response structure.
-
-    Attributes:
-        Zones: List of zone dictionaries containing zone details
-    """
-
-    Zones: List[Dict[str, Union[str, Dict[str, List[str]]]]]
 
 
 class ZoneService:

@@ -46,12 +46,15 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper, CriticalServiceType
 from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DYNAMIC_CM
+from src.api.models.schema import (
+    PodSchema,
+    CriticalServicesListSchema,
+    CriticalServicesItem,
+    CriticalServiceDescribeSchema,
+    CriticalServiceUpdateSchema,
+)
 
-ListCriticalServiceType = Dict[str, Dict[str, List[Dict[str, str]]]]
 ErrorDict = Dict[str, str]
-DescribeStatusType = Dict[
-    str, Dict[str, Union[str, int, Optional[int], List[Dict[str, str]]]]
-]
 
 
 class CriticalServices:
@@ -60,7 +63,7 @@ class CriticalServices:
     @staticmethod
     def fetch_critical_services(
         services: CriticalServiceType,
-    ) -> Union[ListCriticalServiceType]:
+    ) -> CriticalServicesItem:
         """
         Fetch and format critical services grouped by namespace.
 
@@ -73,7 +76,7 @@ class CriticalServices:
         log_id = get_log_id()  # Generate a unique log ID to track this request
 
         # Initialize result dictionary to store services grouped by namespaces
-        result: ListCriticalServiceType = {"namespace": {}}
+        result: CriticalServicesItem = {"namespace": {}}
 
         # Log the start of the process
         app.logger.info(f"[{log_id}] Starting to fetch and format critical services.")
@@ -101,7 +104,7 @@ class CriticalServices:
         return result
 
     @staticmethod
-    def get_critical_service_list() -> Union[Dict[str, ListCriticalServiceType]]:
+    def get_critical_service_list() -> CriticalServicesListSchema:
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
 
@@ -130,7 +133,7 @@ class CriticalServices:
         #         "exception": f"Unexpected error {str(data)} occured while fetching criticalservices"
         #     }
         # Return the formatted services as a JSON response
-        return {"critical-services": data}
+        return {"critical_services": data}
 
     # except (KeyError, TypeError, ValueError) as exc:
     # except Exception as exc:
@@ -144,7 +147,7 @@ class CriticalServices:
     @staticmethod
     def describe_service(
         service_name: str,
-    ) -> Union[DescribeStatusType, ErrorDict]:
+    ) -> Union[CriticalServiceDescribeSchema, ErrorDict]:
         """
         Retrieve service details and return as a JSON response.
 
@@ -187,19 +190,15 @@ class CriticalServices:
         #         "exception": f"Unexpected error {str(data)} occured while fetching criticalservices"
         #     }
 
-        # Pick up the relevant internal fields
-        fields_to_exclude = [
-            "Pods",
-            "Balanced",
-            "Status",
-            "Currently Running Instances",
-        ]
         # Build the result dictionary
-        result = {
-            "Critical Service": {
-                key: value
-                for key, value in data["Critical Service"].items()
-                if key not in fields_to_exclude
+        result: CriticalServiceDescribeSchema = {
+            "Critical_Service": {
+                "Name": data["Critical_Service"].get("Name", ""),
+                "Namespace": data["Critical_Service"].get("Namespace", ""),
+                "Type": data["Critical_Service"].get("Type", ""),
+                "Configured_Instances": data["Critical_Service"].get(
+                    "Configured_Instances"
+                ),
             }
         }
         # Log the successful retrieval of the service details
@@ -225,7 +224,7 @@ class CriticalServices:
         new_data: Dict[str, CriticalServiceType],
         existing_data: CriticalServiceType,
         test: bool = False,
-    ) -> Dict[str, object]:
+    ) -> CriticalServiceUpdateSchema:
         """
         Update the ConfigMap with new critical services.
 
@@ -277,8 +276,8 @@ class CriticalServices:
         # Return the result of the update operation
         return {
             "Update": "Successful" if added_services else "Services Already Exist",
-            "Successfully Added Services": added_services or [],
-            "Already Existing Services": skipped_services or [],
+            "Successfully_Added_Services": added_services or [],
+            "Already_Existing_Services": skipped_services or [],
         }
 
     # except Exception as e:
@@ -288,7 +287,7 @@ class CriticalServices:
     @staticmethod
     def update_critical_services(
         new_data: Dict[str, CriticalServiceType],
-    ) -> Union[Dict[str, object]]:
+    ) -> CriticalServiceUpdateSchema:
         """
         Function to update critical services in the ConfigMap.
 
@@ -342,7 +341,7 @@ class CriticalServicesStatus:
     @staticmethod
     def fetch_critical_services_status(
         services: CriticalServiceType,
-    ) -> ListCriticalServiceType:
+    ) -> CriticalServicesItem:
         """Fetch and format critical services grouped by namespace in the required structure.
 
         Args:
@@ -352,7 +351,7 @@ class CriticalServicesStatus:
             Formatted dictionary of services by namespace or error dictionary
         """
         log_id = get_log_id()
-        result: ListCriticalServiceType = {"namespace": {}}
+        result: CriticalServicesItem = {"namespace": {}}
 
         # Iterate over the services and group them by their namespace
         for name, details in services.items():
@@ -374,7 +373,7 @@ class CriticalServicesStatus:
 
     @staticmethod
     def get_criticalservice_status_list() -> (
-        Union[Dict[str, ListCriticalServiceType], ErrorDict]
+        Union[CriticalServicesListSchema, ErrorDict]
     ):
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
@@ -406,7 +405,7 @@ class CriticalServicesStatus:
 
         # Return the critical services grouped by namespace
         return {
-            "critical-services": CriticalServicesStatus.fetch_critical_services_status(
+            "critical_services": CriticalServicesStatus.fetch_critical_services_status(
                 services
             )
         }
@@ -428,7 +427,7 @@ class CriticalServicesStatus:
     @staticmethod
     def get_service_details(
         services: CriticalServiceType, service_name: str, test: bool = False
-    ) -> Union[DescribeStatusType]:
+    ) -> CriticalServiceDescribeSchema:
         """
         Retrieve details of a specific critical service.
 
@@ -454,7 +453,7 @@ class CriticalServicesStatus:
             )
 
             # Initialize variables for filtering pods and counting running pods
-            filtered_pods: List[Dict[str, str]] = []
+            filtered_pods: List[PodSchema] = []
             running_pods: int = 0
             configured_instances: Optional[int] = None
 
@@ -505,14 +504,14 @@ class CriticalServicesStatus:
 
             # Return a structured dictionary containing the service details
             return {
-                "Critical Service": {
+                "Critical_Service": {
                     "Name": service_name,
                     "Namespace": namespace,
                     "Type": resource_type,
                     "Status": status,
                     "Balanced": balance,
-                    "Configured Instances": configured_instances,
-                    "Currently Running Instances": running_pods,
+                    "Configured_Instances": configured_instances,
+                    "Currently_Running_Instances": running_pods,
                     "Pods": filtered_pods,
                 }
             }
@@ -537,7 +536,7 @@ class CriticalServicesStatus:
     @staticmethod
     def describe_service_status(
         service_name: str,
-    ) -> Union[DescribeStatusType, ErrorDict]:
+    ) -> Union[CriticalServiceDescribeSchema, ErrorDict]:
         """
         Retrieve service details and return as a JSON response.
 

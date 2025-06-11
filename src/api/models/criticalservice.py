@@ -36,8 +36,9 @@ from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
-from src.api.models.schema import NodeSchema
+from src.api.models.schema import PodSchema
 
+# This is for the format present in the configmap
 CriticalServiceType = Dict[str, Dict[str, str]]
 
 
@@ -47,7 +48,7 @@ class CriticalServiceHelper:
     @staticmethod
     def get_namespaced_pods(
         service_info: Dict[str, str], service_name: str
-    ) -> Tuple[List[Dict[str, str]], int]:
+    ) -> Tuple[List[PodSchema], int]:
         """
         Fetch the pods in a namespace and the number of instances using Kube-config.
 
@@ -82,31 +83,28 @@ class CriticalServiceHelper:
 
         # Build node to zone mapping
         node_zone_map = {}
-        if isinstance(nodes_data, dict):
-            for zone, node_types in nodes_data.items():
-                if not isinstance(node_types, dict):
+
+        for zone, node_types in nodes_data.items():
+            for node_type in ["masters", "workers"]:
+                node_list = node_types.get(node_type, [])
+                if not isinstance(node_list, list):
                     continue
 
-                for node_type in ["masters", "workers"]:
-                    node_list = node_types.get(node_type, [])
-                    if not isinstance(node_list, list):  # Ensure the value is a list
-                        continue
-
-                    valid_nodes = {
-                        node["Name"]: zone
-                        for node in node_list
-                        if isinstance(node, dict) and "Name" in node
-                    }
-                    node_zone_map.update(valid_nodes)
+                valid_nodes = {
+                    node["Name"]: zone
+                    for node in node_list
+                }
+                node_zone_map.update(valid_nodes)
 
         try:
             pod_list = v1.list_namespaced_pod(namespace, label_selector="rrflag")
         except client.exceptions.ApiException as e:
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
-            return [{"error": f"Failed to fetch pods: {str(e)}"}], 0
+            # return [{"error": f"Failed to fetch pods: {str(e)}"}], 0
+            raise
 
         running_pods = 0
-        result: List[Dict[str, str]] = []
+        result: List[PodSchema] = []
         expected_owner_kind = CriticalServiceHelper.resolve_owner_kind(resource_type)
 
         for pod in pod_list.items:
