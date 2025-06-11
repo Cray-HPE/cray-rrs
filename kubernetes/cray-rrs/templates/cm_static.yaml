@@ -96,6 +96,10 @@ data:
           "namespace": "services",
           "type": "Deployment"
         },
+        "sshot-net-operator": {
+          "namespace": "sshot-net-operator",
+          "type": "Deployment"
+        },
         "hpe-slingshot-vnid": {
           "namespace": "services",
           "type": "StatefulSet"
@@ -108,6 +112,14 @@ data:
           "namespace": "services",
           "type": "StatefulSet"
         },
+        "cray-console-data": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-console-operator": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
         "cray-dns-powerdns": {
           "namespace": "services",
           "type": "Deployment"
@@ -118,6 +130,50 @@ data:
         },
         "cray-dns-powerdns-postgres": {
           "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-dns-unbound": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-dhcp-kea": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-dhcp-kea-postgres": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
+        "cray-sls": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-sls-postgres": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
+        "cray-keycloak": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
+        "keycloak-postgres": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
+        "slurm-operator": {
+          "namespace": "slurm-operator",
+          "type": "Deployment"
+        },
+        "slurmctld": {
+          "namespace": "user",
+          "type": "Deployment"
+        },
+        "slurmctld-backup": {
+          "namespace": "user",
+          "type": "Deployment"
+        },
+        "slurmdbd": {
+          "namespace": "user",
           "type": "Deployment"
         },
         "cray-dhcp-kea": {
@@ -240,10 +296,6 @@ data:
           "namespace": "services",
           "type": "Deployment"
         },
-        "cfs-hwsync-agent": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
         "cfs-trust": {
           "namespace": "services",
           "type": "Deployment"
@@ -264,11 +316,55 @@ data:
           "namespace": "services",
           "type": "Deployment"
         },
+        "cray-shared-kafka-kafka": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
         "cray-bos": {
           "namespace": "services",
           "type": "Deployment"
         },
         "cray-bos-db": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-actual-state-cleanup": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-configuration": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-discovery": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-power-off-forceful": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-power-off-graceful": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-power-on": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-session-cleanup": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-session-completion": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-session-setup": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-bos-operator-status": {
           "namespace": "services",
           "type": "Deployment"
         },
@@ -316,15 +412,23 @@ data:
           "namespace": "istio-system",
           "type": "Deployment"
         },
+        "cray-oauth2-proxies-customer-access-ingress": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-oauth2-proxies-customer-high-speed-ingress": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-oauth2-proxies-customer-management-ingress": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
         "istio-ingressgateway-hmn": {
           "namespace": "istio-system",
           "type": "Deployment"
         },
         "istiod": {
-          "namespace": "istio-system",
-          "type": "Deployment"
-        },
-        "kiali": {
           "namespace": "istio-system",
           "type": "Deployment"
         },
@@ -377,10 +481,6 @@ data:
           "type": "StatefulSet"
         },
         "cray-k8s-encryption": {
-          "namespace": "kube-system",
-          "type": "DaemonSet"
-        },
-        "kube-multus-ds": {
           "namespace": "kube-system",
           "type": "DaemonSet"
         },
