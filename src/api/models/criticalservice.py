@@ -36,6 +36,7 @@ from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
+from src.api.models.schema import NodeSchema
 
 CriticalServiceType = Dict[str, Dict[str, str]]
 
@@ -88,10 +89,13 @@ class CriticalServiceHelper:
 
                 for node_type in ["masters", "workers"]:
                     node_list = node_types.get(node_type, [])
+                    if not isinstance(node_list, list):  # Ensure the value is a list
+                        continue
+
                     valid_nodes = {
-                        node["name"]: zone
+                        node["Name"]: zone
                         for node in node_list
-                        if isinstance(node, dict) and "name" in node
+                        if isinstance(node, dict) and "Name" in node
                     }
                     node_zone_map.update(valid_nodes)
 
@@ -113,7 +117,7 @@ class CriticalServiceHelper:
             # Check if any owner reference matches our criteria
             is_matching = any(
                 owner.kind == expected_owner_kind
-                and owner.name.startswith(service_name)
+                and owner.name == service_name
                 for owner in pod.metadata.owner_references
             )
 
@@ -122,8 +126,11 @@ class CriticalServiceHelper:
 
             if not pod.status:
                 continue
-            pod_status = pod.status.phase
-            if pod_status == "Running":
+
+            is_terminating = pod.metadata.deletion_timestamp is not None
+            pod_status = pod.status.phase if not is_terminating else "Terminating"
+
+            if pod_status == "Running" and not is_terminating:
                 running_pods += 1
 
             if not pod.spec:

@@ -34,31 +34,15 @@ from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.lib.rrs_constants import DYNAMIC_DATA_KEY
+from src.api.models.schema import k8sNodes, NodeSchema, CephNodeInfo, NodeSchema
 
 CM_NAMESPACE: str = os.getenv("namespace", "")
 CM_NAME: str = os.getenv("dynamic_cm_name", "")
 
 
-class OsdInfo(TypedDict):
-    """TypedDict representing a Ceph OSD (Object Storage Daemon)."""
-
-    name: str
-    status: str
-
-
-class CephNodeInfo(TypedDict):
-    """TypedDict representing a node containing OSDs."""
-
-    name: str
-    status: str
-    osds: List[OsdInfo]
-
-
-k8sNodeType = Dict[str, Dict[str, List[Dict[str, str]]]]
-ZoneMapping = Dict[str, List[CephNodeInfo]]
+CephResultType = Dict[str, List[CephNodeInfo]]
 ErrorDict = Dict[str, str]
-k8sResultType = k8sNodeType
-CephResultType = ZoneMapping
+k8sResultType = Dict[str, k8sNodes]
 
 
 class ZoneTopologyService:
@@ -104,16 +88,16 @@ class ZoneTopologyService:
         # Parsing the data
         ceph_zones = parsed_data["zone"]["ceph_zones"]
 
-        zone_mapping: ZoneMapping = {
+        zone_mapping: CephResultType = {
             zone_name: [
-                CephNodeInfo(
-                    name=node["name"],
-                    status=node["status"],
-                    osds=[
-                        OsdInfo(name=osd["name"], status=osd["status"])
-                        for osd in node["osds"]
+                {
+                    "Name": node["Name"],
+                    "Status": node["Status"],
+                    "Osds": [
+                        {"Name": osd["Name"], "Status": osd["Status"]}
+                        for osd in node["Osds"]
                     ],
-                )
+                }
                 for node in nodes
             ]
             for zone_name, nodes in ceph_zones.items()
@@ -157,14 +141,14 @@ class ZoneTopologyService:
         # Parsing the data
         k8s_zones = parsed_data["zone"]["k8s_zones"]
 
-        zone_mapping: Dict[str, Dict[str, List[Dict[str, str]]]] = {}
+        zone_mapping: k8sResultType = {}
 
         for zone_name, nodes in k8s_zones.items():
             zone_mapping[zone_name] = {"masters": [], "workers": []}
             for node in nodes:
                 node_name = node["name"]
                 node_status = node["Status"]
-                node_info = {"name": node_name, "status": node_status}
+                node_info: NodeSchema = {"Name": node_name, "Status": node_status}
 
                 if node_name.startswith("ncn-m"):
                     zone_mapping[zone_name]["masters"].append(node_info)

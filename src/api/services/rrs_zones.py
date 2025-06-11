@@ -38,13 +38,10 @@ from src.api.models.zones import (
     ZoneTopologyService,
     CephResultType,
     k8sResultType,
-    ErrorDict,
-    CephNodeInfo,
-    k8sNodeType,
-    ZoneMapping,
+    ErrorDict
 )
 from src.lib.rrs_logging import get_log_id
-from src.api.models.schema import (ZoneListSchema, ZoneItemSchema, KubernetesTopologyZoneSchema)
+from src.api.models.schema import (ZoneListSchema, ZoneItemSchema, KubernetesTopologyZoneSchema, ZoneDescribeSchema, StorageNodeSchema, OSDsSchema, NodeSchema, CephNodeInfo)
 
 class NodeDetail(TypedDict):
     """TypedDict for Kubernetes node details."""
@@ -119,7 +116,7 @@ class ZoneService:
 
     @staticmethod
     def get_node_names(
-        node_list: Union[List[Dict[str, str]], List[CephNodeInfo]],
+        node_list: Union[List[NodeSchema], List[CephNodeInfo]],
     ) -> List[str]:
         """
         Extracts node names from a list of node dictionaries.
@@ -131,13 +128,13 @@ class ZoneService:
             list: A list of node names.
         """
         return [
-            node["name"]
+            node["Name"]
             for node in node_list
-            if isinstance(node, dict) and isinstance(node.get("name"), str)
+            if isinstance(node, dict) and isinstance(node.get("Name"), str)
         ]
 
     @staticmethod
-    def map_zones(k8s_zones: k8sNodeType, ceph_zones: ZoneMapping) -> ZoneListSchema:
+    def map_zones(k8s_zones: k8sResultType, ceph_zones: CephResultType) -> ZoneListSchema:
         """
         Maps the Kubernetes and Ceph zones into a structured response.
 
@@ -187,9 +184,9 @@ class ZoneService:
     @staticmethod
     def get_zone_info(
         zone_name: str,
-        k8s_zones: k8sNodeType,
-        ceph_zones: ZoneMapping,
-    ) -> Union[Dict[str, Union[str, int, ZoneSection]], ErrorDict]:
+        k8s_zones: k8sResultType,
+        ceph_zones: CephResultType,
+    ) -> Union[ZoneDescribeSchema, ErrorDict]:
         """
         Retrieves detailed information for a specific zone.
 
@@ -212,7 +209,7 @@ class ZoneService:
             app.logger.warning(f"[{log_id}] Zone '{zone_name}' not found")
             return {"error": "Zone not found"}
 
-        zone_data: Dict[str, Union[str, int, ZoneSection]] = {
+        zone_data: ZoneDescribeSchema = {
             "Zone_Name": zone_name,
             "Management_Masters": len(masters),
             "Management_Workers": len(workers),
@@ -223,7 +220,7 @@ class ZoneService:
             zone_data["Management_Master"] = {
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
-                    {"Name": node["name"], "Status": node["status"]} for node in masters
+                    {"Name": node["Name"], "Status": node["Status"]} for node in masters
                 ],
             }
 
@@ -231,20 +228,20 @@ class ZoneService:
             zone_data["Management_Worker"] = {
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
-                    {"Name": node["name"], "Status": node["status"]} for node in workers
+                    {"Name": node["Name"], "Status": node["Status"]} for node in workers
                 ],
             }
 
         if storage:
-            storage_nodes: List[StorageNodeDetail] = []
+            storage_nodes: List[StorageNodeSchema] = []
             for node in storage:
-                osd_status_map: Dict[str, List[str]] = {}
-                for osd in node.get("osds", []):
-                    osd_status_map.setdefault(osd["status"], []).append(osd["name"])
+                osd_status_map: OSDsSchema = {}
+                for osd in node.get("Osds", []): 
+                    osd_status_map.setdefault(osd["Status"], []).append(osd["Name"])
 
-                storage_node: StorageNodeDetail = {
-                    "Name": node["name"],
-                    "Status": node["status"],
+                storage_node: StorageNodeSchema = {
+                    "Name": node["Name"],
+                    "Status": node["Status"],
                     "OSDs": osd_status_map,
                 }
                 storage_nodes.append(storage_node)
@@ -306,7 +303,7 @@ class ZoneService:
     @staticmethod
     def describe_zone(
         zone_name: str,
-    ) -> Union[Dict[str, Union[str, int, ZoneSection]], ErrorDict]:
+    ) -> Union[ZoneDescribeSchema, ErrorDict]:
         """
         Provides detailed information for a given zone including nodes and OSDs.
 

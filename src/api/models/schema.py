@@ -43,15 +43,15 @@ class ZoneItemSchema(TypedDict, total=False):
     Kubernetes_Topology_Zone: KubernetesTopologyZoneSchema
     CEPH_Zone: CephZoneSchema
 
-class ZoneListSchema(TypedDict):
+class ZoneListSchema(TypedDict, total=False):
     Zones: List[ZoneItemSchema]
 
 # Zone Describe Schema
 
 
-class NodeSchema(TypedDict):
+class NodeSchema(TypedDict, total=False):
     Name: str
-    Status: Literal["Ready", "NotReady"]
+    Status: str
 
 
 class OSDsSchema(TypedDict, total=False):
@@ -59,23 +59,31 @@ class OSDsSchema(TypedDict, total=False):
     down: List[str]
 
 
-class StorageNodeSchema(TypedDict):
+class StorageNodeSchema(TypedDict, total=False):
     Name: str
-    Status: Literal["Ready", "NotReady"]
+    Status: str
     OSDs: OSDsSchema
 
+class CephNodeInfo(TypedDict):
+    """TypedDict representing a node containing OSDs."""
+    Name: str
+    Status: str
+    Osds: List[NodeSchema]
 
-class ManagementMasterSchema(TypedDict):
+class ManagementMasterSchema(TypedDict, total=False):
     Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: List[NodeSchema]
 
 
-class ManagementWorkerSchema(TypedDict):
+class ManagementWorkerSchema(TypedDict, total=False):
     Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: List[NodeSchema]
 
+class k8sNodes(TypedDict, total=False):
+    masters: List[NodeSchema]
+    workers: List[NodeSchema]
 
-class ManagementStorageSchema(TypedDict):
+class ManagementStorageSchema(TypedDict, total=False):
     Type: Literal["CEPH_Zone"]
     Nodes: List[StorageNodeSchema]
 
@@ -94,50 +102,50 @@ class ZoneDescribeSchema(TypedDict, total=False):
 ################################################
 
 
-class CriticalServiceEntrySchema(TypedDict):
+class CriticalServiceEntrySchema(TypedDict, total=False):
     name: str
-    type: Literal["Deployment", "StatefulSet", "DaemonSet", "Pod"]
+    type: str
 
 
-class CriticalServices(TypedDict):
+class CriticalServices(TypedDict, total=False):
     namespace: Dict[str, List[CriticalServiceEntrySchema]]
 
 
-class CriticalServicesListSchema(TypedDict):
+class CriticalServicesListSchema(TypedDict, total=False):
     critical_services: CriticalServices
 
 
-class CriticalServiceDescribeSchema(TypedDict):
+class CriticalServiceDescribeSchema(TypedDict, total=False):
     Name: str
     Namespace: str
     Type: str
     Configured_Instances: int
 
 
-class CriticalServiceStatusEntrySchema(TypedDict):
+class CriticalServiceStatusEntrySchema(TypedDict, total=False):
     name: str
     type: Literal["Deployment", "StatefulSet", "DaemonSet", "Pod"]
     status: Literal["Configured", "UnConfigured", "PartiallyConfigured"]
     balance: Literal["true", "false", "NA"]
 
 
-class CriticalServicesStatus(TypedDict):
+class CriticalServicesStatus(TypedDict, total=False):
     namespace: Dict[str, List[CriticalServiceStatusEntrySchema]]
 
 
-class CriticalServicesStatusListSchema(TypedDict):
+class CriticalServicesStatusListSchema(TypedDict, total=False):
     critical_services: CriticalServicesStatus
 
 
 # Pod Schema
-class PodSchema(TypedDict):
+class PodSchema(TypedDict, total=False):
     Name: str
     Status: str
     Node: str
     Zone: str
 
 
-class CriticalServiceStatusDescribeSchema(TypedDict):
+class CriticalServiceStatusDescribeSchema(TypedDict, total=False):
     Name: str
     Namespace: str
     Type: Literal["Deployment", "StatefulSet", "DaemonSet"]
@@ -148,7 +156,7 @@ class CriticalServiceStatusDescribeSchema(TypedDict):
     Pods: List[PodSchema]
 
 
-class CriticalServiceUpdateSchema(TypedDict):
+class CriticalServiceUpdateSchema(TypedDict, total=False):
     Update: str
     Successfully_Added_Services: List[str]
     Already_Existing_Services: List[str]

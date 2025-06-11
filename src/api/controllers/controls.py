@@ -135,7 +135,7 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
     """
 
     def get(self, zone_name: str) -> Tuple[
-        Union[Dict[str, Union[str, int, ZoneSection]], ErrorDict],
+        Union[ZoneDescribeSchema, ErrorDict],
         Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
     ]:
         """
