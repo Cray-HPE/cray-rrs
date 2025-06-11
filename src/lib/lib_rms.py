@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Dict, List, Tuple, Union, Literal, Optional, TypedDict
+from typing import Dict, List, Tuple, Union, Literal, Optional, TypedDict, NotRequired
 import requests
 import urllib3
 import yaml
@@ -67,7 +67,7 @@ logger = logging.getLogger(__name__)
 # sls_datatype = List[Dict[str, Union[str, int, Dict[str, Union[str, int, List[str]]]]]]
 
 
-class ExtraProperties(TypedDict):
+class ExtraProperties(TypedDict, total=False):
     """
     This represents ExtraProperties field from the SLS get command.
     """
@@ -86,7 +86,7 @@ class sls_entry_datatype(TypedDict):
     Parent: str
     Xname: str
     Type: str
-    ExtraProperties: ExtraProperties
+    ExtraProperties: NotRequired[ExtraProperties]
 
 
 sls_datatype = List[sls_entry_datatype]
@@ -111,7 +111,7 @@ class hsm_datatype(TypedDict):
     Components: List[component_type]
 
 
-class ceph_tree_node_datatype(TypedDict):
+class ceph_tree_node_datatype(TypedDict, total=False):
     """
     This represents one of the entries in the nodes list in the output of the "ceph osd tree -f json" command
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
@@ -121,7 +121,7 @@ class ceph_tree_node_datatype(TypedDict):
     id: int
     type: str
     name: str
-    children: Optional[list[int]]
+    children: list[int]
     status: str
 
 
@@ -136,7 +136,7 @@ class ceph_tree_datatype(TypedDict, total=False):
     nodes: list[ceph_tree_node_datatype]
 
 
-class ceph_host_datatype(TypedDict):
+class ceph_host_datatype(TypedDict, total=False):
     """
     This represents one of the entries in the list in the output of the "ceph orch host ls -f json" command
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
@@ -229,28 +229,29 @@ class Helper:
         try:
             dynamic_cm_data = state_manager.get_dynamic_cm_data()
             yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
-            if yaml_content is not None:
-                dynamic_data = yaml.safe_load(yaml_content)
-                if new_state:
-                    logger.info("Updating state %s to %s", state_field, new_state)
-                    state = dynamic_data.get("state", {})
-                    state[state_field] = new_state
-                if timestamp_field:
-                    logger.info("Updating timestamp %s", timestamp_field)
-                    timestamp = dynamic_data.get("timestamps", {})
-                    timestamp[timestamp_field] = datetime.now().strftime(
-                        "%Y-%m-%dT%H:%M:%SZ"
-                    )
+            if yaml_content is None:
+                return
+            dynamic_data = yaml.safe_load(yaml_content)
+            if new_state:
+                logger.info("Updating state %s to %s", state_field, new_state)
+                state = dynamic_data.get("state", {})
+                state[state_field] = new_state
+            if timestamp_field:
+                logger.info("Updating timestamp %s", timestamp_field)
+                timestamp = dynamic_data.get("timestamps", {})
+                timestamp[timestamp_field] = datetime.now().strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                )
 
-                dynamic_cm_data[DYNAMIC_DATA_KEY] = yaml.dump(
-                    dynamic_data, default_flow_style=False
-                )
-                state_manager.set_dynamic_cm_data(dynamic_cm_data)
-                ConfigMapHelper.update_configmap_data(
-                    dynamic_cm_data,
-                    DYNAMIC_DATA_KEY,
-                    dynamic_cm_data[DYNAMIC_DATA_KEY],
-                )
+            dynamic_cm_data[DYNAMIC_DATA_KEY] = yaml.dump(
+                dynamic_data, default_flow_style=False
+            )
+            state_manager.set_dynamic_cm_data(dynamic_cm_data)
+            ConfigMapHelper.update_configmap_data(
+                dynamic_cm_data,
+                DYNAMIC_DATA_KEY,
+                dynamic_cm_data[DYNAMIC_DATA_KEY],
+            )
         except ValueError as e:
             logger.error("Error during configuration check and update: %s", e)
         except Exception as e:
@@ -413,9 +414,15 @@ class Helper:
             # Retrieve the state of the node that previously hosted the RRS pod.
             # Log a message if the node is powered off
             for sls_entry in sls_data:
-                extraProps = sls_entry["ExtraProperties"]
+                extraProps = sls_entry.get("ExtraProperties", None)
+                if extraProps is None:
+                    return
+                # extraProps = sls_entry["ExtraProperties"]
                 # if isinstance(extraProps, dict):
-                aliases = extraProps["Aliases"]
+                aliases = extraProps.get("Aliases", None)
+                if aliases is None:
+                    return
+                # aliases = extraProps["Aliases"]
                 # if isinstance(aliases, List):
                 alias = aliases[0]
                 if pod_node not in alias:
@@ -638,7 +645,7 @@ class cephHelper:
             failed_hosts: List[str] = []
 
             for item in ceph_tree.get("nodes", []):
-                if item["type"] != "rack":
+                if "type" not in item or "name" not in item or item["type"] != "rack":
                     continue
 
                 rack_name = item["name"]
@@ -651,15 +658,15 @@ class cephHelper:
 
                 for child_id in children:
                     host_node = next(
-                        (x for x in nodes if x["id"] == child_id),
+                        (x for x in nodes if x.get("id") == child_id),
                         None,
                     )
                     if not host_node:
                         continue
 
-                    host_node_name = host_node["name"]
+                    host_node_name = host_node.get("name", "")
                     if not (
-                        host_node["type"] == "host"
+                        host_node.get("type") == "host"
                         and host_node_name.startswith("ncn-s")
                     ):
                         continue
@@ -671,13 +678,13 @@ class cephHelper:
                         osds = [
                             osd
                             for osd in ceph_nodes
-                            if osd["id"] in osd_ids and osd["type"] == "osd"
+                            if osd.get("id") in osd_ids and osd.get("type") == "osd"
                         ]
 
                     osd_status_list: List[Dict[str, str]] = []
                     for osd in osds:
-                        osd_name = osd["name"]
-                        osd_status = osd["status"]
+                        osd_name = osd.get("name", "")
+                        osd_status = osd.get("status", "")
                         osd_status_list = [{"name": osd_name, "status": osd_status}]
 
                     node_status = host_status_map.get(host_node_name, "No Status")
@@ -931,7 +938,7 @@ class k8sHelper:
 
                 for node_type in ["masters", "workers"]:
                     if node_type not in node_types:
-                        continue  # Skip if node_type key doesn't exist or value is not a list
+                        continue  # Skip if node_type key doesn't exist
 
                     for node in node_types[node_type]:
                         node_zone_map[node["name"]] = zone
