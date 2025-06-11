@@ -114,6 +114,7 @@ class ManagementStorageSchema(TypedDict, total=False):
     Nodes: list[StorageNodeSchema]
 
 
+@final
 class ZoneDescribeSchema(TypedDict, total=False):
     """Schema for describing a zone, including its name and management details."""
 
@@ -189,12 +190,14 @@ class CriticalServiceUpdateSchema(TypedDict, total=False):
 
 
 # Error Response Schemas
+@final
 class ErrorDict(TypedDict):
     """Schema for error responses."""
 
     error: str
 
 
+@final
 class InformationDict(TypedDict):
     """Schema for informational responses."""
 

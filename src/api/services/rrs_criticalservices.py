@@ -322,9 +322,7 @@ class CriticalServicesStatus:
         return result
 
     @staticmethod
-    def get_criticalservice_status_list() -> (
-        CriticalServicesListSchema | ErrorDict
-    ):
+    def get_criticalservice_status_list() -> CriticalServicesListSchema | ErrorDict:
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
 

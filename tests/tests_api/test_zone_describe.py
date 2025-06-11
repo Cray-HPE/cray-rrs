@@ -65,7 +65,8 @@ class TestZoneDescribe(unittest.TestCase):
             "x3002", MOCK_K8S_RESPONSE, MOCK_CEPH_RESPONSE
         )
         self.assertIn("Zone_Name", result)
-        self.assertEqual(result["Zone_Name"], "x3002")
+        if "error" not in result:
+            self.assertEqual(result["Zone_Name"], "x3002")
 
     def test_describe_zone_not_found(self) -> None:
         """

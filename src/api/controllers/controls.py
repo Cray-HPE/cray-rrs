@@ -80,7 +80,7 @@ class ZoneListResource(Resource):  # type: ignore[misc]
     ) -> Union[
         tuple[ZoneListSchema, Literal[HTTPStatus.OK]],
         tuple[ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]],
-        tuple[InformationDict, Literal[HTTPStatus.NOT_FOUND]]
+        tuple[InformationDict, Literal[HTTPStatus.NOT_FOUND]],
     ]:
         """
         Get the list of all zones.
@@ -121,9 +121,12 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
     particular zone, identified by its name.
     """
 
-    def get(self, zone_name: str) -> tuple[
-        Union[ZoneDescribeSchema, InformationDict | ErrorDict],
-        Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
+    def get(self, zone_name: str) -> Union[
+        tuple[ZoneDescribeSchema, Literal[HTTPStatus.OK]],
+        tuple[
+            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+        ],
+        tuple[InformationDict, Literal[HTTPStatus.NOT_FOUND]],
     ]:
         """
         Get the description of a specific zone by its name.
@@ -152,6 +155,9 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "Information" in zone:
+            log_event(f"{zone}", level="ERROR")
+            return zone, HTTPStatus.NOT_FOUND
+        if "error" in zone:
             log_event(f"{zone}", level="ERROR")
             return zone, HTTPStatus.NOT_FOUND
         return zone, HTTPStatus.OK
