@@ -193,7 +193,7 @@ class ZoneService:
             zone_data["Management_Master"] = {
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
-                    {"Name": node["name"], "Status": node["status"]} for node in masters
+                    {"name": node["name"], "status": node["status"]} for node in masters
                 ],
             }
 
@@ -201,7 +201,7 @@ class ZoneService:
             zone_data["Management_Worker"] = {
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
-                    {"Name": node["name"], "Status": node["status"]} for node in workers
+                    {"name": node["name"], "status": node["status"]} for node in workers
                 ],
             }
 
@@ -213,9 +213,9 @@ class ZoneService:
                     osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
                 storage_node: StorageNodeSchema = {
-                    "Name": node["name"],
-                    "Status": node["status"],
-                    "OSDs": osd_status_map,
+                    "name": node["name"],
+                    "status": node["status"],
+                    "osds": osd_status_map,
                 }
                 storage_nodes.append(storage_node)
 

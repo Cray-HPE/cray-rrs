@@ -66,24 +66,24 @@ class ZoneListSchema(TypedDict, total=False):
 class NodeSchema(TypedDict, total=False):
     """Schema for a node, including its name and status."""
 
-    Name: str
-    Status: str
+    name: str
+    status: str
 
 
 class StorageNodeSchema(TypedDict, total=False):
     """Schema for a storage node, including its name, status, and OSDs."""
 
-    Name: str
-    Status: str
-    OSDs: Dict[str, List[str]]
+    name: str
+    status: str
+    osds: Dict[str, List[str]]
 
 
 class CephNodeInfo(TypedDict):
     """Schema representing a node containing OSDs."""
 
-    Name: str
-    Status: str
-    Osds: List[NodeSchema]
+    name: str
+    status: str
+    osds: List[NodeSchema]
 
 
 class ManagementMasterSchema(TypedDict, total=False):

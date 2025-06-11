@@ -91,10 +91,10 @@ class ZoneTopologyService:
         zone_mapping: CephResultType = {
             zone_name: [
                 {
-                    "Name": node["name"],
-                    "Status": node["status"],
-                    "Osds": [
-                        {"Name": osd["name"], "Status": osd["status"]}
+                    "name": node["name"],
+                    "status": node["status"],
+                    "osds": [
+                        {"name": osd["name"], "status": osd["status"]}
                         for osd in node["osds"]
                     ],
                 }
@@ -147,8 +147,8 @@ class ZoneTopologyService:
             zone_mapping[zone_name] = {"masters": [], "workers": []}
             for node in nodes:
                 node_name = node["name"]
-                node_status = node["Status"]
-                node_info: NodeSchema = {"Name": node_name, "Status": node_status}
+                node_status = node["status"]
+                node_info: NodeSchema = {"name": node_name, "status": node_status}
 
                 if node_name.startswith("ncn-m"):
                     zone_mapping[zone_name]["masters"].append(node_info)
