@@ -224,7 +224,7 @@ class CriticalServicesItem(TypedDict):
 class CriticalServicesStatusItem(TypedDict):
     """
     Schema for critical services grouped by namespace.
-    OAS: Part of #/components/schemas/CriticalServicesListSchema
+    OAS: Part of #/components/schemas/CriticalServicesStatusListSchema
     """
 
     namespace: dict[str, list[CriticalServiceStatusItemSchema]]

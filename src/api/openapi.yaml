@@ -420,7 +420,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CriticalServicesStatusResponse'
+                $ref: '#/components/schemas/CriticalServicesStatusListSchema'
               examples:
                 criticalServicesStatusExample:
                   value:
@@ -870,7 +870,7 @@ components:
           type: string
         Zone:
           type: string
-    CriticalServicesStatusResponse:
+    CriticalServicesStatusListSchema:
       type: object
       properties:
         critical_services:
