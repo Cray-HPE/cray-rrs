@@ -256,7 +256,7 @@ class CriticalServices:
             # Check if 'critical-services' key is present in the parsed data
             if "critical-services" not in new_services:
                 app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
-                return ErrorDict(error="Missing 'critical-services' in payload")
+                return {"error": "Missing 'critical-services' in payload"}
 
             # Fetch the current ConfigMap data
             existing_data = CriticalServiceHelper.fetch_service_list(

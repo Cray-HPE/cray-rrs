@@ -25,7 +25,7 @@ This module defines various TypedDict schemas for cray-rrs-api
 related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
-from typing import TypedDict, Literal, final
+from typing import TypedDict, Literal, final, Required
 
 # Zones Schemas
 ################################################
@@ -50,20 +50,20 @@ class CephZoneSchema(TypedDict, total=False):
 class ZoneItemSchema(TypedDict, total=False):
     """Schema for a single zone item, including its name and associated zones."""
 
-    Zone_Name: str
+    Zone_Name: Required[str]
     Kubernetes_Topology_Zone: KubernetesTopologyZoneSchema
     CEPH_Zone: CephZoneSchema
 
 
 @final
-class ZoneListSchema(TypedDict, total=False):
+class ZoneListSchema(TypedDict):
     """Schema for a list of zones."""
 
     Zones: list[ZoneItemSchema]
 
 
 @final
-class NodeSchema(TypedDict, total=False):
+class NodeSchema(TypedDict):
     """Schema for a node, including its name and status."""
 
     name: str
@@ -71,7 +71,7 @@ class NodeSchema(TypedDict, total=False):
 
 
 @final
-class StorageNodeSchema(TypedDict, total=False):
+class StorageNodeSchema(TypedDict):
     """Schema for a storage node, including its name, status, and OSDs."""
 
     name: str
@@ -92,7 +92,8 @@ class CephNodeInfo(TypedDict):
 class ManagementMasterSchema(TypedDict, total=False):
     """Schema for management master nodes in a Kubernetes topology zone."""
 
-    Type: Literal["Kubernetes_Topology_Zone"]
+    Count: Required[int]
+    Type: Required[Literal["Kubernetes_Topology_Zone"]]
     Nodes: list[NodeSchema]
 
 
@@ -100,7 +101,8 @@ class ManagementMasterSchema(TypedDict, total=False):
 class ManagementWorkerSchema(TypedDict, total=False):
     """Schema for management worker nodes in a Kubernetes topology zone."""
 
-    Type: Literal["Kubernetes_Topology_Zone"]
+    Count: Required[int]
+    Type: Required[Literal["Kubernetes_Topology_Zone"]]
     Nodes: list[NodeSchema]
 
 
@@ -116,7 +118,8 @@ class k8sNodes(TypedDict, total=False):
 class ManagementStorageSchema(TypedDict, total=False):
     """Schema for management storage nodes in a Ceph zone."""
 
-    Type: Literal["CEPH_Zone"]
+    Count: Required[int]
+    Type: Required[Literal["CEPH_Zone"]]
     Nodes: list[StorageNodeSchema]
 
 
@@ -124,10 +127,7 @@ class ManagementStorageSchema(TypedDict, total=False):
 class ZoneDescribeSchema(TypedDict, total=False):
     """Schema for describing a zone, including its name and management details."""
 
-    Zone_Name: str
-    Management_Masters: int
-    Management_Workers: int
-    Management_Storages: int
+    Zone_Name: Required[str]
     Management_Master: ManagementMasterSchema
     Management_Worker: ManagementWorkerSchema
     Management_Storage: ManagementStorageSchema
@@ -141,9 +141,18 @@ class ZoneDescribeSchema(TypedDict, total=False):
 class CriticalServiceEntrySchema(TypedDict, total=False):
     """Schema for a critical service entry, including its name, type, and status."""
 
-    name: str
-    type: str
-    namespace: str
+    name: Required[str]
+    type: Required[str]
+    status: str
+    balanced: str
+
+
+@final
+class CriticalServiceCmSchema(TypedDict, total=False):
+    """Schema for a critical service entry, including its name, type, and status."""
+
+    type: Required[str]
+    namespace: Required[str]
     status: str
     balanced: str
 
@@ -163,7 +172,7 @@ class CriticalServicesListSchema(TypedDict, total=False):
 
 
 @final
-class PodSchema(TypedDict, total=False):
+class PodSchema(TypedDict):
     """Schema for a pod, including its name, status, node, and zone."""
 
     Name: str
@@ -176,12 +185,12 @@ class PodSchema(TypedDict, total=False):
 class CriticalServiceDescribe(TypedDict, total=False):
     """Schema for describing a critical service, including its pods and instances."""
 
-    Name: str
-    Namespace: str
-    Type: str
+    Name: Required[str]
+    Namespace: Required[str]
+    Type: Required[str]
     Status: str
     Balanced: str
-    Configured_Instances: int | None
+    Configured_Instances: Required[int | None]
     Currently_Running_Instances: int
     Pods: list[PodSchema]
 
@@ -194,13 +203,12 @@ class CriticalServiceDescribeSchema(TypedDict, total=False):
 
 
 @final
-class CriticalServiceUpdateSchema(TypedDict, total=False):
+class CriticalServiceUpdateSchema(TypedDict):
     """Schema for updating critical services, including added and existing services."""
 
     Update: str
     Successfully_Added_Services: list[str]
     Already_Existing_Services: list[str]
-    error: str
 
 
 # Error Response Schemas

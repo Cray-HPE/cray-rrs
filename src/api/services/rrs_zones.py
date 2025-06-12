@@ -185,13 +185,11 @@ class ZoneService:
 
         zone_data: ZoneDescribeSchema = {
             "Zone_Name": zone_name,
-            "Management_Masters": len(masters),
-            "Management_Workers": len(workers),
-            "Management_Storages": len(storage),
         }
 
         if masters:
             zone_data["Management_Master"] = {
+                "Count": len(masters),
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
                     {"name": node["name"], "status": node["status"]} for node in masters
@@ -200,6 +198,7 @@ class ZoneService:
 
         if workers:
             zone_data["Management_Worker"] = {
+                "Count": len(workers),
                 "Type": "Kubernetes_Topology_Zone",
                 "Nodes": [
                     {"name": node["name"], "status": node["status"]} for node in workers
@@ -221,6 +220,7 @@ class ZoneService:
                 storage_nodes.append(storage_node)
 
             zone_data["Management_Storage"] = {
+                "Count": len(storage),
                 "Type": "CEPH_Zone",
                 "Nodes": storage_nodes,
             }

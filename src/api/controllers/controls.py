@@ -165,9 +165,11 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc]
 
     def get(
         self,
-    ) -> tuple[
-        Union[CriticalServicesListSchema, ErrorDict],
-        Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.OK, HTTPStatus.NOT_FOUND],
+    ) -> Union[
+        tuple[CriticalServicesListSchema, Literal[HTTPStatus.OK]],
+        tuple[
+            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+        ],
     ]:
         """
         Get the list of all critical services.
@@ -205,9 +207,11 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc]
     particular critical service, identified by its name.
     """
 
-    def get(self, service_name: str) -> tuple[
-        Union[CriticalServiceDescribeSchema, ErrorDict],
-        Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
+    def get(self, service_name: str) -> Union[
+        tuple[CriticalServiceDescribeSchema, Literal[HTTPStatus.OK]],
+        tuple[
+            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+        ],
     ]:
         """
         Get the description of a specific critical service status by its name.
@@ -248,13 +252,15 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
 
     def patch(
         self,
-    ) -> tuple[
-        Union[CriticalServiceUpdateSchema, ErrorDict],
-        Literal[
-            HTTPStatus.BAD_REQUEST,
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-            HTTPStatus.OK,
-            HTTPStatus.NOT_FOUND,
+    ) -> Union[
+        tuple[CriticalServiceUpdateSchema, Literal[HTTPStatus.OK]],
+        tuple[
+            ErrorDict,
+            Literal[
+                HTTPStatus.BAD_REQUEST,
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                HTTPStatus.NOT_FOUND,
+            ],
         ],
     ]:
         """
@@ -299,9 +305,11 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
 
     def get(
         self,
-    ) -> tuple[
-        Union[CriticalServicesListSchema, ErrorDict],
-        Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.OK, HTTPStatus.NOT_FOUND],
+    ) -> Union[
+        tuple[CriticalServicesListSchema, Literal[HTTPStatus.OK]],
+        tuple[
+            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+        ],
     ]:
         """
         Get the status of all critical services.
@@ -338,9 +346,11 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc]
     particular critical service, identified by its name.
     """
 
-    def get(self, service_name: str) -> tuple[
-        Union[CriticalServiceDescribeSchema, ErrorDict],
-        Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND, HTTPStatus.OK],
+    def get(self, service_name: str) -> Union[
+        tuple[CriticalServiceDescribeSchema, Literal[HTTPStatus.OK]],
+        tuple[
+            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+        ],
     ]:
         """
         Get the description of a specific critical service status by its name.

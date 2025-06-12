@@ -35,10 +35,10 @@ from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
-from src.api.models.schema import PodSchema, CriticalServiceEntrySchema
+from src.api.models.schema import PodSchema, CriticalServiceCmSchema
 
 # This is for the format present in the configmap
-CriticalServiceType = dict[str, CriticalServiceEntrySchema]
+CriticalServiceType = dict[str, CriticalServiceCmSchema]
 
 
 class CriticalServiceHelper:
@@ -46,7 +46,7 @@ class CriticalServiceHelper:
 
     @staticmethod
     def get_namespaced_pods(
-        service_info: CriticalServiceEntrySchema, service_name: str
+        service_info: CriticalServiceCmSchema, service_name: str
     ) -> tuple[list[PodSchema], int]:
         """
         Fetch the pods in a namespace and the number of instances using Kube-config.
