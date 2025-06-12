@@ -280,7 +280,7 @@ class CriticalServiceDescribe(TypedDict):
 class CriticalServiceStatusDescribe(TypedDict):
     """
     Schema for describing a critical service, including its pods and instances.
-    OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
+    OAS: Part of #/components/schemas/CriticalServiceStatusDescribeSchema
     """
 
     Name: str
