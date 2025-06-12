@@ -32,13 +32,14 @@ RRS metadata.
 
 import sys
 from datetime import datetime
+from collections import defaultdict
 import logging
 import json
 import yaml
 from src.rrs.rms.rms_statemanager import RMSState
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper, ceph_result_type
 from src.lib.lib_configmap import ConfigMapHelper
-from src.api.models.schema import NodeSchema
+from src.lib.schema import NodeSchema
 from src.lib.rrs_constants import (
     NAMESPACE,
     DYNAMIC_CM,
@@ -91,7 +92,7 @@ def zone_discovery() -> tuple[
     """
     try:
         status = True
-        updated_k8s_data: k8s_return_type = {}
+        updated_k8s_data: k8s_return_type = defaultdict(list)
         updated_ceph_data: ceph_result_type = {}
         nodes = k8sHelper.get_k8s_nodes()
         logger.info("Retrieving zone information and status of k8s and CEPH nodes")
@@ -118,7 +119,7 @@ def zone_discovery() -> tuple[
             if not zone:
                 logger.error("Node %s does not have a zone marked for it", node_name)
                 status = False
-                updated_k8s_data = {}  # Reset the data
+                updated_k8s_data = defaultdict(list)  # Reset the data
                 break
             updated_k8s_data[zone].append(
                 {
@@ -147,7 +148,7 @@ def check_critical_services_and_timers() -> bool:
         critical_svc = static_cm_data.get(CRITICAL_SERVICE_KEY, None)
         if critical_svc:
             services_data = json.loads(critical_svc)
-            if not services_data["critical-services"]:
+            if not services_data["critical_services"]:
                 logger.error(
                     "Critical services are not defined for Rack Resiliency Service"
                 )

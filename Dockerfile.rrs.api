@@ -59,7 +59,7 @@ COPY src/ /app/src/
 ENV FLASK_APP=/app/src/api/app.py
 ENV PYTHONPATH=/app/src
 
-EXPOSE 8550
+EXPOSE 80
 
 # Final application entrypoint
-CMD ["flask", "run", "--host=0.0.0.0", "--port=8550"]
+CMD ["flask", "run", "--host=0.0.0.0", "--port=80"]

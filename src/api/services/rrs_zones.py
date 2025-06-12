@@ -39,7 +39,7 @@ from src.api.models.zones import (
     CephResultType,
     k8sResultType,
 )
-from src.api.models.schema import (
+from src.lib.schema import (
     ZoneListSchema,
     ZoneItemSchema,
     KubernetesTopologyZoneSchema,

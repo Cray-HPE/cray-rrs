@@ -256,7 +256,7 @@ paths:
         - criticalservices
       description: >
         Returns a list of critical services grouped by namespace. The response includes
-        a critical-services property containing namespaces with arrays of service objects
+        a critical_services property containing namespaces with arrays of service objects
         including:
           - name: the name of the service
           - type: the service type (Deployment, StatefulSet, DaemonSet)
@@ -271,7 +271,7 @@ paths:
               examples:
                 criticalServices:
                   value:
-                    critical-services:
+                    critical_services:
                       namespace:
                         services:
                           - name: cray-dns-powerdns
@@ -425,7 +425,7 @@ paths:
               examples:
                 criticalServicesStatusExample:
                   value:
-                    critical-services:
+                    critical_services:
                       namespace:
                         services:
                           - name: cray-dns-powerdns
@@ -746,7 +746,7 @@ components:
     CriticalServicesListSchema:
       type: object
       properties:
-        critical-services:
+        critical_services:
           type: object
           properties:
             namespace:
@@ -849,7 +849,7 @@ components:
     CriticalServicesStatusResponse:
       type: object
       properties:
-        critical-services:
+        critical_services:
           type: object
           properties:
             namespace:

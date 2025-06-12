@@ -255,7 +255,7 @@ class RMSMonitor:
                         unconfigured_services = []
 
                         for service, details in services_data[
-                            "critical-services"
+                            "critical_services"
                         ].items():
                             if (
                                 details["status"] == "PartiallyConfigured"

@@ -57,14 +57,14 @@ class TestCriticalServicesList(unittest.TestCase):
         Test case to verify that 'fetch_critical_services' correctly retrieves critical services.
         """
         result = {
-            "critical-services": CriticalServicesStatus.fetch_critical_services_status(
+            "critical_services": CriticalServicesStatus.fetch_critical_services_status(
                 MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC
             )
         }
-        self.assertIn("critical-services", result)
-        self.assertIn("namespace", result["critical-services"])
-        self.assertIn("kube-system", result["critical-services"]["namespace"])
-        services = result["critical-services"]["namespace"]["kube-system"]
+        self.assertIn("critical_services", result)
+        self.assertIn("namespace", result["critical_services"])
+        self.assertIn("kube-system", result["critical_services"]["namespace"])
+        services = result["critical_services"]["namespace"]["kube-system"]
         self.assertGreater(len(services), 0)
         self.assertTrue(any(s["name"] == "coredns" for s in services))
         self.assertTrue(any(s["name"] == "coredns" and s["balanced"] for s in services))
@@ -79,13 +79,13 @@ class TestCriticalServicesList(unittest.TestCase):
         Test case for when no critical services are available.
         """
         result = {
-            "critical-services": CriticalServicesStatus.fetch_critical_services_status(
+            "critical_services": CriticalServicesStatus.fetch_critical_services_status(
                 {}
             )
         }
-        self.assertIn("critical-services", result)
-        self.assertIn("namespace", result["critical-services"])
-        self.assertEqual(len(result["critical-services"]["namespace"]), 0)
+        self.assertIn("critical_services", result)
+        self.assertIn("namespace", result["critical_services"])
+        self.assertEqual(len(result["critical_services"]["namespace"]), 0)
 
 
 if __name__ == "__main__":

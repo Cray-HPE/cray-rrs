@@ -33,4 +33,4 @@ from src.api.controllers.routes import create_app
 app = create_app()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8550, debug=True, threaded=True)
+    app.run(host="0.0.0.0", port=80, debug=True, threaded=True)

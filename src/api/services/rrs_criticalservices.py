@@ -46,7 +46,7 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper, CriticalServiceType
 from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DYNAMIC_CM
-from src.api.models.schema import (
+from src.lib.schema import (
     PodSchema,
     CriticalServicesListSchema,
     CriticalServicesItem,
@@ -195,7 +195,7 @@ class CriticalServices:
 
         # Extract existing critical services and the new critical services
         existing_services = existing_data
-        new_services = new_data["critical-services"]
+        new_services = new_data["critical_services"]
 
         # Separate added and skipped services
         added_services = [s for s in new_services if s not in existing_services]
@@ -206,7 +206,7 @@ class CriticalServices:
             existing_services[service_name] = new_services[service_name]
 
         # Prepare new ConfigMap data
-        new_cm_data = json.dumps({"critical-services": existing_services}, indent=2)
+        new_cm_data = json.dumps({"critical_services": existing_services}, indent=2)
         if not test:  # Only update ConfigMap if not in test mode
             ConfigMapHelper.update_configmap_data(
                 None, CRITICAL_SERVICE_KEY, new_cm_data, NAMESPACE, STATIC_CM
@@ -253,10 +253,10 @@ class CriticalServices:
             # Try parsing the JSON string from the 'from_file' key
             new_services = json.loads(str(new_data["from_file"]))
 
-            # Check if 'critical-services' key is present in the parsed data
-            if "critical-services" not in new_services:
-                app.logger.error(f"[{log_id}] Missing 'critical-services' in payload")
-                return {"error": "Missing 'critical-services' in payload"}
+            # Check if 'critical_services' key is present in the parsed data
+            if "critical_services" not in new_services:
+                app.logger.error(f"[{log_id}] Missing 'critical_services' in payload")
+                return {"error": "Missing 'critical_services' in payload"}
 
             # Fetch the current ConfigMap data
             existing_data = CriticalServiceHelper.fetch_service_list(
@@ -334,9 +334,9 @@ class CriticalServicesStatus:
         # If no critical services are found, log and return an error response
         if not services:
             app.logger.warning(
-                f"[{log_id}] No 'critical-services' found in the ConfigMap"
+                f"[{log_id}] No 'critical_services' found in the ConfigMap"
             )
-            return ErrorDict(error="'critical-services' not found in the ConfigMap")
+            return ErrorDict(error="'critical_services' not found in the ConfigMap")
 
         # Return the critical services grouped by namespace
         return {

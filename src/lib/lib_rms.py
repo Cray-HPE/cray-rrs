@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Literal, Optional, TypedDict, NotRequired, final
+from typing import Literal, Optional
 import requests
 import urllib3
 import yaml
@@ -47,11 +47,17 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
-from src.api.models.schema import (
+from src.lib.schema import (
     k8sNodes,
     CephNodeInfo,
     NodeSchema,
-    CriticalServiceCmSchema,
+    CriticalServiceCmType,
+    slsEntryDataType,
+    podInfoType,
+    hsmDataType,
+    cephTreeDataType,
+    cephHostDataType,
+    skewReturn,
 )
 from src.lib.rrs_constants import (
     NAMESPACE,
@@ -65,124 +71,12 @@ from src.lib.rrs_constants import (
     HOSTS,
 )
 
-# This is for the format present in the configmap
-CriticalServiceType = dict[str, dict[str, CriticalServiceCmSchema]]
-
 # disables only the InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 logger = logging.getLogger(__name__)
 
-
-@final
-class extra_properties(TypedDict, total=False):
-    """
-    This represents ExtraProperties field from the SLS get command.
-    """
-
-    Aliases: list[str]
-    Role: str
-
-
-@final
-class sls_entry_datatype(TypedDict):
-    """
-    This represents one of the entries in the output of the SLS get command.
-    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
-    This will not cause problems, because we don't ever try to access any fields not defined here.
-    """
-
-    Parent: str
-    Xname: str
-    Type: str
-    ExtraProperties: NotRequired[extra_properties]
-
-
-sls_datatype = list[sls_entry_datatype]
-
-
-@final
-class component_type(TypedDict):
-    """
-    This represents one of the entries in the output of the HSM get command.
-    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
-    This will not cause problems, because we don't ever try to access any fields not defined here.
-    """
-
-    ID: str
-    State: str
-
-
-@final
-class hsm_datatype(TypedDict):
-    """
-    This represents the entire output from HSM get command.
-    """
-
-    Components: list[component_type]
-
-
-@final
-class ceph_tree_node_datatype(TypedDict, total=False):
-    """
-    This represents one of the entries in the nodes list in the output of the "ceph osd tree -f json" command
-    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
-    This will not cause problems, because we don't ever try to access any fields not defined here.
-    """
-
-    id: int
-    type: str
-    name: str
-    children: list[int]
-    status: str
-
-
-@final
-class ceph_tree_datatype(TypedDict, total=False):
-    """
-    This represents the output of the "ceph osd tree -f json" command
-    Because we only use the "nodes" field from the output, we do not define any of the other
-    fields here, even though there are others. This will not cause problems, because we don't
-    ever try to access those fields.
-    """
-
-    nodes: list[ceph_tree_node_datatype]
-
-
-@final
-class ceph_host_datatype(TypedDict, total=False):
-    """
-    This represents one of the entries in the list in the output of the "ceph orch host ls -f json" command
-    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
-    This will not cause problems, because we don't ever try to access any fields not defined here.
-    """
-
-    hostname: str
-    status: str
-
-
-@final
-class pod_info_type(TypedDict):
-    """
-    This represents one of the entries in the list that is maintained internally to store pod details.
-    """
-
-    Name: str
-    Node: str
-    Zone: str
-    labels: dict[str, str]
-
-
-class skew_return(TypedDict, total=False):
-    """
-    This represents the return type of check_skew function.
-    """
-
-    service_name: str
-    balanced: str
-    status: str
-
-
-pod_info_type_list = list[pod_info_type]
+sls_datatype = list[slsEntryDataType]
+podInfoType_list = list[podInfoType]
 ceph_result_type = dict[str, list[CephNodeInfo]]
 k8s_result_type = dict[str, k8sNodes]
 
@@ -320,7 +214,7 @@ class Helper:
 
     @staticmethod
     def get_hsm_sls_data(get_hsm: bool, get_sls: bool) -> tuple[
-        Optional[hsm_datatype],
+        Optional[hsmDataType],
         Optional[sls_datatype],
     ]:
         """
@@ -422,7 +316,7 @@ class Helper:
         pod_node: str,
         pod_zone: str,
         sls_data: sls_datatype,
-        hsm_data: hsm_datatype,
+        hsm_data: hsmDataType,
     ) -> None:
         """
         Checks if the monitoring pod was previously running on a failed node based on SLS and HSM data.
@@ -430,7 +324,7 @@ class Helper:
             pod_node (str): Name of the node where the pod was previously running.
             pod_zone (str): Rack or zone where the pod was running.
             sls_data (sls_datatype): list of SLS hardware components with xnames and aliases.
-            hsm_data (hsm_datatype): HSM component data filtered to relevant roles/subroles.
+            hsm_data (hsmDataType): HSM component data filtered to relevant roles/subroles.
         Returns:
             None
         """
@@ -599,7 +493,7 @@ class cephHelper:
         return ceph_healthy
 
     @staticmethod
-    def fetch_ceph_data() -> tuple[ceph_tree_datatype, list[ceph_host_datatype]]:
+    def fetch_ceph_data() -> tuple[cephTreeDataType, list[cephHostDataType]]:
         """
         Fetch Ceph OSD and host details using SSH commands.
         This function retrieves the OSD tree and host status using ceph commands executed remotely.
@@ -926,11 +820,11 @@ class k8sHelper:
             return None
 
     @staticmethod
-    def fetch_all_pods() -> Optional[pod_info_type_list]:
+    def fetch_all_pods() -> Optional[podInfoType_list]:
         """
         Fetch all Kubernetes pods in a single API call and annotate them with their zone.
         Returns:
-            Optional[pod_info_type_list]
+            Optional[podInfoType_list]
             Returns None on error or invalid node metadata.
         """
         try:
@@ -953,7 +847,7 @@ class k8sHelper:
                     node_zone_map.update(valid_nodes)
 
             all_pods = v1.list_pod_for_all_namespaces(watch=False).items
-            pod_info: pod_info_type_list = []
+            pod_info: podInfoType_list = []
 
             for pod in all_pods:
                 if pod.spec is None:
@@ -991,14 +885,14 @@ class criticalServicesHelper:
     """
 
     @staticmethod
-    def check_skew(service_name: str, pods: pod_info_type_list) -> skew_return:
+    def check_skew(service_name: str, pods: podInfoType_list) -> skewReturn:
         """
         Check whether pod replicas of a service are evenly distributed across zones.
         Args:
             service_name (str): Name of the service being evaluated.
-            pods (pod_info_type_list): list of pod metadata containing Zone, Node, and Name.
+            pods (podInfoType_list): list of pod metadata containing Zone, Node, and Name.
         Returns:
-            skew_return:
+            skewReturn:
                 - service-name: the name of the service
                 - balanced: "true" or "false" depending on replica distribution
                 - status: Indicates error if any
@@ -1117,15 +1011,15 @@ class criticalServicesHelper:
 
     @staticmethod
     def _filter_pods_by_labels(
-        all_pods: pod_info_type_list, labels: dict[str, str]
-    ) -> pod_info_type_list:
+        all_pods: podInfoType_list, labels: dict[str, str]
+    ) -> podInfoType_list:
         """
         Filter pods based on matching labels.
         Args:
-            all_pods (pod_info_type_list): list of all pods
+            all_pods (podInfoType_list): list of all pods
             labels (dict[str, str]): Labels to match against
         Returns:
-            pod_info_type_list: Filtered list of pods matching the labels
+            podInfoType_list: Filtered list of pods matching the labels
         """
         if not all_pods:
             return []
@@ -1143,14 +1037,14 @@ class criticalServicesHelper:
 
     @staticmethod
     def get_critical_services_status(
-        services_data: CriticalServiceType,
-    ) -> CriticalServiceType:
+        services_data: CriticalServiceCmType,
+    ) -> CriticalServiceCmType:
         """
         Update critical service info with status and balanced values
         Args:
-            services_data (CriticalServiceType): The critical-services section from config.
+            services_data (CriticalServiceCmType): The critical_services section from config.
         Returns:
-            CriticalServiceType:
+            CriticalServiceCmType:
             Updated services_data with 'status' and 'balanced' flags added per service.
         """
         try:
@@ -1159,7 +1053,7 @@ class criticalServicesHelper:
                 logger.warning("Failed to fetch pods, returning original services data")
                 return services_data
 
-            critical_services = services_data.get("critical-services", {})
+            critical_services = services_data.get("critical_services", {})
             logger.info("Number of critical services are - %d", len(critical_services))
             imbalanced_services: list[str] = []
             unconfigured_services: list[str] = []

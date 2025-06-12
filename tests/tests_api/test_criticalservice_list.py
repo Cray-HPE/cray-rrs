@@ -60,20 +60,20 @@ class TestCriticalServicesList(unittest.TestCase):
         and that at least one critical service is listed.
         """
         result = {
-            "critical-services": CriticalServices.fetch_critical_services(
+            "critical_services": CriticalServices.fetch_critical_services(
                 MOCK_CRITICAL_SERVICES_RESPONSE
             )
         }
-        self.assertIn("critical-services", result)
-        self.assertIn("namespace", result["critical-services"])
-        self.assertIn("kube-system", result["critical-services"]["namespace"])
+        self.assertIn("critical_services", result)
+        self.assertIn("namespace", result["critical_services"])
+        self.assertIn("kube-system", result["critical_services"]["namespace"])
         self.assertGreater(
-            len(result["critical-services"]["namespace"]["kube-system"]), 0
+            len(result["critical_services"]["namespace"]["kube-system"]), 0
         )
         self.assertTrue(
             any(
                 service["name"] == "coredns"
-                for service in result["critical-services"]["namespace"]["kube-system"]
+                for service in result["critical_services"]["namespace"]["kube-system"]
             )
         )
 
@@ -83,10 +83,10 @@ class TestCriticalServicesList(unittest.TestCase):
 
         The function should return an empty namespace dictionary.
         """
-        result = {"critical-services": CriticalServices.fetch_critical_services({})}
-        self.assertIn("critical-services", result)
-        self.assertIn("namespace", result["critical-services"])
-        self.assertEqual(len(result["critical-services"]["namespace"]), 0)
+        result = {"critical_services": CriticalServices.fetch_critical_services({})}
+        self.assertIn("critical_services", result)
+        self.assertIn("namespace", result["critical_services"])
+        self.assertEqual(len(result["critical_services"]["namespace"]), 0)
 
 
 if __name__ == "__main__":

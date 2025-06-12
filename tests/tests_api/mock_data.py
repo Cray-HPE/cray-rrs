@@ -58,7 +58,7 @@ MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC: CriticalServiceType = {
 
 # Sample file to update in config map(though the test case won't update the config map)
 MOCK_CRITICAL_SERVICES_UPDATE_FILE = """{
-   "critical-services": {
+   "critical_services": {
       "xyz": {
          "namespace": "abc",
          "type": "Deployment"
@@ -72,7 +72,7 @@ MOCK_CRITICAL_SERVICES_UPDATE_FILE = """{
 
 # Mock file to test existing services in the configmap
 MOCK_ALREADY_EXISTING_FILE = """{
-   "critical-services": {
+   "critical_services": {
       "kube-proxy": {
          "namespace": "kube-system",
          "type": "DaemonSet"

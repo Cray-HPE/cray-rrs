@@ -35,7 +35,7 @@ spec:
   ports:
     - name: http-api
       protocol: TCP
-      port: 8550
+      port: 80
       targetPort: http-api
   type: ClusterIP
 ---

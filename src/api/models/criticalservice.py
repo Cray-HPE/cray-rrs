@@ -35,7 +35,7 @@ from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
-from src.api.models.schema import PodSchema, CriticalServiceCmSchema
+from src.lib.schema import PodSchema, CriticalServiceCmSchema
 
 # This is for the format present in the configmap
 CriticalServiceType = dict[str, CriticalServiceCmSchema]
@@ -179,7 +179,7 @@ class CriticalServiceHelper:
                 config_data = json.loads(cm_data[cm_key])
 
             # Retrieve the critical services from the configuration
-            services = config_data.get("critical-services", {})
+            services = config_data.get("critical_services", {})
             return services
         except KeyError:
             app.logger.error(f"Key '{cm_key}' not found in cm_data.")
