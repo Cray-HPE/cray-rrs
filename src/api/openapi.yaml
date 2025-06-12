@@ -164,6 +164,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/responses/NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InternalServerError'
   /zones/{zone_name}:
     get:
       summary: Get Detailed Zone Information
@@ -217,9 +223,9 @@ paths:
                       Type: CEPH_Zone
                       Nodes:
                         - Name: ncn-s004
-                          Status: Ready
+                          Status: NotReady
                           OSDs:
-                            up:
+                            down:
                               - osd.0
                               - osd.5
                         - Name: ncn-s003
@@ -240,6 +246,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/responses/NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InternalServerError'
   /criticalservices:
     get:
       summary: Get Critical Services
@@ -290,6 +302,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/responses/NotFound'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/InternalServerError'
     patch:
       summary: Update Critical Services ConfigMap
       tags:
