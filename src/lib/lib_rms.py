@@ -915,16 +915,13 @@ class criticalServicesHelper:
 
             balanced = "true" if max(counts) - min(counts) <= 1 else "false"
 
-            return {"service_name": service_name, "balanced": balanced}
         except Exception as e:
             logger.exception(
                 "Error while checking skew for service %s: %s", service_name, e
             )
-            return {
-                "service_name": service_name,
-                "balanced": "unknown",
-                "status": "error",
-            }
+            return skewReturn(service_name=service_name, balanced="unknown", error=True)
+
+        return skewReturn(service_name=service_name, balanced=balanced)
 
     @staticmethod
     def get_service_status(
@@ -1101,16 +1098,16 @@ class criticalServicesHelper:
                 balance_details = criticalServicesHelper.check_skew(
                     service_name, filtered_pods
                 )
-                if balance_details.get("status") == "error":
+                if balance_details.error:
                     status = "error"
 
-                if balance_details.get("balanced") == "False":
+                if balance_details.balanced == "false":
                     imbalanced_services.append(service_name)
 
                 service_info.update(
                     {
                         "status": status,
-                        "balanced": balance_details.get("balanced", "unknown"),
+                        "balanced": balance_details.balanced,
                     }
                 )
 

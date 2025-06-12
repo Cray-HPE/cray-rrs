@@ -25,7 +25,7 @@ This module defines various TypedDict schemas for cray-rrs-api
 related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
-from typing import TypedDict, Literal, final, Required, NotRequired
+from typing import TypedDict, Literal, final, Required, NotRequired, NamedTuple
 
 # Zones Schemas
 ################################################
@@ -411,15 +411,14 @@ class podInfoType(TypedDict):
     labels: dict[str, str]
 
 
-@final
-class skewReturn(TypedDict, total=False):
+class skewReturn(NamedTuple):
     """
     This represents the return type of check_skew function.
     """
 
     service_name: str
-    balanced: str
-    status: str
+    balanced: Literal['true', 'false', 'unknown']
+    error: bool = False
 
 
 @final
