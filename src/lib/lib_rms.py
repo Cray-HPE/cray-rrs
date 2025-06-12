@@ -913,7 +913,7 @@ class criticalServicesHelper:
                 for zone in zone_pod_map.values()
             ]
 
-            balanced = "true" if max(counts) - min(counts) <= 1 else "false"
+            balanced: Literal['true','false'] = "true" if max(counts) - min(counts) <= 1 else "false"
 
         except Exception as e:
             logger.exception(
