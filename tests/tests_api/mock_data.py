@@ -29,7 +29,7 @@ for testing Kubernetes and Ceph zone mapping functionality.
 """
 
 from src.api.models.criticalservice import CriticalServiceType
-from src.api.models.zones import k8sResultType, CephResultType
+from src.lib.schema import k8sNodesResultType, cephNodesResultType
 
 
 ERR_FILE = {"from_file": """{"error": "string indices must be integers"}"""}
@@ -81,7 +81,7 @@ MOCK_ALREADY_EXISTING_FILE = """{
 }"""
 
 # Mock Kubernetes response
-MOCK_K8S_RESPONSE: k8sResultType = {
+MOCK_K8S_RESPONSE: k8sNodesResultType = {
     "x3002": {
         "masters": [{"name": "ncn-m003", "status": "Ready"}],
         "workers": [{"name": "ncn-w003", "status": "Ready"}],
@@ -89,7 +89,7 @@ MOCK_K8S_RESPONSE: k8sResultType = {
 }
 
 # Mock Ceph response
-MOCK_CEPH_RESPONSE: CephResultType = {
+MOCK_CEPH_RESPONSE: cephNodesResultType = {
     "x3002": [
         {
             "name": "ncn-s005",
