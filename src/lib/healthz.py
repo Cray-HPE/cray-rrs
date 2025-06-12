@@ -25,7 +25,7 @@
 Kubernetes Health and Liveness functions
 """
 
-from typing import Literal, TypedDict, final
+from typing import Literal
 from http import HTTPStatus
 from flask import current_app as app
 from flask_restful import Resource
