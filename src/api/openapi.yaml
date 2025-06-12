@@ -310,9 +310,10 @@ paths:
         - criticalservices
       operationId: patchCriticalServices
       description: >
-        Updates the critical services configuration. The request body should contain a JSON string in the
-        from_file property representing the updated critical services configuration
+        Updates the critical services configuration. The request body should contain
+        critical services mapped by service name to their configuration details.
       requestBody:
+        description: Critical services configuration update
         required: true
         content:
           application/json:
@@ -330,12 +331,13 @@ paths:
                   value:
                     Update: Successful
                     Successfully_Added_Services:
-                      - kube-api-server
+                      - k8s-zone-api
+                      - kube-multus-ds
                     Already_Existing_Services:
                       - coredns
                       - kube-proxy
         '400':
-          description: Bad Request - No data provided
+          description: Bad Request - Invalid data provided
           content:
             application/json:
               schema:
@@ -766,10 +768,35 @@ components:
           type: string
     CriticalServicesPatch:
       type: object
+      description: |
+        A collection of critical services that need to be monitored for resiliency.
+        Each service is identified by name and contains namespace and type information.
       properties:
-        from_file:
+        critical_services:
+          type: object
+          description: |
+            Mapping from service names to service configurations.
+          additionalProperties:
+            $ref: '#/components/schemas/CriticalServiceConfig'
+      additionalProperties: false
+      required: [critical_services]
+      
+    CriticalServiceConfig:
+      type: object
+      description: Configuration details for a critical service
+      properties:
+        namespace:
           type: string
-          description: A JSON string containing the updated critical services configuration
+          description: The Kubernetes namespace where the service is deployed
+          example: "rack-resiliency"
+        type:
+          type: string
+          description: The type of Kubernetes resource
+          example: "Deployment"
+          enum: ["Deployment", "DaemonSet", "StatefulSet", "Service", "Pod"]
+      additionalProperties: false
+      required: [namespace, type]
+
     CriticalServiceUpdateSchema:
       type: object
       required: [Update, Successfully_Added_Service, Already_Existing_Service]
