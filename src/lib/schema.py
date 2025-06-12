@@ -420,3 +420,12 @@ class skewReturn(TypedDict, total=False):
     service_name: str
     balanced: str
     status: str
+
+
+@final
+class EmptyDict(TypedDict):
+    """
+    The API spec dictates an empty dict response for calls to the Healthz endpoints
+    A final TypedDict with no keys covers this
+    OAS: #/components/schemas/EmptyDict
+    """

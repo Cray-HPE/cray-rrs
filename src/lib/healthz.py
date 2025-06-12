@@ -30,14 +30,7 @@ from http import HTTPStatus
 from flask import current_app as app
 from flask_restful import Resource
 from src.lib.rrs_logging import get_log_id
-
-
-@final
-class EmptyDict(TypedDict):
-    """
-    The API spec dictates an empty dict response for calls to the Healthz endpoints
-    A final TypedDict with no keys covers this
-    """
+from src.lib.schema import EmptyDict
 
 
 EMPTY_DICT = EmptyDict()
