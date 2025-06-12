@@ -62,7 +62,6 @@ info:
       ### GET /criticalservices/{critical-service-name}
         Retrieve a summarized view of a specific critical service (without pod details). The response includes:
           - Configured Instances
-          - Currently Running Instances
           - Name
           - Namespace
           - Type
@@ -365,7 +364,6 @@ paths:
           - Namespace: string
           - Type: string
           - Configured Instances: number
-          - Currently Running Instances: number
       operationId: getCriticalServiceDetails
       parameters:
         - name: critical_service_name
@@ -389,7 +387,6 @@ paths:
                       Namespace: services
                       Type: Deployment
                       Configured_Instances: 3
-                      Currently_Running_Instances: 3
         '404':
           description: Critical service not found
           content:
@@ -509,7 +506,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CriticalServiceDetail'
+                $ref: '#/components/schemas/CriticalServiceStatusDescribeSchema'
               examples:
                 criticalServiceStatusExample:
                   value:
@@ -810,10 +807,7 @@ components:
             Configured_Instances:
               type: integer
               minimum: 1
-            Currently_Running_Instances:
-              type: integer
-              minimum: 0
-    CriticalServiceDetail:
+    CriticalServiceStatusDescribeSchema:
       type: object
       properties:
         Critical_Service:
@@ -836,6 +830,7 @@ components:
               enum:
                 - "true"
                 - "false"
+                - "unknown"
             Configured_Instances:
               type: integer
               minimum: 1

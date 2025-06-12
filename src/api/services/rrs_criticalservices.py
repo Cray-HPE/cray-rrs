@@ -50,6 +50,7 @@ from src.lib.schema import (
     PodSchema,
     CriticalServicesListSchema,
     CriticalServicesStatusListSchema,
+    CriticalServiceStatusDescribeSchema,
     CriticalServicesItem,
     CriticalServicesStatusItem,
     CriticalServiceDescribeSchema,
@@ -352,7 +353,7 @@ class CriticalServicesStatus:
     @staticmethod
     def get_service_details(
         services: CriticalServiceType, service_name: str, test: bool = False
-    ) -> CriticalServiceDescribeSchema:
+    ) -> CriticalServiceStatusDescribeSchema:
         """
         Retrieve details of a specific critical service.
 
@@ -459,7 +460,7 @@ class CriticalServicesStatus:
     @staticmethod
     def describe_service_status(
         service_name: str,
-    ) -> CriticalServiceDescribeSchema | ErrorDict:
+    ) -> CriticalServiceStatusDescribeSchema | ErrorDict:
         """
         Retrieve service details and return as a JSON response.
 

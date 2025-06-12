@@ -276,18 +276,31 @@ class PodSchema(TypedDict):
 
 
 @final
-class CriticalServiceDescribe(TypedDict, total=False):
+class CriticalServiceDescribe(TypedDict):
     """
     Schema for describing a critical service, including its pods and instances.
-    OAS: Part of #/components/schemas/CriticalServiceDescribeSchema and #/components/schemas/CriticalServiceDetail
+    OAS: Part of #/components/schemas/CriticalServiceDescribeSchema
     """
 
-    Name: Required[str]
-    Namespace: Required[str]
-    Type: Required[str]
+    Name: str
+    Namespace: str
+    Type: str
+    Configured_Instances: int | None
+
+
+@final
+class CriticalServiceStatusDescribe(TypedDict):
+    """
+    Schema for describing a critical service, including its pods and instances.
+    OAS: Part of #/components/schemas/CriticalServiceStatusDescribeSchema
+    """
+
+    Name: str
+    Namespace: str
+    Type: str
     Status: str
     Balanced: str
-    Configured_Instances: Required[int | None]
+    Configured_Instances: int | None
     Currently_Running_Instances: int
     Pods: list[PodSchema]
 
@@ -296,10 +309,20 @@ class CriticalServiceDescribe(TypedDict, total=False):
 class CriticalServiceDescribeSchema(TypedDict, total=False):
     """
     Schema for describing a critical service.
-    OAS: #/components/schemas/CriticalServiceDescribeSchema and #/components/schemas/CriticalServiceDetail
+    OAS: #/components/schemas/CriticalServiceDescribeSchema
     """
 
     Critical_Service: CriticalServiceDescribe
+
+
+@final
+class CriticalServiceStatusDescribeSchema(TypedDict, total=False):
+    """
+    Schema for describing a critical service.
+    OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
+    """
+
+    Critical_Service: CriticalServiceStatusDescribe
 
 
 @final

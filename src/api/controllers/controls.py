@@ -53,6 +53,7 @@ from src.lib.schema import (
     ZoneDescribeSchema,
     CriticalServicesListSchema,
     CriticalServicesStatusListSchema,
+    CriticalServiceStatusDescribeSchema,
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
     ErrorDict,
@@ -348,7 +349,7 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc]
     """
 
     def get(self, service_name: str) -> Union[
-        tuple[CriticalServiceDescribeSchema, Literal[HTTPStatus.OK]],
+        tuple[CriticalServiceStatusDescribeSchema, Literal[HTTPStatus.OK]],
         tuple[
             ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
         ],
