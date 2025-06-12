@@ -109,26 +109,26 @@ class CephNodeInfo(TypedDict):
 
 
 @final
-class ManagementMasterSchema(TypedDict, total=False):
+class ManagementMasterSchema(TypedDict):
     """
     Schema for management master nodes in a Kubernetes topology zone.
     OAS: #/components/schemas/ManagementMasterSchema
     """
 
-    Count: Required[int]
-    Type: Required[Literal["Kubernetes_Topology_Zone"]]
+    Count: int
+    Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: list[NodeSchema]
 
 
 @final
-class ManagementWorkerSchema(TypedDict, total=False):
+class ManagementWorkerSchema(TypedDict):
     """
     Schema for management worker nodes in a Kubernetes topology zone.
     OAS: #/components/schemas/ManagementWorkerSchema
     """
 
-    Count: Required[int]
-    Type: Required[Literal["Kubernetes_Topology_Zone"]]
+    Count: int
+    Type: Literal["Kubernetes_Topology_Zone"]
     Nodes: list[NodeSchema]
 
 
@@ -149,14 +149,14 @@ type cephNodesResultType = dict[str, list[CephNodeInfo]]
 
 
 @final
-class ManagementStorageSchema(TypedDict, total=False):
+class ManagementStorageSchema(TypedDict):
     """
     Schema for management storage nodes in a Ceph zone.
     OAS: #/components/schemas/ManagementStorageSchema
     """
 
-    Count: Required[int]
-    Type: Required[Literal["CEPH_Zone"]]
+    Count: int
+    Type: Literal["CEPH_Zone"]
     Nodes: list[StorageNodeSchema]
 
 
@@ -359,14 +359,14 @@ class slsEntryDataType(TypedDict):
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
 
-    Parent: str
+    Parent: NotRequired[str]
     Xname: str
-    Type: str
+    Type: NotRequired[str]
     ExtraProperties: NotRequired[extra_properties]
 
 
 @final
-class component_type(TypedDict):
+class component_type(TypedDict, total=False):
     """
     This represents one of the entries in a successful response to a GET request to
     the HSM 'v2/State/Components' URI.
@@ -381,7 +381,7 @@ class component_type(TypedDict):
 
 
 @final
-class hsmDataType(TypedDict):
+class hsmDataType(TypedDict, total=False):
     """
     This represents a successful response to a GET request to the HSM 'v2/State/Components' URI.
     https://github.com/Cray-HPE/hms-smd/blob/master/api/swagger_v2.yaml

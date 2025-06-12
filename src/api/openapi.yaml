@@ -666,10 +666,11 @@ components:
       required:
         - Count
         - Type
+        - Nodes
       properties:
         Count:
           type: integer
-          minimum: 0
+          minimum: 1
         Type:
           type: string
           enum:
@@ -683,10 +684,11 @@ components:
       required:
         - Count
         - Type
+        - Nodes
       properties:
         Count:
           type: integer
-          minimum: 0
+          minimum: 1
         Type:
           type: string
           enum:
@@ -700,10 +702,11 @@ components:
       required:
         - Count
         - Type
+        - Nodes
       properties:
         Count:
           type: integer
-          minimum: 0
+          minimum: 1
         Type:
           type: string
           enum:
@@ -748,9 +751,11 @@ components:
                 type: string
     CriticalServicesListSchema:
       type: object
+      required: [critical_services]
       properties:
         critical_services:
           type: object
+          required: [namespace]
           properties:
             namespace:
               type: object
@@ -776,6 +781,7 @@ components:
           description: A JSON string containing the updated critical services configuration
     CriticalServiceUpdateSchema:
       type: object
+      required: [Update, Successfully_Added_Service, Already_Existing_Service]
       properties:
         Update:
           type: string
@@ -789,9 +795,11 @@ components:
             type: string
     CriticalServiceDescribeSchema:
       type: object
+      required: [Critical_Service]
       properties:
         Critical_Service:
           type: object
+          required: [Name, Namespace, Type, Configured_Instances]
           properties:
             Name:
               type: string
@@ -840,6 +848,7 @@ components:
                 $ref: '#/components/schemas/PodSchema'
     PodSchema:
       type: object
+      required: [Name, Node, Status, Zone]
       properties:
         Name:
           type: string
