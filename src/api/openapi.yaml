@@ -804,9 +804,11 @@ components:
               nullable: true
     CriticalServiceStatusDescribeSchema:
       type: object
+      required: [Critical_Service]
       properties:
         Critical_Service:
           type: object
+          required: [Name, Namespace, Type, Status, Balanced, Configured_Instances, Currently_Running_Instances, Pods]
           properties:
             Name:
               type: string
