@@ -801,6 +801,7 @@ components:
             Configured_Instances:
               type: integer
               minimum: 1
+              nullable: true
     CriticalServiceStatusDescribeSchema:
       type: object
       properties:
@@ -820,6 +821,7 @@ components:
             Configured_Instances:
               type: integer
               minimum: 1
+              nullable: true
             Currently_Running_Instances:
               type: integer
               minimum: 0
