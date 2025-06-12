@@ -728,6 +728,18 @@ components:
               type: array
               items:
                 type: string
+    ServiceStatus:
+      type: string
+      enum:
+        - Configured
+        - PartiallyConfigured
+        - Running
+    ServiceBalanced:
+      type: string
+      enum:
+        - "true"
+        - "false"
+        - "unknown"
     CriticalServicesListSchema:
       type: object
       required: [critical_services]
@@ -802,17 +814,9 @@ components:
             Type:
               type: string
             Status:
-              type: string
-              enum:
-                - Configured
-                - PartiallyConfigured
-                - Running
+              $ref: '#/components/schemas/ServiceStatus'
             Balanced:
-              type: string
-              enum:
-                - "true"
-                - "false"
-                - "unknown"
+              $ref: '#/components/schemas/ServiceStatus'
             Configured_Instances:
               type: integer
               minimum: 1
@@ -855,17 +859,9 @@ components:
         type:
           type: string
         status:
-          type: string
-          enum:
-            - Configured
-            - PartiallyConfigured
-            - Running
+          $ref: '#/components/schemas/ServiceStatus'
         balanced:
-          type: string
-          enum:
-            - "true"
-            - "false"
-            - "unknown"
+          $ref: '#/components/schemas/ServiceBalanced'
     ErrorDict:
       type: object
       required: [error]
