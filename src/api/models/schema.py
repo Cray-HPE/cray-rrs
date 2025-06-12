@@ -62,10 +62,6 @@ class ZoneListSchema(TypedDict, total=False):
     Zones: list[ZoneItemSchema]
 
 
-# Zone Describe Schema
-################################################
-
-
 @final
 class NodeSchema(TypedDict, total=False):
     """Schema for a node, including its name and status."""
@@ -138,6 +134,7 @@ class ZoneDescribeSchema(TypedDict, total=False):
 
 
 # Critical Service Schemas
+################################################
 
 
 @final
@@ -146,6 +143,7 @@ class CriticalServiceEntrySchema(TypedDict, total=False):
 
     name: str
     type: str
+    namespace: str
     status: str
     balanced: str
 
@@ -164,7 +162,6 @@ class CriticalServicesListSchema(TypedDict, total=False):
     critical_services: CriticalServicesItem
 
 
-# Pod Schema
 @final
 class PodSchema(TypedDict, total=False):
     """Schema for a pod, including its name, status, node, and zone."""

@@ -41,13 +41,11 @@ Usage:
     to expose the functionality of Rack Resiliency Service.
 """
 
-import json
+import traceback
 from typing import Literal, Union
 from http import HTTPStatus
-import yaml
 from flask import request
 from flask_restful import Resource
-from kubernetes import client
 from src.lib.rrs_logging import log_event
 from src.api.services.rrs_zones import ZoneService
 from src.api.models.schema import (
@@ -95,14 +93,10 @@ class ZoneListResource(Resource):  # type: ignore[misc]
         try:
             # Retrieve zones using the ZoneMapper utility
             zones = ZoneService.list_zones()
-        except yaml.YAMLError as e:
+        except Exception as e:
+            log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"YAML parsing error: {e}"),
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-        except TypeError as e:
-            return (
-                ErrorDict(error=f"Invalid type passed to safe_load: {e}"),
+                ErrorDict(error=f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "Information" in zones:
@@ -144,14 +138,10 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
         try:
             # Fetch the zone description using the ZoneDescriber utility
             zone = ZoneService.describe_zone(zone_name)
-        except yaml.YAMLError as e:
+        except Exception as e:
+            log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"YAML parsing error: {e}"),
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-            )
-        except TypeError as e:
-            return (
-                ErrorDict(error=f"Invalid type passed to safe_load: {e}"),
+                ErrorDict(error=f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "Information" in zone:
@@ -192,16 +182,12 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc]
         try:
             # Retrieve the list of critical services
             critical_services = CriticalServices.get_critical_service_list()
-        except KeyError as e:
-            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
-        except TypeError as e:
-            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
-        except client.exceptions.ApiException as e:
-            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
-        except json.JSONDecodeError as e:
-            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
-            return ErrorDict(error=str(e)), HTTPStatus.INTERNAL_SERVER_ERROR
+            log_event(traceback.format_exc(), level="ERROR")
+            return (
+                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
         if "error" in critical_services:
             log_event(f"{critical_services}", level="ERROR")
             return critical_services, HTTPStatus.NOT_FOUND
@@ -239,16 +225,12 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc]
         try:
             # Fetch the critical service description using the CriticalServiceDescriber utility
             result = CriticalServices.describe_service(service_name)
-        except KeyError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except TypeError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except json.JSONDecodeError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except client.exceptions.ApiException as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
+            log_event(traceback.format_exc(), level="ERROR")
+            return (
+                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
         if "error" in result:
             log_event(f"{result}", level="ERROR")
             return result, HTTPStatus.NOT_FOUND
@@ -293,16 +275,12 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
                 log_event("No data provided for update", level="ERROR")
                 return ErrorDict(error="No data provided"), HTTPStatus.BAD_REQUEST
             updated_services = CriticalServices.update_critical_services(new_data)
-        except KeyError as e:
-            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
-        except TypeError as e:
-            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
-        except json.JSONDecodeError as json_err:
-            return ErrorDict(error=f"{str(json_err)}"), HTTPStatus.INTERNAL_SERVER_ERROR
-        except client.exceptions.ApiException as e:
-            return ErrorDict(error=f"{str(e)}"), HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
-            return ErrorDict(error=str(e)), HTTPStatus.INTERNAL_SERVER_ERROR
+            log_event(traceback.format_exc(), level="ERROR")
+            return (
+                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
         if "error" in updated_services:
             log_event(f"{updated_services}", level="ERROR")
             return updated_services, HTTPStatus.NOT_FOUND
@@ -338,16 +316,12 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
         try:
             # Retrieve the status of all critical services
             status = CriticalServicesStatus.get_criticalservice_status_list()
-        except KeyError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except TypeError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except json.JSONDecodeError as json_err:
-            return {"error": f"{str(json_err)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except client.exceptions.ApiException as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
         except Exception as e:
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
+            log_event(traceback.format_exc(), level="ERROR")
+            return (
+                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+            )
         if "error" in status:
             log_event(f"{status}", level="ERROR")
             return status, HTTPStatus.NOT_FOUND
@@ -385,21 +359,12 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc]
         try:
             # Fetch the critical service status using the CriticalServiceStatusDescriber utility
             service = CriticalServicesStatus.describe_service_status(service_name)
-        except yaml.YAMLError as e:
+        except Exception as e:
+            log_event(traceback.format_exc(), level="ERROR")
             return (
-                {"error": f"YAML parsing error: {e}"},
+                ErrorDict(error=f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
-        except KeyError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except TypeError as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except json.JSONDecodeError as json_err:
-            return {"error": f"{str(json_err)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except client.exceptions.ApiException as e:
-            return {"error": f"{str(e)}"}, HTTPStatus.INTERNAL_SERVER_ERROR
-        except Exception as e:
-            return {"error": str(e)}, HTTPStatus.INTERNAL_SERVER_ERROR
         if "error" in service:
             log_event(f"{service}", level="ERROR")
             return service, HTTPStatus.NOT_FOUND

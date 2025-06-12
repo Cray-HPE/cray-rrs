@@ -155,13 +155,6 @@ class CriticalServices:
         # Use another helper to get the details of the service
         data = CriticalServicesStatus.get_service_details(services, service_name)
 
-        # In case of error throw it
-        # if isinstance(data, Exception):
-        #     app.logger.warning(f"[{log_id}] Error encountered in result: {data}")
-        #     return {
-        #         "exception": f"Unexpected error {str(data)} occured while fetching criticalservices"
-        #     }
-
         # Build the result dictionary
         result: CriticalServiceDescribeSchema = {
             "Critical_Service": {

@@ -35,7 +35,7 @@ from src.api.models.zones import k8sResultType, CephResultType
 ERR_FILE = {"from_file": """{"error": "string indices must be integers"}"""}
 
 # This response will come from configMap
-MOCK_CRITICAL_SERVICES_RESPONSE = {
+MOCK_CRITICAL_SERVICES_RESPONSE: CriticalServiceType = {
     "coredns": {"namespace": "kube-system", "type": "Deployment"},
     "kube-proxy": {"namespace": "kube-system", "type": "DaemonSet"},
 }
