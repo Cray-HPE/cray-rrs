@@ -36,10 +36,10 @@ from typing import Optional
 from flask import current_app as app
 from src.api.models.zones import (
     ZoneTopologyService,
-    CephResultType,
-    k8sResultType,
 )
 from src.lib.schema import (
+    cephNodesResultType,
+    k8sNodesResultType,
     ZoneListSchema,
     ZoneItemSchema,
     KubernetesTopologyZoneSchema,
@@ -58,7 +58,7 @@ class ZoneService:
 
     @staticmethod
     def zone_exist(
-        k8s_zones: k8sResultType, ceph_zones: CephResultType
+        k8s_zones: k8sNodesResultType, ceph_zones: cephNodesResultType
     ) -> Optional[InformationDict]:
         """
         Checks whether Kubernetes and/or Ceph zones are configured.
@@ -109,7 +109,7 @@ class ZoneService:
 
     @staticmethod
     def map_zones(
-        k8s_zones: k8sResultType, ceph_zones: CephResultType
+        k8s_zones: k8sNodesResultType, ceph_zones: cephNodesResultType
     ) -> ZoneListSchema:
         """
         Maps the Kubernetes and Ceph zones into a structured response.
@@ -158,8 +158,8 @@ class ZoneService:
     @staticmethod
     def get_zone_info(
         zone_name: str,
-        k8s_zones: k8sResultType,
-        ceph_zones: CephResultType,
+        k8s_zones: k8sNodesResultType,
+        ceph_zones: cephNodesResultType,
     ) -> ZoneDescribeSchema | ErrorDict:
         """
         Retrieves detailed information for a specific zone.
@@ -231,7 +231,7 @@ class ZoneService:
         return zone_data
 
     @staticmethod
-    def fetch_zones() -> tuple[k8sResultType, CephResultType]:
+    def fetch_zones() -> tuple[k8sNodesResultType, cephNodesResultType]:
         """
         Fetches zone information from the Kubernetes and Ceph zone providers.
 

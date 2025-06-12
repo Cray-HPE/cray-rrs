@@ -142,6 +142,12 @@ class k8sNodes(TypedDict, total=False):
     workers: list[NodeSchema]
 
 
+# Mappings from zone names to k8sNodes
+type k8sNodesResultType = dict[str, k8sNodes]
+# Mappings from zone names to list[CephNodeInfo]
+type cephNodesResultType = dict[str, list[CephNodeInfo]]
+
+
 @final
 class ManagementStorageSchema(TypedDict, total=False):
     """

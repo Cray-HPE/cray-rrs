@@ -48,7 +48,8 @@ from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.schema import (
-    k8sNodes,
+    cephNodesResultType,
+    k8sNodesResultType,
     CephNodeInfo,
     NodeSchema,
     CriticalServiceCmType,
@@ -77,8 +78,6 @@ logger = logging.getLogger(__name__)
 
 sls_datatype = list[slsEntryDataType]
 podInfoType_list = list[podInfoType]
-ceph_result_type = dict[str, list[CephNodeInfo]]
-k8s_result_type = dict[str, k8sNodes]
 
 
 def set_logger(custom_logger: Logger) -> None:
@@ -535,7 +534,7 @@ class cephHelper:
         return {}, []
 
     @staticmethod
-    def get_ceph_status() -> tuple[ceph_result_type, bool]:
+    def get_ceph_status() -> tuple[cephNodesResultType, bool]:
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
@@ -550,7 +549,7 @@ class cephHelper:
                 if "hostname" in host and "status" in host:
                     host_status_map[host["hostname"]] = host["status"]
 
-            final_output: ceph_result_type = {}
+            final_output: cephNodesResultType = {}
             failed_hosts: list[str] = []
 
             for item in ceph_tree.get("nodes", []):
@@ -765,11 +764,11 @@ class k8sHelper:
             return "Unknown"
 
     @staticmethod
-    def get_k8s_nodes_data() -> Optional[k8s_result_type]:
+    def get_k8s_nodes_data() -> Optional[k8sNodesResultType]:
         """
         Fetch Kubernetes nodes and organize them by topology zone.
         Returns:
-            Optional[k8s_result_type]:
+            Optional[k8sNodesResultType]:
                 - A dictionary organized by zone with 'masters' and 'workers' lists.
                 - Returns None if nodes cannot be retrieved or no zone information is found.
         """
@@ -779,7 +778,7 @@ class k8sHelper:
                 logger.debug("Failed to retrieve k8s nodes")
                 return None
 
-            zone_mapping: k8s_result_type = {}
+            zone_mapping: k8sNodesResultType = {}
 
             for node in nodes:
                 if node.metadata is None:

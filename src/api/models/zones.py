@@ -33,14 +33,10 @@ from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.lib.rrs_constants import DYNAMIC_DATA_KEY
-from src.lib.schema import k8sNodes, CephNodeInfo, NodeSchema
+from src.lib.schema import cephNodesResultType, k8sNodesResultType, NodeSchema
 
 CM_NAMESPACE: str = os.getenv("namespace", "")
 CM_NAME: str = os.getenv("dynamic_cm_name", "")
-
-
-CephResultType = dict[str, list[CephNodeInfo]]
-k8sResultType = dict[str, k8sNodes]
 
 
 class ZoneTopologyService:
@@ -48,20 +44,20 @@ class ZoneTopologyService:
     Service class to fetch zone details from Kubernetes and Ceph.
 
     Methods:
-    fetch_ceph_zones() -> CephResultType
+    fetch_ceph_zones() -> cephNodesResultType
         Fetches and parses Ceph zone data from the ConfigMap.
 
-    fetch_k8s_zones() -> k8sResultType
+    fetch_k8s_zones() -> k8sNodesResultType
         Fetches and parses Kubernetes zone data from the ConfigMap.
     """
 
     @staticmethod
-    def fetch_ceph_zones() -> CephResultType:
+    def fetch_ceph_zones() -> cephNodesResultType:
         """
         Extracts Ceph zone details from the ConfigMap.
 
         Returns:
-            CephResultType
+            cephNodesResultType
                 A dictionary mapping zone names to a list of node info including OSDs,
                 or an error dictionary in case of failure.
         """
@@ -83,7 +79,7 @@ class ZoneTopologyService:
         # Parsing the data
         ceph_zones = parsed_data["zone"]["ceph_zones"]
 
-        zone_mapping: CephResultType = {
+        zone_mapping: cephNodesResultType = {
             zone_name: [
                 {
                     "name": node["name"],
@@ -106,12 +102,12 @@ class ZoneTopologyService:
         return {}
 
     @staticmethod
-    def fetch_k8s_zones() -> k8sResultType:
+    def fetch_k8s_zones() -> k8sNodesResultType:
         """
         Extracts Kubernetes zone details from the ConfigMap.
 
         Returns:
-            k8sResultType
+            k8sNodesResultType
                 A dictionary mapping zone names to master and worker node lists,
                 or an error dictionary in case of failure.
         """
@@ -133,7 +129,7 @@ class ZoneTopologyService:
         # Parsing the data
         k8s_zones = parsed_data["zone"]["k8s_zones"]
 
-        zone_mapping: k8sResultType = {}
+        zone_mapping: k8sNodesResultType = {}
 
         for zone_name, nodes in k8s_zones.items():
             zone_mapping[zone_name] = {"masters": [], "workers": []}
@@ -150,6 +146,6 @@ class ZoneTopologyService:
         if zone_mapping:
             app.logger.info(f"[{log_id}] Successfully parsed Kubernetes zone details.")
             return zone_mapping
-        # Return empty dict of type k8sResultType
+        # Return empty dict of type k8sNodesResultType
         app.logger.warning(f"[{log_id}] No Kubernetes zones present.")
         return {}
