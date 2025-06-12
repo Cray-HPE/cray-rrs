@@ -330,9 +330,9 @@ paths:
                 patchResponse:
                   value:
                     Update: Successful
-                    Successfully Added Services:
+                    Successfully_Added_Services:
                       - kube-api-server
-                    Already Existing Services:
+                    Already_Existing_Services:
                       - coredns
                       - kube-proxy
         '400':
@@ -384,12 +384,12 @@ paths:
               examples:
                 criticalServiceDetail:
                   value:
-                    Critical Service:
+                    Critical_Service:
                       Name: cray-hbtd
                       Namespace: services
                       Type: Deployment
-                      Configured Instances: 3
-                      Currently Running Instances: 3
+                      Configured_Instances: 3
+                      Currently_Running_Instances: 3
         '404':
           description: Critical service not found
           content:
@@ -513,14 +513,14 @@ paths:
               examples:
                 criticalServiceStatusExample:
                   value:
-                    Critical Service:
+                    Critical_Service:
                       Name: cray-hbtd
                       Namespace: services
                       Type: Deployment
                       Status: Configured
                       Balanced: "true"
-                      Configured Instances: 3
-                      Currently Running Instances: 3
+                      Configured_Instances: 3
+                      Currently_Running_Instances: 3
                       Pods:
                         - Name: cray-hbtd-6cbdbd6955-5xlfg
                           Status: Running
@@ -779,18 +779,18 @@ components:
       properties:
         Update:
           type: string
-        Successfully Added Services:
+        Successfully_Added_Services:
           type: array
           items:
             type: string
-        Already Existing Services:
+        Already_Existing_Services:
           type: array
           items:
             type: string
     CriticalServiceDescribeSchema:
       type: object
       properties:
-        Critical Service:
+        Critical_Service:
           type: object
           properties:
             Name:
@@ -799,16 +799,16 @@ components:
               type: string
             Type:
               type: string
-            Configured Instances:
+            Configured_Instances:
               type: integer
               minimum: 1
-            Currently Running Instances:
+            Currently_Running_Instances:
               type: integer
               minimum: 0
     CriticalServiceDetail:
       type: object
       properties:
-        Critical Service:
+        Critical_Service:
           type: object
           properties:
             Name:
@@ -828,10 +828,10 @@ components:
               enum:
                 - "true"
                 - "false"
-            Configured Instances:
+            Configured_Instances:
               type: integer
               minimum: 1
-            Currently Running Instances:
+            Currently_Running_Instances:
               type: integer
               minimum: 0
             Pods:
@@ -881,11 +881,13 @@ components:
             - "false"
     ErrorDict:
       type: object
+      required: [error]
       properties:
         error:
           type: string
     InformationDict:
       type: object
+      required: [Information]      
       properties:
         Information:
           type: string

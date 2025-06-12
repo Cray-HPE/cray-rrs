@@ -307,7 +307,10 @@ class InformationDict(TypedDict):
 @final
 class extra_properties(TypedDict, total=False):
     """
-    This represents ExtraProperties field from the SLS get command.
+    This represents ExtraProperties field from the response to a GET request to the
+    SLS 'v1/search/hardware' URI.
+    https://github.com/Cray-HPE/hms-sls/blob/master/api/openapi.yaml
+    #/components/schemas/hardware_extra_properties
     """
 
     Aliases: list[str]
@@ -317,7 +320,10 @@ class extra_properties(TypedDict, total=False):
 @final
 class slsEntryDataType(TypedDict):
     """
-    This represents one of the entries in the output of the SLS get command.
+    This represents one of the entries in the response to a GET request to the
+    SLS 'v1/search/hardware' URI.
+    https://github.com/Cray-HPE/hms-sls/blob/master/api/openapi.yaml
+    #/components/schemas/hardware 
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
@@ -331,7 +337,10 @@ class slsEntryDataType(TypedDict):
 @final
 class component_type(TypedDict):
     """
-    This represents one of the entries in the output of the HSM get command.
+    This represents one of the entries in a successful response to a GET request to
+    the HSM 'v2/State/Components' URI.
+    https://github.com/Cray-HPE/hms-smd/blob/master/api/swagger_v2.yaml
+    #/definitions/Component.1.0.0_Component
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
@@ -343,7 +352,9 @@ class component_type(TypedDict):
 @final
 class hsmDataType(TypedDict):
     """
-    This represents the entire output from HSM get command.
+    This represents a successful response to a GET request to the HSM 'v2/State/Components' URI.
+    https://github.com/Cray-HPE/hms-smd/blob/master/api/swagger_v2.yaml
+    #/definitions/ComponentArray_ComponentArray
     """
 
     Components: list[component_type]
