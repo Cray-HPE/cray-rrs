@@ -323,7 +323,7 @@ class slsEntryDataType(TypedDict):
     This represents one of the entries in the response to a GET request to the
     SLS 'v1/search/hardware' URI.
     https://github.com/Cray-HPE/hms-sls/blob/master/api/openapi.yaml
-    #/components/schemas/hardware 
+    #/components/schemas/hardware
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
