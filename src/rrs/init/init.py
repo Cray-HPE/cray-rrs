@@ -32,14 +32,13 @@ RRS metadata.
 
 import sys
 from datetime import datetime
-from collections import defaultdict
 import logging
 import json
-from typing import Union
 import yaml
 from src.rrs.rms.rms_statemanager import RMSState
-from src.lib.lib_rms import cephHelper, k8sHelper, Helper
+from src.lib.lib_rms import cephHelper, k8sHelper, Helper, ceph_result_type
 from src.lib.lib_configmap import ConfigMapHelper
+from src.api.models.schema import NodeSchema
 from src.lib.rrs_constants import (
     NAMESPACE,
     DYNAMIC_CM,
@@ -52,6 +51,8 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s in %(module)s: %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+
+k8s_return_type = dict[str, list[NodeSchema]]
 
 
 def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
@@ -78,8 +79,8 @@ def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
 
 def zone_discovery() -> tuple[
     bool,
-    dict[str, list[dict[str, str]]],
-    dict[str, list[dict[str, Union[str, list[dict[str, str]]]]]],
+    k8s_return_type,
+    ceph_result_type,
 ]:
     """Retrieving zone information and status of k8s and CEPH nodes
     Returns:
@@ -90,10 +91,8 @@ def zone_discovery() -> tuple[
     """
     try:
         status = True
-        updated_k8s_data: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
-        updated_ceph_data: dict[
-            str, list[dict[str, Union[str, list[dict[str, str]]]]]
-        ] = {}
+        updated_k8s_data: k8s_return_type = {}
+        updated_ceph_data: ceph_result_type = {}
         nodes = k8sHelper.get_k8s_nodes()
         logger.info("Retrieving zone information and status of k8s and CEPH nodes")
 
@@ -119,7 +118,7 @@ def zone_discovery() -> tuple[
             if not zone:
                 logger.error("Node %s does not have a zone marked for it", node_name)
                 status = False
-                updated_k8s_data = defaultdict(list)  # Reset the data
+                updated_k8s_data = {}  # Reset the data
                 break
             updated_k8s_data[zone].append(
                 {

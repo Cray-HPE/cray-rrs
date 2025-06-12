@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Union, Literal, Optional, TypedDict, NotRequired, final
+from typing import Literal, Optional, TypedDict, NotRequired, final
 import requests
 import urllib3
 import yaml
@@ -47,6 +47,12 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
+from src.api.models.schema import (
+    k8sNodes,
+    CephNodeInfo,
+    NodeSchema,
+    CriticalServiceCmSchema,
+)
 from src.lib.rrs_constants import (
     NAMESPACE,
     DYNAMIC_DATA_KEY,
@@ -59,6 +65,8 @@ from src.lib.rrs_constants import (
     HOSTS,
 )
 
+# This is for the format present in the configmap
+CriticalServiceType = dict[str, dict[str, CriticalServiceCmSchema]]
 
 # disables only the InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -66,7 +74,7 @@ logger = logging.getLogger(__name__)
 
 
 @final
-class ExtraProperties(TypedDict, total=False):
+class extra_properties(TypedDict, total=False):
     """
     This represents ExtraProperties field from the SLS get command.
     """
@@ -86,7 +94,7 @@ class sls_entry_datatype(TypedDict):
     Parent: str
     Xname: str
     Type: str
-    ExtraProperties: NotRequired[ExtraProperties]
+    ExtraProperties: NotRequired[extra_properties]
 
 
 sls_datatype = list[sls_entry_datatype]
@@ -164,7 +172,19 @@ class pod_info_type(TypedDict):
     labels: dict[str, str]
 
 
+class skew_return(TypedDict, total=False):
+    """
+    This represents the return type of check_skew function.
+    """
+
+    service_name: str
+    balanced: str
+    status: str
+
+
 pod_info_type_list = list[pod_info_type]
+ceph_result_type = dict[str, list[CephNodeInfo]]
+k8s_result_type = dict[str, k8sNodes]
 
 
 def set_logger(custom_logger: Logger) -> None:
@@ -621,9 +641,7 @@ class cephHelper:
         return {}, []
 
     @staticmethod
-    def get_ceph_status() -> (
-        tuple[dict[str, list[dict[str, Union[str, list[dict[str, str]]]]]], bool]
-    ):
+    def get_ceph_status() -> tuple[ceph_result_type, bool]:
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
@@ -638,9 +656,7 @@ class cephHelper:
                 if "hostname" in host and "status" in host:
                     host_status_map[host["hostname"]] = host["status"]
 
-            final_output: dict[
-                str, list[dict[str, Union[str, list[dict[str, str]]]]]
-            ] = {}
+            final_output: ceph_result_type = {}
             failed_hosts: list[str] = []
 
             for item in ceph_tree.get("nodes", []):
@@ -649,7 +665,7 @@ class cephHelper:
 
                 rack_name = item["name"]
 
-                storage_nodes: list[dict[str, Union[str, list[dict[str, str]]]]] = []
+                storage_nodes: list[CephNodeInfo] = []
                 children = item.get("children")
                 nodes = ceph_tree.get("nodes")
                 if children is None or nodes is None:
@@ -680,11 +696,11 @@ class cephHelper:
                             if osd.get("id") in osd_ids and osd.get("type") == "osd"
                         ]
 
-                    osd_status_list: list[dict[str, str]] = []
+                    osd_status_list: list[NodeSchema] = []
                     for osd in osds:
                         osd_name = osd.get("name", "")
                         osd_status = osd.get("status", "")
-                        osd_status_list = [{"name": osd_name, "status": osd_status}]
+                        osd_status_list.append({"name": osd_name, "status": osd_status})
 
                     node_status = host_status_map.get(host_node_name, "No Status")
                     if node_status in ["", "online"]:
@@ -707,7 +723,6 @@ class cephHelper:
                     )
 
                 final_output[rack_name] = storage_nodes
-                print(final_output)
 
             if failed_hosts:
                 logger.warning(
@@ -856,13 +871,11 @@ class k8sHelper:
             return "Unknown"
 
     @staticmethod
-    def get_k8s_nodes_data() -> (
-        Optional[Union[dict[str, dict[str, list[dict[str, str]]]], dict[str, str], str]]
-    ):
+    def get_k8s_nodes_data() -> Optional[k8s_result_type]:
         """
         Fetch Kubernetes nodes and organize them by topology zone.
         Returns:
-            Optional[dict[str, dict[str, list[dict[str, str]]]]]:
+            Optional[k8s_result_type]:
                 - A dictionary organized by zone with 'masters' and 'workers' lists.
                 - Returns None if nodes cannot be retrieved or no zone information is found.
         """
@@ -872,7 +885,7 @@ class k8sHelper:
                 logger.debug("Failed to retrieve k8s nodes")
                 return None
 
-            zone_mapping: dict[str, dict[str, list[dict[str, str]]]] = {}
+            zone_mapping: k8s_result_type = {}
 
             for node in nodes:
                 if node.metadata is None:
@@ -895,13 +908,13 @@ class k8sHelper:
 
                 # Classify nodes as master or worker based on name prefix
                 if node_name.startswith("ncn-m"):
-                    zone_mapping[node_zone]["masters"].append(
-                        {"name": node_name, "status": node_status}
-                    )
+                    masters = zone_mapping[node_zone].get("masters", [])
+                    masters.append({"name": node_name, "status": node_status})
+                    zone_mapping[node_zone]["masters"] = masters
                 elif node_name.startswith("ncn-w"):
-                    zone_mapping[node_zone]["workers"].append(
-                        {"name": node_name, "status": node_status}
-                    )
+                    workers = zone_mapping[node_zone].get("workers", [])
+                    workers.append({"name": node_name, "status": node_status})
+                    zone_mapping[node_zone]["workers"] = workers
             if zone_mapping:
                 return zone_mapping
             logger.error("No K8s topology zone present")
@@ -926,21 +939,18 @@ class k8sHelper:
             nodes_data = k8sHelper.get_k8s_nodes_data()
 
             # Handle error cases
-            if not nodes_data or not isinstance(nodes_data, dict):
+            if not nodes_data:
                 logger.debug("Cannot fetch k8s node data or data format is not valid")
                 return None
 
-            node_zone_map: dict[str, str] = {}
+            node_zone_map = {}
             for zone, node_types in nodes_data.items():
-                if not isinstance(node_types, dict):
-                    continue  # Skip if node_types is not a dictionary
-
                 for node_type in ["masters", "workers"]:
-                    if node_type not in node_types:
-                        continue  # Skip if node_type key doesn't exist
-
-                    for node in node_types[node_type]:
-                        node_zone_map[node["name"]] = zone
+                    node_list = node_types.get(node_type, [])
+                    if not isinstance(node_list, list):
+                        continue
+                    valid_nodes = {node["name"]: zone for node in node_list}
+                    node_zone_map.update(valid_nodes)
 
             all_pods = v1.list_pod_for_all_namespaces(watch=False).items
             pod_info: pod_info_type_list = []
@@ -981,17 +991,17 @@ class criticalServicesHelper:
     """
 
     @staticmethod
-    def check_skew(service_name: str, pods: pod_info_type_list) -> dict[str, str]:
+    def check_skew(service_name: str, pods: pod_info_type_list) -> skew_return:
         """
         Check whether pod replicas of a service are evenly distributed across zones.
         Args:
             service_name (str): Name of the service being evaluated.
             pods (pod_info_type_list): list of pod metadata containing Zone, Node, and Name.
         Returns:
-            dict[str, str]:
+            skew_return:
                 - service-name: the name of the service
                 - balanced: "true" or "false" depending on replica distribution
-                - status: "no replicas found"
+                - status: Indicates error if any
         """
         try:
             zone_pod_map: dict[str, dict[str, list[str]]] = {}
@@ -1010,21 +1020,15 @@ class criticalServicesHelper:
                 for zone in zone_pod_map.values()
             ]
 
-            if not counts:
-                return {
-                    "service-name": service_name,
-                    "status": "no replicas found",
-                }
-
             balanced = "true" if max(counts) - min(counts) <= 1 else "false"
 
-            return {"service-name": service_name, "balanced": balanced}
+            return {"service_name": service_name, "balanced": balanced}
         except Exception as e:
             logger.exception(
                 "Error while checking skew for service %s: %s", service_name, e
             )
             return {
-                "service-name": service_name,
+                "service_name": service_name,
                 "balanced": "unknown",
                 "status": "error",
             }
@@ -1132,21 +1136,21 @@ class criticalServicesHelper:
             if not pod_labels:
                 continue
 
-            if all(pod_labels[key] == value for key, value in labels.items()):
+            if all(pod_labels.get(key) == value for key, value in labels.items()):
                 filtered_pods.append(pod)
 
         return filtered_pods
 
     @staticmethod
     def get_critical_services_status(
-        services_data: dict[str, dict[str, dict[str, str]]],
-    ) -> dict[str, dict[str, dict[str, str]]]:
+        services_data: CriticalServiceType,
+    ) -> CriticalServiceType:
         """
         Update critical service info with status and balanced values
         Args:
-            services_data (dict[str, dict[str, dict[str, str]]]): The critical-services section from config.
+            services_data (CriticalServiceType): The critical-services section from config.
         Returns:
-            dict[str, dict[str, dict[str, str]]]:
+            CriticalServiceType:
             Updated services_data with 'status' and 'balanced' flags added per service.
         """
         try:
@@ -1204,6 +1208,8 @@ class criticalServicesHelper:
                 balance_details = criticalServicesHelper.check_skew(
                     service_name, filtered_pods
                 )
+                if balance_details.get("status") == "error":
+                    status = "error"
 
                 if balance_details.get("balanced") == "False":
                     imbalanced_services.append(service_name)
