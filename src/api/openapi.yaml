@@ -613,6 +613,7 @@ components:
   schemas:
     ZonesResponse:
       type: object
+      required: [Zones]
       properties:
         Zones:
           type: array
@@ -713,6 +714,7 @@ components:
             $ref: '#/components/schemas/StorageNodeSchema'
     NodeSchema:
       type: object
+      required: [name, status]
       properties:
         name:
           type: string
@@ -724,6 +726,7 @@ components:
             - Unknown
     StorageNodeSchema:
       type: object
+      required: [name, status, osds]
       properties:
         name:
           type: string
