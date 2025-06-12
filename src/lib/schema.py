@@ -223,7 +223,7 @@ class CriticalServiceCmType(TypedDict):
 
 
 @final
-class CriticalServicesItem(TypedDict, total=False):
+class CriticalServicesItem(TypedDict):
     """
     Schema for critical services grouped by namespace.
     OAS: Part of #/components/schemas/CriticalServicesListSchema
@@ -233,7 +233,7 @@ class CriticalServicesItem(TypedDict, total=False):
 
 
 @final
-class CriticalServicesStatusItem(TypedDict, total=False):
+class CriticalServicesStatusItem(TypedDict):
     """
     Schema for critical services grouped by namespace.
     OAS: Part of #/components/schemas/CriticalServicesListSchema
@@ -243,7 +243,7 @@ class CriticalServicesStatusItem(TypedDict, total=False):
 
 
 @final
-class CriticalServicesListSchema(TypedDict, total=False):
+class CriticalServicesListSchema(TypedDict):
     """
     Schema for a list of critical services.
     OAS: #/components/schemas/CriticalServicesListSchema
@@ -253,7 +253,7 @@ class CriticalServicesListSchema(TypedDict, total=False):
 
 
 @final
-class CriticalServicesStatusListSchema(TypedDict, total=False):
+class CriticalServicesStatusListSchema(TypedDict):
     """
     Schema for a list of critical services.
     OAS: #/components/schemas/CriticalServicesStatusListSchema
@@ -306,7 +306,7 @@ class CriticalServiceStatusDescribe(TypedDict):
 
 
 @final
-class CriticalServiceDescribeSchema(TypedDict, total=False):
+class CriticalServiceDescribeSchema(TypedDict):
     """
     Schema for describing a critical service.
     OAS: #/components/schemas/CriticalServiceDescribeSchema
@@ -316,7 +316,7 @@ class CriticalServiceDescribeSchema(TypedDict, total=False):
 
 
 @final
-class CriticalServiceStatusDescribeSchema(TypedDict, total=False):
+class CriticalServiceStatusDescribeSchema(TypedDict):
     """
     Schema for describing a critical service.
     OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
