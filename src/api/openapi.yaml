@@ -653,30 +653,12 @@ components:
         Zone_Name:
           type: string
         Management_Master:
-          $ref: '#/components/schemas/ManagementMasterSchema'
+          $ref: '#/components/schemas/ManagementKubernetesSchema'
         Management_Worker:
-          $ref: '#/components/schemas/ManagementWorkerSchema'
+          $ref: '#/components/schemas/ManagementKubernetesSchema'
         Management_Storage:
           $ref: '#/components/schemas/ManagementStorageSchema'
-    ManagementMasterSchema:
-      type: object
-      required:
-        - Count
-        - Type
-        - Nodes
-      properties:
-        Count:
-          type: integer
-          minimum: 1
-        Type:
-          type: string
-          enum:
-            - "Kubernetes_Topology_Zone"
-        Nodes:
-          type: array
-          items:
-            $ref: '#/components/schemas/NodeSchema'
-    ManagementWorkerSchema:
+    ManagementKubernetesSchema:
       type: object
       required:
         - Count

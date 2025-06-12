@@ -109,22 +109,10 @@ class CephNodeInfo(TypedDict):
 
 
 @final
-class ManagementMasterSchema(TypedDict):
+class ManagementKubernetesSchema(TypedDict):
     """
-    Schema for management master nodes in a Kubernetes topology zone.
-    OAS: #/components/schemas/ManagementMasterSchema
-    """
-
-    Count: int
-    Type: Literal["Kubernetes_Topology_Zone"]
-    Nodes: list[NodeSchema]
-
-
-@final
-class ManagementWorkerSchema(TypedDict):
-    """
-    Schema for management worker nodes in a Kubernetes topology zone.
-    OAS: #/components/schemas/ManagementWorkerSchema
+    Schema for management master or worker nodes in a Kubernetes topology zone.
+    OAS: #/components/schemas/ManagementKubernetesSchema
     """
 
     Count: int
@@ -168,8 +156,8 @@ class ZoneDescribeSchema(TypedDict, total=False):
     """
 
     Zone_Name: Required[str]
-    Management_Master: ManagementMasterSchema
-    Management_Worker: ManagementWorkerSchema
+    Management_Master: ManagementKubernetesSchema
+    Management_Worker: ManagementKubernetesSchema
     Management_Storage: ManagementStorageSchema
 
 
