@@ -139,7 +139,7 @@ class ZoneDescribeSchema(TypedDict, total=False):
 
 @final
 class CriticalServiceEntrySchema(TypedDict, total=False):
-    """Schema for a critical service entry, including its name, type, and status."""
+    """Schema for a critical service entry, including its name, type, and status, balanced."""
 
     name: Required[str]
     type: Required[str]
@@ -149,7 +149,7 @@ class CriticalServiceEntrySchema(TypedDict, total=False):
 
 @final
 class CriticalServiceCmSchema(TypedDict, total=False):
-    """Schema for a critical service entry, including its name, type, and status."""
+    """Schema for a critical service entry, including its namespace, type, balanced and status."""
 
     type: Required[str]
     namespace: Required[str]
