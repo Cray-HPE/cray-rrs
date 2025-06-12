@@ -178,16 +178,27 @@ class ZoneDescribeSchema(TypedDict, total=False):
 
 
 @final
-class CriticalServiceEntrySchema(TypedDict, total=False):
+class CriticalServiceStatusItemSchema(TypedDict):
     """
     Schema for a critical service entry, including its name, type, and status, balanced.
-    OAS: #/components/schemas/CriticalServiceEntrySchema
+    OAS: #/components/schemas/CriticalServiceStatusItemSchema
     """
 
-    name: Required[str]
-    type: Required[str]
+    name: str
+    type: str
     status: str
     balanced: str
+
+
+@final
+class CriticalServiceItemSchema(TypedDict):
+    """
+    Schema for a critical service entry, including its name and type.
+    OAS: #/components/schemas/CriticalServiceItemSchema
+    """
+
+    name: str
+    type: str
 
 
 @final
@@ -218,7 +229,17 @@ class CriticalServicesItem(TypedDict, total=False):
     OAS: Part of #/components/schemas/CriticalServicesListSchema
     """
 
-    namespace: dict[str, list[CriticalServiceEntrySchema]]
+    namespace: dict[str, list[CriticalServiceItemSchema]]
+
+
+@final
+class CriticalServicesStatusItem(TypedDict, total=False):
+    """
+    Schema for critical services grouped by namespace.
+    OAS: Part of #/components/schemas/CriticalServicesListSchema
+    """
+
+    namespace: dict[str, list[CriticalServiceStatusItemSchema]]
 
 
 @final
@@ -229,6 +250,16 @@ class CriticalServicesListSchema(TypedDict, total=False):
     """
 
     critical_services: CriticalServicesItem
+
+
+@final
+class CriticalServicesStatusListSchema(TypedDict, total=False):
+    """
+    Schema for a list of critical services.
+    OAS: #/components/schemas/CriticalServicesStatusListSchema
+    """
+
+    critical_services: CriticalServicesStatusItem
 
 
 @final
@@ -417,7 +448,7 @@ class skewReturn(NamedTuple):
     """
 
     service_name: str
-    balanced: Literal['true', 'false', 'unknown']
+    balanced: Literal["true", "false", "unknown"]
     error: bool = False
 
 

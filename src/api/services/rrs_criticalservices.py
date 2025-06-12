@@ -49,7 +49,9 @@ from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DY
 from src.lib.schema import (
     PodSchema,
     CriticalServicesListSchema,
+    CriticalServicesStatusListSchema,
     CriticalServicesItem,
+    CriticalServicesStatusItem,
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
     ErrorDict,
@@ -284,7 +286,7 @@ class CriticalServicesStatus:
     @staticmethod
     def fetch_critical_services_status(
         services: CriticalServiceType,
-    ) -> CriticalServicesItem:
+    ) -> CriticalServicesStatusItem:
         """Fetch and format critical services grouped by namespace in the required structure.
 
         Args:
@@ -294,7 +296,7 @@ class CriticalServicesStatus:
             Formatted dictionary of services by namespace or error dictionary
         """
         log_id = get_log_id()
-        result: CriticalServicesItem = {"namespace": {}}
+        result: CriticalServicesStatusItem = {"namespace": {}}
 
         # Iterate over the services and group them by their namespace
         for name, details in services.items():
@@ -315,7 +317,9 @@ class CriticalServicesStatus:
         return result
 
     @staticmethod
-    def get_criticalservice_status_list() -> CriticalServicesListSchema | ErrorDict:
+    def get_criticalservice_status_list() -> (
+        CriticalServicesStatusListSchema | ErrorDict
+    ):
         """
         Fetch critical services from the ConfigMap and return as a JSON response.
 

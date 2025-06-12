@@ -52,6 +52,7 @@ from src.lib.schema import (
     ZoneListSchema,
     ZoneDescribeSchema,
     CriticalServicesListSchema,
+    CriticalServicesStatusListSchema,
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
     ErrorDict,
@@ -306,7 +307,7 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
     def get(
         self,
     ) -> Union[
-        tuple[CriticalServicesListSchema, Literal[HTTPStatus.OK]],
+        tuple[CriticalServicesStatusListSchema, Literal[HTTPStatus.OK]],
         tuple[
             ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
         ],

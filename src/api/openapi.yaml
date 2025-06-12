@@ -757,8 +757,8 @@ components:
               additionalProperties:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CriticalServiceEntrySchema'
-    CriticalServiceEntrySchema:
+                  $ref: '#/components/schemas/CriticalServiceItemSchema'
+    CriticalServiceItemSchema:
       type: object
       required:
         - name
@@ -860,8 +860,8 @@ components:
               additionalProperties:
                 type: array
                 items:
-                  $ref: '#/components/schemas/CriticalServiceStatusItem'
-    CriticalServiceStatusItem:
+                  $ref: '#/components/schemas/CriticalServiceStatusItemSchema'
+    CriticalServiceStatusItemSchema:
       type: object
       properties:
         name:
@@ -879,6 +879,7 @@ components:
           enum:
             - "true"
             - "false"
+            - "unknown"
     ErrorDict:
       type: object
       required: [error]
