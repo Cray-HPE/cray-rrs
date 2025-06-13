@@ -27,15 +27,10 @@ on:
   pull_request:
 
 jobs:
-  oas-check:
+  setup:
     runs-on: ubuntu-latest
-
-    container:
-      image: artifactory.algol60.net/csm-docker/stable/docker.io/openapitools/openapi-generator-cli:v7.13.0
-      credentials:
-          username: ${{ secrets.ARTIFACTORY_ALGOL60_READONLY_USERNAME }}
-          password: ${{ secrets.ARTIFACTORY_ALGOL60_READONLY_TOKEN }}
-
+    outputs:
+      matrix: ${{ steps.changed-files.outputs.all_changed_files }}
     steps:
     - uses: actions/checkout@v4
 
@@ -44,11 +39,21 @@ jobs:
       uses: tj-actions/changed-files@v45
       with:
         files: "**/*{openapi,swagger}*.yaml"
+        json: true
+
+    - name: List all changed files
+      run: echo '${{ steps.changed-files.outputs.all_changed_files }}'
+
+  oas-validate:
+    runs-on: ubuntu-latest
+    needs: [setup]
+    strategy:
+      matrix:
+        files: ${{ fromJSON(needs.setup.outputs.matrix) }}
+      max-parallel: 4
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v4
 
     - name: OAS Validate
-      if: ${{ steps.changed-files.outputs.all_changed_files }}
-      run: |
-        set -e
-        for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-          docker-entrypoint.sh validate -i "$file"
-        done
+      run: docker run -v "$(pwd):/oas" docker.io/openapitools/openapi-generator-cli:v7.13.0 docker-entrypoint.sh validate -i "/oas/${{ matrix.files }}"
