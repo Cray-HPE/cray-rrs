@@ -39,7 +39,7 @@ jobs:
       uses: tj-actions/changed-files@v46
       with:
         files: "**{openapi,swagger}*.yaml"
-        json: true
+        matrix: true
 
     - name: List all changed files
       run: echo '${{ steps.changed-files.outputs.all_changed_files }}'
