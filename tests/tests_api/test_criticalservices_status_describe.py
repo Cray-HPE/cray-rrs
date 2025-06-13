@@ -63,14 +63,14 @@ class TestCriticalServicesDescribe(unittest.TestCase):
             "coredns",
             test=True,
         )
-        self.assertIn("Critical_Service", result)
-        self.assertIn("Name", result["Critical_Service"])
-        self.assertEqual(result["Critical_Service"]["Name"], "coredns")
-        self.assertIn("Type", result["Critical_Service"])
-        self.assertEqual(result["Critical_Service"]["Type"], "Deployment")
-        self.assertEqual(result["Critical_Service"]["Status"], "Configured")
-        self.assertEqual(result["Critical_Service"]["Balanced"], "True")
-        self.assertEqual(result["Critical_Service"]["Namespace"], "kube-system")
+        self.assertIn("critical_service", result)
+        self.assertIn("Name", result["critical_service"])
+        self.assertEqual(result["critical_service"]["Name"], "coredns")
+        self.assertIn("Type", result["critical_service"])
+        self.assertEqual(result["critical_service"]["Type"], "Deployment")
+        self.assertEqual(result["critical_service"]["Status"], "Configured")
+        self.assertEqual(result["critical_service"]["Balanced"], "True")
+        self.assertEqual(result["critical_service"]["Namespace"], "kube-system")
 
     def test_describe_critical_service_not_found(self) -> None:
         """
@@ -82,7 +82,7 @@ class TestCriticalServicesDescribe(unittest.TestCase):
             result = CriticalServicesStatus.get_service_details(
                 MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "unknown-service"
             )
-            self.assertIn("Critical_Service", result)
+            self.assertIn("critical_service", result)
         results = {"error": "Service not found"}
         self.assertIn("error", results)
         self.assertEqual(results["error"], "Service not found")

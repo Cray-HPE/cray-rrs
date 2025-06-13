@@ -384,7 +384,7 @@ paths:
               examples:
                 criticalServiceDetail:
                   value:
-                    Critical_Service:
+                    critical_service:
                       Name: cray-hbtd
                       Namespace: services
                       Type: Deployment
@@ -512,7 +512,7 @@ paths:
               examples:
                 criticalServiceStatusExample:
                   value:
-                    Critical_Service:
+                    critical_service:
                       Name: cray-hbtd
                       Namespace: services
                       Type: Deployment
@@ -813,9 +813,9 @@ components:
             type: string
     CriticalServiceDescribeSchema:
       type: object
-      required: [Critical_Service]
+      required: [critical_service]
       properties:
-        Critical_Service:
+        critical_service:
           type: object
           required: [Name, Namespace, Type, Configured_Instances]
           properties:
@@ -831,9 +831,9 @@ components:
               nullable: true
     CriticalServiceStatusDescribeSchema:
       type: object
-      required: [Critical_Service]
+      required: [critical_service]
       properties:
-        Critical_Service:
+        critical_service:
           type: object
           required: [Name, Namespace, Type, Status, Balanced, Configured_Instances, Currently_Running_Instances, Pods]
           properties:

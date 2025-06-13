@@ -319,7 +319,7 @@ class CriticalServiceDescribeSchema(TypedDict):
     OAS: #/components/schemas/CriticalServiceDescribeSchema
     """
 
-    Critical_Service: CriticalServiceDescribe
+    critical_service: CriticalServiceDescribe
 
 
 @final
@@ -329,7 +329,7 @@ class CriticalServiceStatusDescribeSchema(TypedDict):
     OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
     """
 
-    Critical_Service: CriticalServiceStatusDescribe
+    critical_service: CriticalServiceStatusDescribe
 
 
 @final
