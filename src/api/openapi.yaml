@@ -642,6 +642,7 @@ components:
             type: string
     CephZoneSchema:
       type: object
+      required: [Management_Storage_Nodes]
       properties:
         Management_Storage_Nodes:
           type: array
