@@ -82,7 +82,7 @@ class NodeSchema(TypedDict):
     """
 
     name: str
-    status: str
+    status: Literal["Ready", "NotReady", "Unknown", "up", "down", ""]
 
 
 @final
@@ -93,7 +93,7 @@ class StorageNodeSchema(TypedDict):
     """
 
     name: str
-    status: str
+    status: Literal["Ready", "NotReady"]
     osds: dict[str, list[str]]
 
 
@@ -104,7 +104,7 @@ class CephNodeInfo(TypedDict):
     """
 
     name: str
-    status: str
+    status: Literal["Ready", "NotReady"]
     osds: list[NodeSchema]
 
 
@@ -174,8 +174,8 @@ class CriticalServiceStatusItemSchema(TypedDict):
 
     name: str
     type: str
-    status: str
-    balanced: str
+    status: Literal["Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"]
+    balanced: Literal["true", "false", "NA"]
 
 
 @final
@@ -197,8 +197,8 @@ class CriticalServiceCmDynamicSchema(TypedDict, total=False):
 
     type: Required[str]
     namespace: Required[str]
-    status: str
-    balanced: str
+    status: Literal["Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"]
+    balanced: Literal["true", "false", "NA"]
 
 
 @final
@@ -279,7 +279,7 @@ class PodSchema(TypedDict):
     """
 
     Name: str
-    Status: str
+    Status: Literal["Running", "Pending", "Failed", "Terminating"]
     Node: str
     Zone: str
 
@@ -307,8 +307,8 @@ class CriticalServiceStatusDescribe(TypedDict):
     Name: str
     Namespace: str
     Type: str
-    Status: str
-    Balanced: str
+    Status: Literal["Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"]
+    Balanced: Literal["true", "false", "NA"]
     Configured_Instances: int | None
     Currently_Running_Instances: int
     Pods: list[PodSchema]
@@ -446,7 +446,7 @@ class ceph_tree_node_datatype(TypedDict, total=False):
     type: str
     name: str
     children: list[int]
-    status: str
+    status: Literal["Ready", "NotReady"]
 
 
 @final
@@ -470,7 +470,7 @@ class cephHostDataType(TypedDict, total=False):
     """
 
     hostname: str
-    status: str
+    status: Literal["", "online", "offline"]
 
 
 @final
@@ -491,7 +491,7 @@ class skewReturn(NamedTuple):
     """
 
     service_name: str
-    balanced: Literal["true", "false", "unknown"]
+    balanced: Literal["true", "false", "NA"]
     error: bool = False
 
 

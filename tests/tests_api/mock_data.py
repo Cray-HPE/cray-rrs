@@ -46,13 +46,13 @@ MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC: CriticalServiceType = {
         "namespace": "kube-system",
         "type": "Deployment",
         "status": "Configured",
-        "balanced": "True",
+        "balanced": "true",
     },
     "kube-proxy": {
         "namespace": "kube-system",
         "type": "DaemonSet",
         "status": "PartiallyConfigured",
-        "balanced": "False",
+        "balanced": "false",
     },
 }
 

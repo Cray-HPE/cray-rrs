@@ -30,6 +30,7 @@ Classes:
 """
 
 import json
+from typing import Literal
 from flask import current_app as app
 from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
@@ -116,8 +117,15 @@ class CriticalServiceHelper:
                 continue
 
             is_terminating = pod.metadata.deletion_timestamp is not None
-            pod_status = pod.status.phase if not is_terminating else "Terminating"
-
+            pod_stat = pod.status.phase if not is_terminating else "Terminating"
+            pod_status: Literal["Running", "Pending", "Failed", "Terminating"]
+            if pod_stat == "Running":
+                pod_status = "Running"
+            elif pod_stat == "Terminating":
+                pod_status = "Terminating"
+            else:
+                pod_status = "Pending"
+            
             if pod_status == "Running" and not is_terminating:
                 running_pods += 1
 

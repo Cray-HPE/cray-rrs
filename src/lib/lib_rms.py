@@ -596,8 +596,9 @@ class cephHelper:
                         osd_status_list.append({"name": osd_name, "status": osd_status})
 
                     node_status = host_status_map.get(host_node_name, "No Status")
+                    storage_node_status: Literal["Ready", "NotReady"]
                     if node_status in ["", "online"]:
-                        node_status = "Ready"
+                        storage_node_status = "Ready"
                     else:
                         failed_hosts.append(host_node_name)
                         logger.warning(
@@ -605,12 +606,12 @@ class cephHelper:
                             host_node_name,
                             node_status,
                         )
-                        node_status = "NotReady"
+                        storage_node_status = "NotReady"
 
                     storage_nodes.append(
                         {
                             "name": host_node_name,
-                            "status": node_status,
+                            "status": storage_node_status,
                             "osds": osd_status_list,
                         }
                     )
@@ -921,7 +922,7 @@ class criticalServicesHelper:
             logger.exception(
                 "Error while checking skew for service %s: %s", service_name, e
             )
-            return skewReturn(service_name=service_name, balanced="unknown", error=True)
+            return skewReturn(service_name=service_name, balanced="NA", error=True)
 
         return skewReturn(service_name=service_name, balanced=balanced)
 
