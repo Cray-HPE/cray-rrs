@@ -56,6 +56,7 @@ from src.lib.schema import (
     slsEntryDataType,
     podInfoType,
     hsmDataType,
+    openidTokenResponse,
     cephTreeDataType,
     cephHostDataType,
     skewReturn,
@@ -198,7 +199,7 @@ class Helper:
                 response = requests.post(
                     keycloak_url, data=data, timeout=REQUESTS_TIMEOUT, verify=False
                 )
-                token_data = response.json()
+                token_data: openidTokenResponse = response.json()
                 token: Optional[str] = token_data.get("access_token")
                 return token
 
@@ -227,8 +228,8 @@ class Helper:
         hsm_url = "https://api-gw-service-nmn.local/apis/smd/hsm/v2/State/Components"
         sls_url = "https://api-gw-service-nmn.local/apis/sls/v1/search/hardware"
         headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-        hsm_data = None
-        sls_data = None
+        hsm_data: hsmDataType | None = None
+        sls_data: sls_datatype | None = None
 
         # Peform HSM fetch
         if get_hsm:
@@ -243,7 +244,8 @@ class Helper:
                         verify=False,
                     )
                     hsm_response.raise_for_status()
-                    hsm_data = hsm_response.json()
+                    hsm_data = cast(hsmDataType, hsm_response.json())
+
                     break  # Success, exit retry loop
                 except (requests.exceptions.RequestException, ValueError) as e:
                     logger.error("Attempt %d: Failed to fetch HSM data: %s", attempt, e)
@@ -265,7 +267,7 @@ class Helper:
                         verify=False,
                     )
                     sls_response.raise_for_status()
-                    sls_data = sls_response.json()
+                    sls_data = cast(sls_datatype, sls_response.json())
                     break  # Success, exit retry loop
                 except (requests.exceptions.RequestException, ValueError) as e:
                     logger.error("Attempt %d: Failed to fetch SLS data: %s", attempt, e)
