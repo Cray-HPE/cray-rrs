@@ -37,7 +37,7 @@ EMPTY_DICT = EmptyDict()
 
 
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class Ready(Resource):  # type: ignore[misc]
+class Ready(Resource):  # type: ignore[misc,no-any-unimported]
     """Return k8s readiness check"""
 
     def get(self) -> tuple[EmptyDict, Literal[HTTPStatus.OK]]:
@@ -52,7 +52,7 @@ class Ready(Resource):  # type: ignore[misc]
 
 
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class Live(Resource):  # type: ignore[misc]
+class Live(Resource):  # type: ignore[misc,no-any-unimported]
     """Return k8s liveness check"""
 
     def get(self) -> tuple[EmptyDict, Literal[HTTPStatus.OK]]:

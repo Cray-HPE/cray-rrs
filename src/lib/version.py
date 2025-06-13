@@ -33,7 +33,7 @@ from src.lib.rrs_logging import get_log_id
 
 
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class Version(Resource):  # type: ignore[misc]
+class Version(Resource):  # type: ignore[misc,no-any-unimported]
     """Return RRS version information"""
 
     def get(self) -> tuple[dict[str, str], Literal[HTTPStatus.OK]]:

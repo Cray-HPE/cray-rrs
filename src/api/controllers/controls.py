@@ -67,7 +67,7 @@ from src.api.services.rrs_criticalservices import (
 
 # Route to get the list of zones
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class ZoneListResource(Resource):  # type: ignore[misc]
+class ZoneListResource(Resource):  # type: ignore[misc,no-any-unimported]
     """
     Resource for retrieving the list of all zones.
 
@@ -109,7 +109,7 @@ class ZoneListResource(Resource):  # type: ignore[misc]
 
 # Route to describe the zone entered
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class ZoneDescribeResource(Resource):  # type: ignore[misc]
+class ZoneDescribeResource(Resource):  # type: ignore[misc,no-any-unimported]
     """
     Resource for describing a specific zone.
 
@@ -157,7 +157,7 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc]
 
 # Route to get the list of critical services
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class CriticalServiceListResource(Resource):  # type: ignore[misc]
+class CriticalServiceListResource(Resource):  # type: ignore[misc,no-any-unimported]
     """
     Resource for retrieving the list of all critical services.
 
@@ -201,7 +201,7 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc]
 
 # Route to describe the critical service entered
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class CriticalServiceDescribeResource(Resource):  # type: ignore[misc]
+class CriticalServiceDescribeResource(Resource):  # type: ignore[misc,no-any-unimported]
     """
     Resource for describing a specific critical service.
 
@@ -245,7 +245,7 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc]
 
 # Route to update the critical services list
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
+class CriticalServiceUpdateResource(Resource):  # type: ignore[misc,no-any-unimported]
     """
     Resource for updating the list of critical services.
 
@@ -297,7 +297,7 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc]
 
 # Route to get the list of critical services status
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
+class CriticalServiceStatusListResource(Resource):  # type: ignore[misc,no-any-unimported]
     """
     Resource for retrieving the status of all critical services.
 
@@ -340,7 +340,7 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc]
 
 # Route to describe the critical service entered
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc]
+class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc,no-any-unimported]
     """
     Resource for describing a specific critical service status.
 
