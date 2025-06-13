@@ -424,6 +424,17 @@ class hsmDataType(TypedDict, total=False):
 
 
 @final
+class openidTokenResponse(TypedDict, total=False):
+    """
+    This represents a successful response to a POST request to:
+    https://api-gw-service-nmn.local/keycloak/realms/shasta/protocol/openid-connect/token
+    We do not define all of the possible fields here.
+    This will not cause problems, because we don't ever try to access any fields not defined here.
+    """
+    access_token: str
+
+
+@final
 class ceph_tree_node_datatype(TypedDict, total=False):
     """
     This represents one of the entries in the nodes list in the output of the "ceph osd tree -f json" command
