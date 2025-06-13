@@ -312,7 +312,7 @@ class CriticalServiceStatusDescribe(TypedDict):
     Namespace: str
     Type: str
     Status: Literal[
-        "Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"
+        "Configured", "PartiallyConfigured", "NotConfigured", "Running", "Unconfigured"
     ]
     Balanced: Literal["true", "false", "NA"]
     Configured_Instances: int | None
