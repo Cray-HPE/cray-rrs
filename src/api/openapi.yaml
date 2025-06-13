@@ -158,17 +158,9 @@ paths:
                           Management_Storage_Nodes:
                             - ncn-s001
         '404':
-          description: Zones not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /zones/{zone_name}:
     get:
       summary: Get Detailed Zone Information
@@ -237,17 +229,9 @@ paths:
                               - osd.24
                               - osd.27
         '404':
-          description: Zone not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices:
     get:
       summary: Get Critical Services
@@ -293,17 +277,9 @@ paths:
                           - name: kube-multus-ds
                             type: DaemonSet
         '404':
-          description: Critical services not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
     patch:
       summary: Update Critical Services ConfigMap
       tags:
@@ -337,23 +313,11 @@ paths:
                       - coredns
                       - kube-proxy
         '400':
-          description: Bad Request - Invalid data provided
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Critical services not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices/{critical_service_name}:
     get:
       summary: Get Critical Service Details (Summarized)
@@ -390,17 +354,9 @@ paths:
                       Type: Deployment
                       Configured_Instances: 3
         '404':
-          description: Critical service not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices/status:
     get:
       summary: Get Critical Services Status
@@ -467,17 +423,9 @@ paths:
                             status: Configured
                             balanced: "true"
         '404':
-          description: Critical services status not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices/status/{critical_service_name}:
     get:
       summary: Get Critical Service Status by Name (Detailed)
@@ -534,17 +482,9 @@ paths:
                           Node: ncn-w001
                           Zone: cscs-rack-x3000
         '404':
-          description: Critical service status not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /healthz/ready:
     get:
       summary: Retrieve RRS Readiness Probe
