@@ -52,7 +52,7 @@ from src.lib.schema import (
     k8sNodesResultType,
     CephNodeInfo,
     NodeSchema,
-    CriticalServiceCmDynamicType,
+    CriticalServiceCmType,
     slsEntryDataType,
     podInfoType,
     hsmDataType,
@@ -1036,8 +1036,8 @@ class criticalServicesHelper:
 
     @staticmethod
     def get_critical_services_status(
-        services_data: CriticalServiceCmDynamicType,
-    ) -> CriticalServiceCmDynamicType:
+        services_data: CriticalServiceCmType,
+    ) -> CriticalServiceCmType:
         """
         Update critical service info with status and balanced values
         Args:

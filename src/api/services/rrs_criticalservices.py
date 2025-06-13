@@ -55,7 +55,7 @@ from src.lib.schema import (
     CriticalServicesStatusItem,
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
-    CriticalServiceCmDynamicSchema,
+    CriticalServiceCmSchema,
     ErrorDict,
 )
 
@@ -241,7 +241,7 @@ class CriticalServices:
 
     @staticmethod
     def update_critical_services(
-        new_data: CriticalServiceCmDynamicSchema,
+        new_data: CriticalServiceCmSchema,
     ) -> CriticalServiceUpdateSchema | ErrorDict:
         """
         Function to update critical services in the ConfigMap.

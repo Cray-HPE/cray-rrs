@@ -197,7 +197,7 @@ class CriticalServiceItemSchema(TypedDict):
 
 
 @final
-class CriticalServiceCmDynamicSchema(TypedDict, total=False):
+class CriticalServiceCmSchema(TypedDict, total=False):
     """
     Schema for a critical service entry, including its namespace, type, balanced and status.
     """
@@ -237,12 +237,12 @@ class CriticalServiceCmStaticType(TypedDict):
 
 
 @final
-class CriticalServiceCmDynamicType(TypedDict):
+class CriticalServiceCmType(TypedDict):
     """
     Schema for critical services in a configmap, including the service name and its details.
     """
 
-    critical_services: dict[str, CriticalServiceCmDynamicSchema]
+    critical_services: dict[str, CriticalServiceCmSchema]
 
 
 @final
