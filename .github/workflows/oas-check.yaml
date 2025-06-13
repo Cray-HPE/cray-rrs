@@ -47,4 +47,8 @@ jobs:
 
     - name: OAS Validate
       if: ${{ steps.changed-files.outputs.all_changed_files }}
-      run: set -e; for file in ${{ steps.changed-files.outputs.all_changed_files }}; do docker-entrypoint.sh validate -i "$file"; done
+      run: |
+        set -e
+        for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+          docker-entrypoint.sh validate -i "$file"
+        done
