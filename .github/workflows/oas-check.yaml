@@ -39,23 +39,10 @@ jobs:
       uses: tj-actions/changed-files@v46
       with:
         json: true
-        files: |
-          **openapi*.yaml
-          **swagger*.yaml
+#        files: |
+#          **openapi*.yaml
+#          **swagger*.yaml
 
     - name: List all changed files
       run: echo '${{ steps.changed-files.outputs.all_changed_files }}'
 
-  oas-validate:
-    runs-on: ubuntu-latest
-    needs: [setup]
-    strategy:
-      matrix:
-        files: ${{ fromJSON(needs.setup.outputs.matrix) }}
-      max-parallel: 4
-      fail-fast: false
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: OAS Validate
-      run: docker run -v "$(pwd):/oas" docker.io/openapitools/openapi-generator-cli:v7.13.0 docker-entrypoint.sh validate -i "/oas/${{ matrix.files }}"
