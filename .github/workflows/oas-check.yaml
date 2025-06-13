@@ -36,9 +36,9 @@ jobs:
 
     - name: Get changed files
       id: changed-files
-      uses: tj-actions/changed-files@v45
+      uses: tj-actions/changed-files@v46
       with:
-        files: "**/*{openapi,swagger}*.yaml"
+        files: "**{openapi,swagger}*.yaml"
         json: true
 
     - name: List all changed files
