@@ -33,7 +33,6 @@ import json
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
 from tests.tests_api.mock_data import (
-    ERR_FILE,
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,
     MOCK_CRITICAL_SERVICES_RESPONSE,
     MOCK_ALREADY_EXISTING_FILE,
@@ -86,15 +85,6 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         self.app.logger.info(result)
         self.assertEqual(result["Update"], "Services Already Exist")
         self.assertEqual(result["Already_Existing_Services"], ["kube-proxy"])
-
-    def test_update_critical_service_failure(self) -> None:
-        """
-        Test case for handling a failure when updating the ConfigMap.
-
-        Ensures that an error key is present in the response.
-        """
-        result = CriticalServices.update_critical_services(ERR_FILE)
-        self.assertIn("error", result)
 
 
 if __name__ == "__main__":

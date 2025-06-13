@@ -35,10 +35,10 @@ from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.schema import PodSchema, CriticalServiceCmSchema
+from src.lib.schema import PodSchema, CriticalServiceCmDynamicSchema
 
 # This is for the format present in the configmap
-CriticalServiceType = dict[str, CriticalServiceCmSchema]
+CriticalServiceType = dict[str, CriticalServiceCmDynamicSchema]
 
 
 class CriticalServiceHelper:
@@ -46,7 +46,7 @@ class CriticalServiceHelper:
 
     @staticmethod
     def get_namespaced_pods(
-        service_info: CriticalServiceCmSchema, service_name: str
+        service_info: CriticalServiceCmDynamicSchema, service_name: str
     ) -> tuple[list[PodSchema], int]:
         """
         Fetch the pods in a namespace and the number of instances using Kube-config.
@@ -105,7 +105,7 @@ class CriticalServiceHelper:
 
             # Check if any owner reference matches our criteria
             is_matching = any(
-                owner.kind == expected_owner_kind and owner.name == service_name
+                owner.kind == expected_owner_kind and owner.name.rsplit("-", 1)[0] == service_name
                 for owner in pod.metadata.owner_references
             )
 

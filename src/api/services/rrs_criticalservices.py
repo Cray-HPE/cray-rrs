@@ -55,6 +55,7 @@ from src.lib.schema import (
     CriticalServicesStatusItem,
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
+    CriticalServiceCmDynamicSchema,
     ErrorDict,
 )
 
@@ -240,7 +241,7 @@ class CriticalServices:
 
     @staticmethod
     def update_critical_services(
-        new_data: dict[str, str],
+        new_data: CriticalServiceCmDynamicSchema,
     ) -> CriticalServiceUpdateSchema | ErrorDict:
         """
         Function to update critical services in the ConfigMap.
@@ -253,11 +254,8 @@ class CriticalServices:
         """
         log_id = get_log_id()  # Generate a unique log ID for this operation
         try:
-            # Try parsing the JSON string from the 'from_file' key
-            new_services = json.loads(str(new_data["from_file"]))
-
             # Check if 'critical_services' key is present in the parsed data
-            if "critical_services" not in new_services:
+            if "critical_services" not in new_data:
                 app.logger.error(f"[{log_id}] Missing 'critical_services' in payload")
                 return {"error": "Missing 'critical_services' in payload"}
 
@@ -267,7 +265,7 @@ class CriticalServices:
             )
 
             # Call the update_configmap function to update the critical services
-            result = CriticalServices.update_configmap(new_services, existing_data)
+            result = CriticalServices.update_configmap(new_data, existing_data)
             return result
 
         # Handle any exceptions and return error responses

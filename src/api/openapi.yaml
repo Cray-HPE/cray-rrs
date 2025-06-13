@@ -793,7 +793,7 @@ components:
           type: string
           description: The type of Kubernetes resource
           example: "Deployment"
-          enum: ["Deployment", "DaemonSet", "StatefulSet", "Service", "Pod"]
+          enum: ["Deployment", "DaemonSet", "StatefulSet", "Pod"]
       additionalProperties: false
       required: [namespace, type]
 

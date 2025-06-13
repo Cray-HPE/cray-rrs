@@ -43,7 +43,7 @@ class KubernetesTopologyZoneSchema(TypedDict, total=False):
 
 
 @final
-class CephZoneSchema(TypedDict, total=False):
+class CephZoneSchema(TypedDict):
     """
     Schema for Ceph zone, including storage nodes.
     OAS: #/components/schemas/CephZoneSchema
@@ -190,7 +190,7 @@ class CriticalServiceItemSchema(TypedDict):
 
 
 @final
-class CriticalServiceCmSchema(TypedDict, total=False):
+class CriticalServiceCmDynamicSchema(TypedDict, total=False):
     """
     Schema for a critical service entry, including its namespace, type, balanced and status.
     """
@@ -202,12 +202,31 @@ class CriticalServiceCmSchema(TypedDict, total=False):
 
 
 @final
-class CriticalServiceCmType(TypedDict):
+class CriticalServiceCmStaticSchema(TypedDict):
+    """
+    Schema for a critical service entry, including its namespace, type, balanced and status.
+    """
+
+    type: str
+    namespace: str
+
+
+@final
+class CriticalServiceCmStaticType(TypedDict):
     """
     Schema for critical services in a configmap, including the service name and its details.
     """
 
-    critical_services: dict[str, CriticalServiceCmSchema]
+    critical_services: dict[str, CriticalServiceCmStaticSchema]
+
+
+@final
+class CriticalServiceCmDynamicType(TypedDict):
+    """
+    Schema for critical services in a configmap, including the service name and its details.
+    """
+
+    critical_services: dict[str, CriticalServiceCmDynamicSchema]
 
 
 @final
