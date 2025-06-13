@@ -174,7 +174,9 @@ class CriticalServiceStatusItemSchema(TypedDict):
 
     name: str
     type: str
-    status: Literal["Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"]
+    status: Literal[
+        "Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"
+    ]
     balanced: Literal["true", "false", "NA"]
 
 
@@ -197,7 +199,9 @@ class CriticalServiceCmDynamicSchema(TypedDict, total=False):
 
     type: Required[str]
     namespace: Required[str]
-    status: Literal["Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"]
+    status: Literal[
+        "Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"
+    ]
     balanced: Literal["true", "false", "NA"]
 
 
@@ -307,7 +311,9 @@ class CriticalServiceStatusDescribe(TypedDict):
     Name: str
     Namespace: str
     Type: str
-    Status: Literal["Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"]
+    Status: Literal[
+        "Configured", "PartiallyConfigured", "NotConfigured", "Runnig", "Unconfigured"
+    ]
     Balanced: Literal["true", "false", "NA"]
     Configured_Instances: int | None
     Currently_Running_Instances: int
@@ -431,6 +437,7 @@ class openidTokenResponse(TypedDict, total=False):
     We do not define all of the possible fields here.
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
+
     access_token: str
 
 

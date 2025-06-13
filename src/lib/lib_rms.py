@@ -556,7 +556,7 @@ class cephHelper:
                 if "type" not in item or "name" not in item or item["type"] != "rack":
                     continue
 
-                rack_name = item["name"]
+                # rack_name = item["name"]
 
                 storage_nodes: list[CephNodeInfo] = []
                 children = item.get("children")
@@ -616,7 +616,7 @@ class cephHelper:
                         }
                     )
 
-                final_output[rack_name] = storage_nodes
+                final_output[item["name"]] = storage_nodes
 
             if failed_hosts:
                 logger.warning(

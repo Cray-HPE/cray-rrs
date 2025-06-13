@@ -106,7 +106,8 @@ class CriticalServiceHelper:
 
             # Check if any owner reference matches our criteria
             is_matching = any(
-                owner.kind == expected_owner_kind and owner.name.rsplit("-", 1)[0] == service_name
+                owner.kind == expected_owner_kind
+                and owner.name.rsplit("-", 1)[0] == service_name
                 for owner in pod.metadata.owner_references
             )
 
@@ -125,7 +126,7 @@ class CriticalServiceHelper:
                 pod_status = "Terminating"
             else:
                 pod_status = "Pending"
-            
+
             if pod_status == "Running" and not is_terminating:
                 running_pods += 1
 
