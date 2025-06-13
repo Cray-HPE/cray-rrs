@@ -164,6 +164,8 @@ class ZoneDescribeSchema(TypedDict, total=False):
 # Critical Service Schemas
 ################################################
 
+# OAS: #/components/schemas/ServiceBalanced
+ServiceBalanced = Literal["true", "false", "NA"]
 
 @final
 class CriticalServiceStatusItemSchema(TypedDict):
@@ -182,7 +184,7 @@ class CriticalServiceStatusItemSchema(TypedDict):
         "Running",
         "Unconfigured",
     ]
-    balanced: Literal["true", "false", "NA"]
+    balanced: ServiceBalanced
 
 
 @final
@@ -233,7 +235,7 @@ class CriticalServiceCmDynamicSchema(TypedDict):
         "Running",
         "Unconfigured",
     ]
-    balanced: Literal["true", "false", "NA"]
+    balanced: ServiceBalanced
 
 
 @final
@@ -329,7 +331,7 @@ class CriticalServiceStatusDescribe(TypedDict):
         "Running",
         "Unconfigured",
     ]
-    Balanced: Literal["true", "false", "NA"]
+    Balanced: ServiceBalanced
     Configured_Instances: int | None
     Currently_Running_Instances: int
     Pods: list[PodSchema]
@@ -513,7 +515,7 @@ class skewReturn(NamedTuple):
     """
 
     service_name: str
-    balanced: Literal["true", "false", "NA"]
+    balanced: ServiceBalanced
     error: bool = False
 
 
