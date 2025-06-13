@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, Optional, cast
 import requests
 import urllib3
 import yaml
@@ -531,7 +531,7 @@ class cephHelper:
             logger.exception("Unexpected error while fetching CEPH data: %s", e)
 
         # Safe fallback on failure
-        return {}, []
+        return cephTreeDataType(), cast(list[cephHostDataType], [])
 
     @staticmethod
     def get_ceph_status() -> tuple[cephNodesResultType, bool]:
