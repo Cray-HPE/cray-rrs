@@ -1076,7 +1076,14 @@ class criticalServicesHelper:
                     unconfigured_services.append(service_name)
                     service_info.update({"status": "Unconfigured", "balanced": "NA"})
                     continue
-
+                status: Literal[
+                    "error",
+                    "Configured",
+                    "PartiallyConfigured",
+                    "NotConfigured",
+                    "Running",
+                    "Unconfigured",
+                ]
                 status = "Configured"
                 if ready_replicas < desired_replicas:
                     partially_configured_services.append(service_name)
