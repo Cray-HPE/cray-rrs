@@ -216,27 +216,6 @@ class CriticalServiceCmSchema(TypedDict, total=False):
 
 
 @final
-class CriticalServiceCmStaticSchema(TypedDict):
-    """
-    Schema for a critical service entry, including its namespace, type, balanced and status.
-    OAS: #/components/schemas/CriticalServiceCmStaticSchema
-    """
-
-    type: str
-    namespace: str
-
-
-@final
-class CriticalServiceCmStaticType(TypedDict):
-    """
-    Schema for critical services in a configmap, including the service name and its details.
-    OAS: #/components/schemas/CriticalServiceCmStaticType
-    """
-
-    critical_services: dict[str, CriticalServiceCmStaticSchema]
-
-
-@final
 class CriticalServiceCmType(TypedDict):
     """
     Schema for critical services in a configmap, including the service name and its details.
