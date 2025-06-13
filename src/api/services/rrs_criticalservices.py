@@ -38,13 +38,13 @@ Usage:
 """
 
 import json
-from typing import Optional
+from typing import Optional, cast
 from datetime import datetime
 from flask import current_app as app
 from kubernetes import client
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
-from src.api.models.criticalservice import CriticalServiceHelper, CriticalServiceType
+from src.api.models.criticalservice import CriticalServiceHelper
 from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DYNAMIC_CM
 from src.lib.schema import (
     PodSchema,
@@ -55,7 +55,9 @@ from src.lib.schema import (
     CriticalServicesStatusItem,
     CriticalServiceDescribeSchema,
     CriticalServiceUpdateSchema,
-    CriticalServiceCmSchema,
+    CriticalServiceCmStaticType,
+    CriticalServiceCmDynamicSchema,
+    CriticalServiceCmStaticSchema,
     ErrorDict,
 )
 
@@ -65,7 +67,7 @@ class CriticalServices:
 
     @staticmethod
     def fetch_critical_services(
-        services: CriticalServiceType,
+        services: dict[str, CriticalServiceCmStaticSchema],
     ) -> CriticalServicesItem:
         """
         Fetch and format critical services grouped by namespace.
@@ -123,7 +125,9 @@ class CriticalServices:
             STATIC_CM, NAMESPACE, CRITICAL_SERVICE_KEY
         )
 
-        data = CriticalServices.fetch_critical_services(services)
+        data = CriticalServices.fetch_critical_services(
+            cast(dict[str, CriticalServiceCmStaticSchema], services)
+        )
         return {"critical_services": data}
 
     @staticmethod
@@ -157,7 +161,9 @@ class CriticalServices:
             )
             return ErrorDict(error="Service not found")
         # Use another helper to get the details of the service
-        data = CriticalServicesStatus.get_service_details(services, service_name)
+        data = CriticalServicesStatus.get_service_details(
+            cast(dict[str, CriticalServiceCmDynamicSchema], services), service_name
+        )
 
         # Build the result dictionary
         result: CriticalServiceDescribeSchema = {
@@ -180,8 +186,8 @@ class CriticalServices:
 
     @staticmethod
     def update_configmap(
-        new_data: dict[str, CriticalServiceType],
-        existing_data: CriticalServiceType,
+        new_data: CriticalServiceCmStaticType,
+        existing_data: dict[str, CriticalServiceCmStaticSchema],
         test: bool = False,
     ) -> CriticalServiceUpdateSchema:
         """
@@ -241,7 +247,7 @@ class CriticalServices:
 
     @staticmethod
     def update_critical_services(
-        new_data: CriticalServiceCmSchema,
+        new_data: CriticalServiceCmStaticType,
     ) -> CriticalServiceUpdateSchema | ErrorDict:
         """
         Function to update critical services in the ConfigMap.
@@ -265,7 +271,9 @@ class CriticalServices:
             )
 
             # Call the update_configmap function to update the critical services
-            result = CriticalServices.update_configmap(new_data, existing_data)
+            result = CriticalServices.update_configmap(
+                new_data, cast(dict[str, CriticalServiceCmStaticSchema], existing_data)
+            )
             return result
 
         # Handle any exceptions and return error responses
@@ -284,7 +292,7 @@ class CriticalServicesStatus:
 
     @staticmethod
     def fetch_critical_services_status(
-        services: CriticalServiceType,
+        services: dict[str, CriticalServiceCmDynamicSchema],
     ) -> CriticalServicesStatusItem:
         """Fetch and format critical services grouped by namespace in the required structure.
 
@@ -344,13 +352,15 @@ class CriticalServicesStatus:
         # Return the critical services grouped by namespace
         return {
             "critical_services": CriticalServicesStatus.fetch_critical_services_status(
-                services
+                cast(dict[str, CriticalServiceCmDynamicSchema], services)
             )
         }
 
     @staticmethod
     def get_service_details(
-        services: CriticalServiceType, service_name: str, test: bool = False
+        services: dict[str, CriticalServiceCmDynamicSchema],
+        service_name: str,
+        test: bool = False,
     ) -> CriticalServiceStatusDescribeSchema:
         """
         Retrieve details of a specific critical service.
@@ -483,6 +493,8 @@ class CriticalServicesStatus:
             )
             return ErrorDict(error="Service not found")
 
-        data = CriticalServicesStatus.get_service_details(services, service_name)
+        data = CriticalServicesStatus.get_service_details(
+            cast(dict[str, CriticalServiceCmDynamicSchema], services), service_name
+        )
 
         return data

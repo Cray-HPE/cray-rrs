@@ -55,7 +55,7 @@ from src.lib.schema import (
     CriticalServicesStatusListSchema,
     CriticalServiceStatusDescribeSchema,
     CriticalServiceDescribeSchema,
-    CriticalServiceCmSchema,
+    CriticalServiceCmStaticType,
     CriticalServiceUpdateSchema,
     ErrorDict,
     InformationDict,
@@ -278,7 +278,7 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc,no-any-unimp
         log_event("Updating critical services list")
         try:
             # Get the new data from the request body (assumes JSON)
-            new_data: CriticalServiceCmSchema = request.get_json()
+            new_data: CriticalServiceCmStaticType = request.get_json()
             # If no data is provided, return an error
             if not new_data:
                 log_event("No data provided for update", level="ERROR")

@@ -197,13 +197,34 @@ class CriticalServiceItemSchema(TypedDict):
 
 
 @final
-class CriticalServiceCmSchema(TypedDict, total=False):
+class CriticalServiceCmStaticSchema(TypedDict):
+    """
+    Schema for a critical service configuration in static ConfigMap.
+    OAS: #/components/schemas/CriticalServiceCmStaticSchema
+    """
+
+    namespace: str
+    type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod"]
+
+
+@final
+class CriticalServiceCmStaticType(TypedDict):
+    """
+    Schema for critical services in static ConfigMap.
+    OAS: #/components/schemas/CriticalServiceCmStaticType
+    """
+
+    critical_services: dict[str, CriticalServiceCmStaticSchema]
+
+
+@final
+class CriticalServiceCmDynamicSchema(TypedDict):
     """
     Schema for a critical service entry, including its namespace, type, balanced and status.
     """
 
-    type: Required[str]
-    namespace: Required[str]
+    type: str
+    namespace: str
     status: Literal[
         "error",
         "Configured",
@@ -216,12 +237,12 @@ class CriticalServiceCmSchema(TypedDict, total=False):
 
 
 @final
-class CriticalServiceCmType(TypedDict):
+class CriticalServiceCmDynamicType(TypedDict):
     """
     Schema for critical services in a configmap, including the service name and its details.
     """
 
-    critical_services: dict[str, CriticalServiceCmSchema]
+    critical_services: dict[str, CriticalServiceCmDynamicSchema]
 
 
 @final
