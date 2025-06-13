@@ -318,7 +318,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CriticalServicesPatch'
+              $ref: '#/components/schemas/CriticalServiceCmStaticType'
       responses:
         '200':
           description: Critical Services Updated Successfully
@@ -767,7 +767,7 @@ components:
           type: string
         type:
           type: string
-    CriticalServicesPatch:
+    CriticalServiceCmStaticType:
       type: object
       description: |
         A collection of critical services that need to be monitored for resiliency.
@@ -778,11 +778,11 @@ components:
           description: |
             Mapping from service names to service configurations.
           additionalProperties:
-            $ref: '#/components/schemas/CriticalServiceConfig'
+            $ref: '#/components/schemas/CriticalServiceCmStaticSchema'
       additionalProperties: false
       required: [critical_services]
       
-    CriticalServiceConfig:
+    CriticalServiceCmStaticSchema:
       type: object
       description: Configuration details for a critical service
       properties:

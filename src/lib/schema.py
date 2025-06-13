@@ -205,6 +205,7 @@ class CriticalServiceCmDynamicSchema(TypedDict, total=False):
 class CriticalServiceCmStaticSchema(TypedDict):
     """
     Schema for a critical service entry, including its namespace, type, balanced and status.
+    OAS: #/components/schemas/CriticalServiceCmStaticSchema
     """
 
     type: str
@@ -215,6 +216,7 @@ class CriticalServiceCmStaticSchema(TypedDict):
 class CriticalServiceCmStaticType(TypedDict):
     """
     Schema for critical services in a configmap, including the service name and its details.
+    OAS: #/components/schemas/CriticalServiceCmStaticType
     """
 
     critical_services: dict[str, CriticalServiceCmStaticSchema]
@@ -335,7 +337,7 @@ class CriticalServiceStatusDescribeSchema(TypedDict):
 @final
 class CriticalServiceUpdateSchema(TypedDict):
     """
-    Schema for updating critical services, including added and existing services.
+    Schema for response to updating critical services, including added and existing services.
     OAS: #/components/schemas/CriticalServiceUpdateSchema
     """
 
