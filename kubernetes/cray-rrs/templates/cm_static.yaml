@@ -256,26 +256,6 @@ data:
           "namespace": "services",
           "type": "StatefulSet"
         },
-        "cray-bss": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bss-bitnami-etcd": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "cray-tftp": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-ipxe-aarch64": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-ipxe-x86-64": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
         "cray-vault-configurer": {
           "namespace": "vault",
           "type": "Deployment"
@@ -289,86 +269,6 @@ data:
           "type": "StatefulSet"
         },
         "cray-sts": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cfs-ara": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cfs-trust": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-cfs-api": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-cfs-api-db": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-cfs-batcher": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-cfs-operator": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-shared-kafka-kafka": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "cray-bos": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-ims": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-db": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-actual-state-cleanup": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-configuration": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-discovery": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-power-off-forceful": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-power-off-graceful": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-power-on": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-session-cleanup": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-session-completion": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-session-setup": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bos-operator-status": {
           "namespace": "services",
           "type": "Deployment"
         },
@@ -436,22 +336,6 @@ data:
           "namespace": "istio-system",
           "type": "Deployment"
         },
-        "gitea-vcs": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "gitea-vcs-postgres": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "cray-bss": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-bss-bitnami-etcd": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
         "cray-sls": {
           "namespace": "services",
           "type": "Deployment"
@@ -471,18 +355,6 @@ data:
         "cray-capmc": {
           "namespace": "services",
           "type": "Deployment"
-        },
-        "cray-tftp": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "gitea-vcs": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "gitea-vcs-postgres": {
-          "namespace": "services",
-          "type": "StatefulSet"
         },
         "kube-apiserver": {
           "namespace": "kube-system",
