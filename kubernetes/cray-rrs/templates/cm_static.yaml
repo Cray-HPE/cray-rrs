@@ -144,10 +144,6 @@ data:
           "namespace": "services",
           "type": "StatefulSet"
         },
-        "cray-sls": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
         "cray-sls-postgres": {
           "namespace": "services",
           "type": "StatefulSet"
@@ -176,44 +172,8 @@ data:
           "namespace": "user",
           "type": "Deployment"
         },
-        "cray-dhcp-kea": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-dhcp-kea-postgres": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
         "cray-sls": {
           "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-sls-postgres": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "cray-keycloak": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "keycloak-postgres": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "slurm-operator": {
-          "namespace": "slurm-operator",
-          "type": "Deployment"
-        },
-        "slurmctld": {
-          "namespace": "user",
-          "type": "Deployment"
-        },
-        "slurmctld-backup": {
-          "namespace": "user",
-          "type": "Deployment"
-        },
-        "slurmdbd": {
-          "namespace": "user",
           "type": "Deployment"
         },
         "slurmdbd-backup": {
@@ -335,14 +295,6 @@ data:
         "istiod": {
           "namespace": "istio-system",
           "type": "Deployment"
-        },
-        "cray-sls": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-sls-postgres": {
-          "namespace": "services",
-          "type": "StatefulSet"
         },
         "cray-power-control": {
           "namespace": "services",
