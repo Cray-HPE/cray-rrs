@@ -44,12 +44,20 @@ data:
   critical-service-config.json: |-
     {
       "critical_services": {
+        "cilium-operator": {
+          "namespace": "kube-system",
+          "type": "Deployment"
+        },
         "coredns": {
           "namespace": "kube-system",
           "type": "Deployment"
         },
-        "sealed-secrets": {
-          "namespace": "kube-system",
+        "cray-activemq-artemis-operator-controller-manager": {
+          "namespace": "dvs",
+          "type": "Deployment"
+        },
+        "cray-capmc": {
+          "namespace": "services",
           "type": "Deployment"
         },
         "cray-ceph-csi-cephfs-provisioner": {
@@ -60,47 +68,23 @@ data:
           "namespace": "ceph-rbd",
           "type": "Deployment"
         },
-        "cray-activemq-artemis-operator-controller-manager": {
-          "namespace": "dvs",
+        "cray-certmanager-cert-manager": {
+          "namespace": "cert-manager",
           "type": "Deployment"
         },
-        "cray-dvs-mqtt-ss": {
-          "namespace": "dvs",
-          "type": "StatefulSet"
-        },
-        "cray-hmnfd-bitnami-etcd": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "cray-hmnfd": {
-          "namespace": "services",
+        "cray-certmanager-cert-manager-cainjector": {
+          "namespace": "cert-manager",
           "type": "Deployment"
         },
-        "cray-hbtd": {
+        "cray-certmanager-cert-manager-webhook": {
+          "namespace": "cert-manager",
+          "type": "Deployment"
+        },
+        "cray-console-data": {
           "namespace": "services",
           "type": "Deployment"
         },
-        "cray-hbtd-bitnami-etcd": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "hpe-slingshot-jackaloped": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "hpe-slingshot-ogopogod": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "slingshot-fabric-manager": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "sshot-net-operator": {
-          "namespace": "sshot-net-operator",
-          "type": "Deployment"
-        },
-        "hpe-slingshot-vnid": {
+        "cray-console-data-postgres": {
           "namespace": "services",
           "type": "StatefulSet"
         },
@@ -108,31 +92,7 @@ data:
           "namespace": "services",
           "type": "StatefulSet"
         },
-        "cray-console-data-postgres": {
-          "namespace": "services",
-          "type": "StatefulSet"
-        },
-        "cray-console-data": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
         "cray-console-operator": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-dns-powerdns": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-powerdns-manager": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-dns-powerdns-postgres": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-dns-unbound": {
           "namespace": "services",
           "type": "Deployment"
         },
@@ -144,7 +104,35 @@ data:
           "namespace": "services",
           "type": "StatefulSet"
         },
-        "cray-sls-postgres": {
+        "cray-dns-powerdns": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-dns-powerdns-postgres": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-dns-unbound": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-dvs-mqtt-ss": {
+          "namespace": "dvs",
+          "type": "StatefulSet"
+        },
+        "cray-hbtd": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-hbtd-bitnami-etcd": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
+        "cray-hmnfd": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-hmnfd-bitnami-etcd": {
           "namespace": "services",
           "type": "StatefulSet"
         },
@@ -152,49 +140,45 @@ data:
           "namespace": "services",
           "type": "StatefulSet"
         },
-        "keycloak-postgres": {
+        "cray-oauth2-proxies-customer-access-ingress": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-oauth2-proxies-customer-high-speed-ingress": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-oauth2-proxies-customer-management-ingress": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-power-control": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-power-control-bitnami-etcd": {
           "namespace": "services",
           "type": "StatefulSet"
         },
-        "slurm-operator": {
-          "namespace": "slurm-operator",
-          "type": "Deployment"
-        },
-        "slurmctld": {
-          "namespace": "user",
-          "type": "Deployment"
-        },
-        "slurmctld-backup": {
-          "namespace": "user",
-          "type": "Deployment"
-        },
-        "slurmdbd": {
-          "namespace": "user",
+        "cray-powerdns-manager": {
+          "namespace": "services",
           "type": "Deployment"
         },
         "cray-sls": {
           "namespace": "services",
           "type": "Deployment"
         },
-        "slurmdbd-backup": {
-          "namespace": "user",
-          "type": "Deployment"
-        },
-        "slurmdb-haproxy": {
-          "namespace": "user",
+        "cray-sls-postgres": {
+          "namespace": "services",
           "type": "StatefulSet"
         },
-        "slurmdb-pxc": {
-          "namespace": "user",
+        "cray-smd": {
+          "namespace": "services",
+          "type": "Deployment"
+        },
+        "cray-smd-postgres": {
+          "namespace": "services",
           "type": "StatefulSet"
-        },
-        "pbs": {
-          "namespace": "user",
-          "type": "Deployment"
-        },
-        "pbs-comm": {
-          "namespace": "user",
-          "type": "Deployment"
         },
         "cray-spire-postgres": {
           "namespace": "spire",
@@ -204,16 +188,12 @@ data:
           "namespace": "spire",
           "type": "StatefulSet"
         },
-        "cilium-operator": {
-          "namespace": "kube-system",
-          "type": "Deployment"
-        },
-        "cray-smd": {
+        "cray-sts": {
           "namespace": "services",
           "type": "Deployment"
         },
-        "cray-smd-postgres": {
-          "namespace": "services",
+        "cray-vault": {
+          "namespace": "vault",
           "type": "StatefulSet"
         },
         "cray-vault-configurer": {
@@ -224,17 +204,53 @@ data:
           "namespace": "vault",
           "type": "Deployment"
         },
-        "cray-vault": {
-          "namespace": "vault",
-          "type": "StatefulSet"
-        },
-        "cray-sts": {
+        "hpe-slingshot-jackaloped": {
           "namespace": "services",
           "type": "Deployment"
         },
-        "nexus": {
-          "namespace": "nexus",
+        "hpe-slingshot-ogopogod": {
+          "namespace": "services",
           "type": "Deployment"
+        },
+        "hpe-slingshot-vnid": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
+        "istio-ingressgateway": {
+          "namespace": "istio-system",
+          "type": "Deployment"
+        },
+        "istio-ingressgateway-customer-admin": {
+          "namespace": "istio-system",
+          "type": "Deployment"
+        },
+        "istio-ingressgateway-customer-user": {
+          "namespace": "istio-system",
+          "type": "Deployment"
+        },
+        "istio-ingressgateway-hmn": {
+          "namespace": "istio-system",
+          "type": "Deployment"
+        },
+        "istiod": {
+          "namespace": "istio-system",
+          "type": "Deployment"
+        },
+        "keycloak-postgres": {
+          "namespace": "services",
+          "type": "StatefulSet"
+        },
+        "kube-apiserver": {
+          "namespace": "kube-system",
+          "type": "Pod"
+        },
+        "kube-controller-manager": {
+          "namespace": "kube-system",
+          "type": "Pod"
+        },
+        "kube-scheduler": {
+          "namespace": "kube-system",
+          "type": "Pod"
         },
         "kyverno-admission-controller": {
           "namespace": "kyverno",
@@ -252,73 +268,57 @@ data:
           "namespace": "kyverno",
           "type": "Deployment"
         },
-        "cray-certmanager-cert-manager": {
-          "namespace": "cert-manager",
+        "nexus": {
+          "namespace": "nexus",
           "type": "Deployment"
         },
-        "cray-certmanager-cert-manager-cainjector": {
-          "namespace": "cert-manager",
+        "pbs": {
+          "namespace": "user",
           "type": "Deployment"
         },
-        "cray-certmanager-cert-manager-webhook": {
-          "namespace": "cert-manager",
+        "pbs-comm": {
+          "namespace": "user",
           "type": "Deployment"
         },
-        "istio-ingressgateway": {
-          "namespace": "istio-system",
+        "sealed-secrets": {
+          "namespace": "kube-system",
           "type": "Deployment"
         },
-        "istio-ingressgateway-customer-admin": {
-          "namespace": "istio-system",
-          "type": "Deployment"
-        },
-        "istio-ingressgateway-customer-user": {
-          "namespace": "istio-system",
-          "type": "Deployment"
-        },
-        "cray-oauth2-proxies-customer-access-ingress": {
+        "slingshot-fabric-manager": {
           "namespace": "services",
           "type": "Deployment"
         },
-        "cray-oauth2-proxies-customer-high-speed-ingress": {
-          "namespace": "services",
+        "slurm-operator": {
+          "namespace": "slurm-operator",
           "type": "Deployment"
         },
-        "cray-oauth2-proxies-customer-management-ingress": {
-          "namespace": "services",
+        "slurmctld": {
+          "namespace": "user",
           "type": "Deployment"
         },
-        "istio-ingressgateway-hmn": {
-          "namespace": "istio-system",
+        "slurmctld-backup": {
+          "namespace": "user",
           "type": "Deployment"
         },
-        "istiod": {
-          "namespace": "istio-system",
-          "type": "Deployment"
-        },
-        "cray-power-control": {
-          "namespace": "services",
-          "type": "Deployment"
-        },
-        "cray-power-control-bitnami-etcd": {
-          "namespace": "services",
+        "slurmdb-haproxy": {
+          "namespace": "user",
           "type": "StatefulSet"
         },
-        "cray-capmc": {
-          "namespace": "services",
+        "slurmdb-pxc": {
+          "namespace": "user",
+          "type": "StatefulSet"
+        },
+        "slurmdbd": {
+          "namespace": "user",
           "type": "Deployment"
         },
-        "kube-apiserver": {
-          "namespace": "kube-system",
-          "type": "Pod"
+        "slurmdbd-backup": {
+          "namespace": "user",
+          "type": "Deployment"
         },
-        "kube-controller-manager": {
-          "namespace": "kube-system",
-          "type": "Pod"
-        },
-        "kube-scheduler": {
-          "namespace": "kube-system",
-          "type": "Pod"
+        "sshot-net-operator": {
+          "namespace": "sshot-net-operator",
+          "type": "Deployment"
         }
       }
     }
