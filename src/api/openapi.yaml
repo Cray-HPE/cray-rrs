@@ -649,6 +649,9 @@ components:
             - Ready
             - NotReady
             - Unknown
+            - up
+            - down
+            - ""
     StorageNodeSchema:
       type: object
       required: [name, status, osds]
@@ -674,15 +677,18 @@ components:
     ServiceStatus:
       type: string
       enum:
+        - error
         - Configured
         - PartiallyConfigured
+        - NotConfigured
         - Running
+        - Unconfigured
     ServiceBalanced:
       type: string
       enum:
         - "true"
         - "false"
-        - "unknown"
+        - "NA"
     CriticalServicesListSchema:
       type: object
       required: [critical_services]
@@ -707,6 +713,12 @@ components:
           type: string
         type:
           type: string
+          enum:
+            - Deployment
+            - DaemonSet
+            - StatefulSet
+            - Pod
+            - ""
     CriticalServiceCmStaticType:
       type: object
       description: |
@@ -740,7 +752,7 @@ components:
 
     CriticalServiceUpdateSchema:
       type: object
-      required: [Update, Successfully_Added_Service, Already_Existing_Service]
+      required: [Update, Successfully_Added_Services, Already_Existing_Services]
       properties:
         Update:
           type: string
@@ -787,7 +799,7 @@ components:
             Status:
               $ref: '#/components/schemas/ServiceStatus'
             Balanced:
-              $ref: '#/components/schemas/ServiceStatus'
+              $ref: '#/components/schemas/ServiceBalanced'
             Configured_Instances:
               type: integer
               minimum: 1
@@ -809,6 +821,11 @@ components:
           type: string
         Status:
           type: string
+          enum:
+            - Running
+            - Pending
+            - Failed
+            - Terminating
         Zone:
           type: string
     CriticalServicesStatusListSchema:

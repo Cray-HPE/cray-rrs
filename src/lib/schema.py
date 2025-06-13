@@ -193,7 +193,7 @@ class CriticalServiceItemSchema(TypedDict):
     """
 
     name: str
-    type: str
+    type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod", ""]
 
 
 @final
