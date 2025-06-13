@@ -778,6 +778,12 @@ components:
               type: string
             Type:
               type: string
+              enum:
+                - Deployment
+                - DaemonSet
+                - StatefulSet
+                - Pod
+                - ""
             Configured_Instances:
               type: integer
               minimum: 1
@@ -796,6 +802,12 @@ components:
               type: string
             Type:
               type: string
+              enum:
+              - Deployment
+              - DaemonSet
+              - StatefulSet
+              - Pod
+              - ""
             Status:
               $ref: '#/components/schemas/ServiceStatus'
             Balanced:
@@ -847,6 +859,12 @@ components:
           type: string
         type:
           type: string
+          enum:
+            - Deployment
+            - DaemonSet
+            - StatefulSet
+            - Pod
+            - ""
         status:
           $ref: '#/components/schemas/ServiceStatus'
         balanced:
