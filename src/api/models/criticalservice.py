@@ -209,13 +209,19 @@ class CriticalServiceHelper:
                 raise ValueError(cm_data["error"])
 
             if cm_key in cm_data:
-                config_data: CriticalServiceCmStaticType | CriticalServiceCmDynamicType = json.loads(cm_data[cm_key])
+                config_data: (
+                    CriticalServiceCmStaticType | CriticalServiceCmDynamicType
+                ) = json.loads(cm_data[cm_key])
 
                 # Retrieve the critical services from the configuration
                 if "critical_services" in config_data:
                     return config_data["critical_services"]
 
-            return cast(dict[str, CriticalServiceCmDynamicSchema] | dict[str, CriticalServiceCmStaticSchema], {})
+            return cast(
+                dict[str, CriticalServiceCmDynamicSchema]
+                | dict[str, CriticalServiceCmStaticSchema],
+                {},
+            )
 
         except KeyError:
             app.logger.error(f"Key '{cm_key}' not found in cm_data.")

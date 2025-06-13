@@ -45,7 +45,13 @@ from kubernetes import client
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
-from src.lib.rrs_constants import NAMESPACE, CRITICAL_SERVICE_KEY, STATIC_CM, DYNAMIC_CM, CmType
+from src.lib.rrs_constants import (
+    NAMESPACE,
+    CRITICAL_SERVICE_KEY,
+    STATIC_CM,
+    DYNAMIC_CM,
+    CmType,
+)
 from src.lib.schema import (
     PodSchema,
     CriticalServicesListSchema,
@@ -347,7 +353,9 @@ class CriticalServicesStatus:
 
         # Return the critical services grouped by namespace
         return {
-            "critical_services": CriticalServicesStatus.fetch_critical_services_status(services)
+            "critical_services": CriticalServicesStatus.fetch_critical_services_status(
+                services
+            )
         }
 
     @staticmethod

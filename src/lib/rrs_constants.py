@@ -58,5 +58,6 @@ class CmType(Enum):
     """
     Used by methods which need to distinguish between the different configmaps
     """
+
     STATIC = auto()
     DYNAMIC = auto()

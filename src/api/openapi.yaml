@@ -807,7 +807,6 @@ components:
               - DaemonSet
               - StatefulSet
               - Pod
-              - ""
             Status:
               $ref: '#/components/schemas/ServiceStatus'
             Balanced:
@@ -864,7 +863,6 @@ components:
             - DaemonSet
             - StatefulSet
             - Pod
-            - ""
         status:
           $ref: '#/components/schemas/ServiceStatus'
         balanced:
