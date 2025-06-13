@@ -25,6 +25,7 @@
 constants being used by cray-rrs service
 """
 
+from enum import Enum, auto
 import os
 
 
@@ -51,3 +52,11 @@ MAIN_LOOP_WAIT_TIME_INTERVAL = 600
 
 STARTED_STATE = "Started"
 COMPLETED_STATE = "Completed"
+
+
+class CmType(Enum):
+    """
+    Used by methods which need to distinguish between the different configmaps
+    """
+    STATIC = auto()
+    DYNAMIC = auto()

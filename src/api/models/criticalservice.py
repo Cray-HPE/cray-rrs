@@ -30,10 +30,11 @@ Classes:
 """
 
 import json
-from typing import Literal, cast
+from typing import Literal, cast, overload
 from flask import current_app as app
 from kubernetes import client
 from src.api.models.zones import ZoneTopologyService
+from src.lib.rrs_constants import CmType, DYNAMIC_CM, STATIC_CM
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.schema import (
@@ -164,9 +165,21 @@ class CriticalServiceHelper:
         # Deployment creates ReplicaSet, so we map that accordingly
         return "ReplicaSet" if resource_type == "Deployment" else resource_type
 
+    @overload
     @staticmethod
     def fetch_service_list(
-        cm_name: str, cm_namespace: str, cm_key: str
+        cm_type: Literal[CmType.STATIC], cm_namespace: str, cm_key: str
+    ) -> dict[str, CriticalServiceCmStaticSchema]: ...
+
+    @overload
+    @staticmethod
+    def fetch_service_list(
+        cm_type: Literal[CmType.DYNAMIC], cm_namespace: str, cm_key: str
+    ) -> dict[str, CriticalServiceCmDynamicSchema]: ...
+
+    @staticmethod
+    def fetch_service_list(
+        cm_type: Literal[CmType.STATIC, CmType.DYNAMIC], cm_namespace: str, cm_key: str
     ) -> (
         dict[str, CriticalServiceCmDynamicSchema]
         | dict[str, CriticalServiceCmStaticSchema]
@@ -185,30 +198,25 @@ class CriticalServiceHelper:
             or an error message if the operation fails.
         """
         log_id = get_log_id()  # Generate a unique log ID for tracking
+        cm_name = STATIC_CM if cm_type == CmType.STATIC else DYNAMIC_CM
         try:
             # Log the attempt to fetch service details
-            app.logger.info(f"[{log_id}] Fetching all services from confgMap.")
+            app.logger.info(f"[{log_id}] Fetching all services from configMap.")
 
             # Fetch the ConfigMap data containing critical service information
             cm_data = ConfigMapHelper.read_configmap(cm_namespace, cm_name)
             if "error" in cm_data:
                 raise ValueError(cm_data["error"])
-            config_data: CriticalServiceCmStaticType | CriticalServiceCmDynamicType = (
-                cast(CriticalServiceCmStaticType | CriticalServiceCmDynamicType, {})
-            )
-            if cm_key in cm_data:
-                config_data = json.loads(cm_data[cm_key])
 
-            # Retrieve the critical services from the configuration
-            services = config_data.get(
-                "critical_services",
-                cast(
-                    dict[str, CriticalServiceCmDynamicSchema]
-                    | dict[str, CriticalServiceCmStaticSchema],
-                    {},
-                ),
-            )
-            return services
+            if cm_key in cm_data:
+                config_data: CriticalServiceCmStaticType | CriticalServiceCmDynamicType = json.loads(cm_data[cm_key])
+
+                # Retrieve the critical services from the configuration
+                if "critical_services" in config_data:
+                    return config_data["critical_services"]
+
+            return cast(dict[str, CriticalServiceCmDynamicSchema] | dict[str, CriticalServiceCmStaticSchema], {})
+
         except KeyError:
             app.logger.error(f"Key '{cm_key}' not found in cm_data.")
             raise
