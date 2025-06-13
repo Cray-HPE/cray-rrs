@@ -175,7 +175,12 @@ class CriticalServiceStatusItemSchema(TypedDict):
     name: str
     type: str
     status: Literal[
-        "error", "Configured", "PartiallyConfigured", "NotConfigured", "Running", "Unconfigured"
+        "error",
+        "Configured",
+        "PartiallyConfigured",
+        "NotConfigured",
+        "Running",
+        "Unconfigured",
     ]
     balanced: Literal["true", "false", "NA"]
 
@@ -200,7 +205,12 @@ class CriticalServiceCmDynamicSchema(TypedDict, total=False):
     type: Required[str]
     namespace: Required[str]
     status: Literal[
-        "error", "Configured", "PartiallyConfigured", "NotConfigured", "Running", "Unconfigured"
+        "error",
+        "Configured",
+        "PartiallyConfigured",
+        "NotConfigured",
+        "Running",
+        "Unconfigured",
     ]
     balanced: Literal["true", "false", "NA"]
 
@@ -312,7 +322,12 @@ class CriticalServiceStatusDescribe(TypedDict):
     Namespace: str
     Type: str
     Status: Literal[
-        "error", "Configured", "PartiallyConfigured", "NotConfigured", "Running", "Unconfigured"
+        "error",
+        "Configured",
+        "PartiallyConfigured",
+        "NotConfigured",
+        "Running",
+        "Unconfigured",
     ]
     Balanced: Literal["true", "false", "NA"]
     Configured_Instances: int | None
