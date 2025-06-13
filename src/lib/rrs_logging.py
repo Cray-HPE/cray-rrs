@@ -52,16 +52,7 @@ def str_to_log_level(level: str) -> int:
     Returns:
         int: The corresponding logging level constant from the logging module.
     """
-    name_to_level = {
-        "CRITICAL": logging.CRITICAL,
-        "FATAL": logging.FATAL,
-        "ERROR": logging.ERROR,
-        "WARN": logging.WARNING,
-        "WARNING": logging.WARNING,
-        "INFO": logging.INFO,
-        "DEBUG": logging.DEBUG,
-        "NOTSET": logging.NOTSET,
-    }
+    name_to_level = logging.getLevelNamesMapping()
     return name_to_level.get(level.upper(), logging.INFO)
 
 
