@@ -745,8 +745,6 @@ components:
           enum:
             - Deployment
             - StatefulSet
-            - Pod
-            - ""
     CriticalServiceCmStaticType:
       type: object
       description: Configuration payload for updating critical services in the system. Contains service definitions that need to be monitored for resiliency
@@ -800,7 +798,7 @@ components:
       properties:
         critical_service:
           type: object
-          required: [Name, Namespace, Type, Configured_Instances]
+          required: [name, namespace, type, configured_instances]
           description: Basic configuration information about the critical service
           properties:
             Name:
@@ -815,8 +813,6 @@ components:
               enum:
                 - Deployment
                 - StatefulSet
-                - Pod
-                - ""
             Configured_Instances:
               type: integer
               minimum: 1
@@ -829,7 +825,7 @@ components:
       properties:
         critical_service:
           type: object
-          required: [Name, Namespace, Type, Status, Balanced, Configured_Instances, Currently_Running_Instances, Pods]
+          required: [name, namespace, type, status, balanced, configured_instances, currently_running_instances, pods]
           description: Complete status information including configuration and runtime details
           properties:
             Name:
@@ -844,7 +840,6 @@ components:
               enum:
               - Deployment
               - StatefulSet
-              - Pod
             Status:
               $ref: '#/components/schemas/ServiceStatus'
             Balanced:
@@ -865,7 +860,7 @@ components:
                 $ref: '#/components/schemas/PodSchema'
     PodSchema:
       type: object
-      required: [Name, Node, Status, Zone]
+      required: [name, node, status, zone]
       description: Information about an individual pod instance including its location and status
       properties:
         Name:
@@ -913,7 +908,6 @@ components:
           enum:
             - Deployment
             - StatefulSet
-            - Pod
         status:
           $ref: '#/components/schemas/ServiceStatus'
         balanced:

@@ -177,7 +177,7 @@ class CriticalServiceStatusItemSchema(TypedDict):
     """
 
     name: str
-    type: Literal["Deployment", "StatefulSet", "Pod"]
+    type: Literal["Deployment", "StatefulSet"]
     status: Literal[
         "error",
         "Configured",
