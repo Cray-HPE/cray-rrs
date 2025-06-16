@@ -483,6 +483,62 @@ class hsmDataType(TypedDict, total=False):
 
 
 @final
+class hmnfdSubscribePost(TypedDict, total=False):
+    """
+    This represents one item in a successful response to a GET request to the HMNFD '/subscriptions' URI.
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/SubscribePost
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    This will not cause problems, because we don't ever try to access any fields not defined here.
+    """
+    Subscriber: str
+    SubscriberAgent: str
+
+
+@final
+class hmnfdSubscriptionListArray(TypedDict, total=False):
+    """
+    This represents a successful response to a GET request to the HMNFD '/subscriptions' URI.
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/SubscriptionListArray
+    """
+    SubscriptionList: list[hmnfdSubscribePost]
+
+
+# https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+# #/components/schemas/Roles.1.0.0
+hmnfdRole = Literal["Compute", "System", "Application", "Storage", "Management"]
+# #/components/schemas/HMSState.1.0.0
+hmnfdState = Literal[
+    "Unknown",
+    "Empty",
+    "Populated",
+    "Off",
+    "On",
+    "Active",
+    "Standby",
+    "Halt",
+    "Ready",
+    "Paused"
+]
+
+
+@final
+class hmnfdSubscribePostV2(TypedDict, total=False):
+    """
+    This represents the request body for a POST request to the HMNFD
+    '/subscriptions/{subscriber_node}/agents/{agent_name}' URI.
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/SubscribePostV2
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    """
+    Components: list[str]
+    Roles: list[hmnfdRole]
+    Status: list[hmnfdState]
+    Url: str
+
+
+@final
 class openidTokenResponse(TypedDict, total=False):
     """
     This represents a successful response to a POST request to:
