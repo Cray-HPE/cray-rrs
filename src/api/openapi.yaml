@@ -61,10 +61,10 @@ info:
 
       ### GET /criticalservices/{critical-service-name}
         Retrieve a summarized view of a specific critical service (without pod details). The response includes:
-          - Configured Instances
-          - Name
-          - Namespace
-          - Type
+          - configured_instances
+          - name
+          - namespace
+          - type
 
       ### PATCH /criticalservices
         Update the critical services configuration based on provided input. This endpoint allows
@@ -74,20 +74,20 @@ info:
         Retrieve the status of all critical services including service status and distribution details.
         Each service object may include:
           - Service Name
-          - Status
-          - Balanced: indicates whether the service is properly distributed
+          - status
+          - balanced: indicates whether the service is properly distributed
 
       ### GET /criticalservices/status/{critical-service-name}
         Retrieve detailed status for a specific critical service including pod information.
         The response includes:
-          - Configured Instances
-          - Currently Running Instances
-          - Name
-          - Namespace
-          - Pods with Name, Node, Status, and Zone
-          - Type
-          - Status
-          - Balanced
+          - configured_instances
+          - currently_running_instances
+          - name
+          - namespace
+          - pods with name, node, status, and zone
+          - type
+          - status
+          - balanced
 servers:
   - url: 'https://api-gw-service-nmn.local/apis/rrs'
     description: The production RRS API server. Accessed from outside the mesh.
@@ -170,9 +170,9 @@ paths:
         Returns detailed information for a specific zone.
         The response includes:
           - Zone_Name: the name of the zone
-          - Management_Master: an object with Count, Type, and Nodes (array of node objects with Name and Status)
-          - Management_Worker: an object with Count, Type, and Nodes (array of node objects with Name and Status)
-          - Management_Storage: an object with Count, Type, and Nodes (array of node objects with Name, Status, and OSDs)
+          - Management_Master: an object with Count, Type, and Nodes (array of node objects with name and status)
+          - Management_Worker: an object with Count, Type, and Nodes (array of node objects with name and status)
+          - Management_Storage: an object with Count, Type, and Nodes (array of node objects with name, status, and osds)
       operationId: getZoneDetails
       parameters:
         - name: zone_name
@@ -323,10 +323,10 @@ paths:
       description: >
         Returns a summarized view of a specific critical service.
         The response includes:
-          - Name: string
-          - Namespace: string
-          - Type: string
-          - Configured Instances: number
+          - name: string
+          - namespace: string
+          - type: string
+          - configured_instances: number
       operationId: getCriticalServiceDetails
       parameters:
         - name: critical_service_name
@@ -346,10 +346,10 @@ paths:
                 criticalServiceDetail:
                   value:
                     critical_service:
-                      Name: cray-hbtd
-                      Namespace: services
-                      Type: Deployment
-                      Configured_Instances: 3
+                      name: cray-hbtd
+                      namespace: services
+                      type: Deployment
+                      configured_instances: 3
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -427,14 +427,14 @@ paths:
       description: >
         Returns detailed status for a specific critical service, including pod information.
         The response includes:
-          - Name: string
-          - Namespace: string
-          - Type: string
-          - Status: string
-          - Balanced: string
-          - Configured Instances: number
-          - Currently Running Instances: number
-          - Pods: array of pod objects with Name, Node, Status, Zone
+          - name: string
+          - namespace: string
+          - type: string
+          - status: string
+          - balanced: string
+          - configured_instances: number
+          - currently_running_instances: number
+          - pods: array of pod objects with name, node, status, zone
       operationId: getCriticalServiceStatus
       parameters:
         - name: critical_service_name
@@ -454,26 +454,26 @@ paths:
                 criticalServiceStatusExample:
                   value:
                     critical_service:
-                      Name: cray-hbtd
-                      Namespace: services
-                      Type: Deployment
-                      Status: Configured
-                      Balanced: "true"
-                      Configured_Instances: 3
-                      Currently_Running_Instances: 3
-                      Pods:
-                        - Name: cray-hbtd-6cbdbd6955-5xlfg
-                          Status: Running
-                          Node: ncn-w002
-                          Zone: cscs-rack-x3001
-                        - Name: cray-hbtd-6cbdbd6955-jwzgq
-                          Status: Running
-                          Node: ncn-w003
-                          Zone: cscs-rack-x3002
-                        - Name: cray-hbtd-6cbdbd6955-k6pkt
-                          Status: Running
-                          Node: ncn-w001
-                          Zone: cscs-rack-x3000
+                      name: cray-hbtd
+                      namespace: services
+                      type: Deployment
+                      status: Configured
+                      balanced: "true"
+                      configured_instances: 3
+                      currently_running_instances: 3
+                      pods:
+                        - name: cray-hbtd-6cbdbd6955-5xlfg
+                          status: Running
+                          node: ncn-w002
+                          zone: cscs-rack-x3001
+                        - name: cray-hbtd-6cbdbd6955-jwzgq
+                          status: Running
+                          node: ncn-w003
+                          zone: cscs-rack-x3002
+                        - name: cray-hbtd-6cbdbd6955-k6pkt
+                          status: Running
+                          node: ncn-w001
+                          zone: cscs-rack-x3000
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -801,19 +801,19 @@ components:
           required: [name, namespace, type, configured_instances]
           description: Basic configuration information about the critical service
           properties:
-            Name:
+            name:
               type: string
               description: Name of the critical service
-            Namespace:
+            namespace:
               type: string
               description: Kubernetes namespace where the service is deployed
-            Type:
+            type:
               type: string
               description: Kubernetes resource type of the service
               enum:
                 - Deployment
                 - StatefulSet
-            Configured_Instances:
+            configured_instances:
               type: integer
               minimum: 1
               nullable: true
@@ -828,32 +828,32 @@ components:
           required: [name, namespace, type, status, balanced, configured_instances, currently_running_instances, pods]
           description: Complete status information including configuration and runtime details
           properties:
-            Name:
+            name:
               type: string
               description: Name of the critical service
-            Namespace:
+            namespace:
               type: string
               description: Kubernetes namespace where the service is deployed
-            Type:
+            type:
               type: string
               description: Kubernetes resource type of the service
               enum:
               - Deployment
               - StatefulSet
-            Status:
+            status:
               $ref: '#/components/schemas/ServiceStatus'
-            Balanced:
+            balanced:
               $ref: '#/components/schemas/ServiceBalanced'
-            Configured_Instances:
+            configured_instances:
               type: integer
               minimum: 1
               nullable: true
               description: Number of instances configured for this service
-            Currently_Running_Instances:
+            currently_running_instances:
               type: integer
               minimum: 0
               description: Number of instances currently running and healthy
-            Pods:
+            pods:
               type: array
               description: Detailed information about each pod instance of this service
               items:
@@ -863,13 +863,13 @@ components:
       required: [name, node, status, zone]
       description: Information about an individual pod instance including its location and status
       properties:
-        Name:
+        name:
           type: string
           description: Unique name of the pod instance
-        Node:
+        node:
           type: string
           description: Kubernetes node where the pod is scheduled to run
-        Status:
+        status:
           type: string
           description: Current operational status of the pod
           enum:
@@ -877,7 +877,7 @@ components:
             - Pending
             - Failed
             - Terminating
-        Zone:
+        zone:
           type: string
           description: Zone where the pod is located based on its assigned node
     CriticalServicesStatusListSchema:
