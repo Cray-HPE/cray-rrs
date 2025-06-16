@@ -1,0 +1,250 @@
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# Resiliency Monitoring Service API Specification
+openapi: 3.0.3
+info:
+  title: Resiliency Monitoring Service
+  license:
+    name: Hewlett Packard Enterprise Development LP
+    url: http://www.hpe.com/
+  version: 0.0.0-rms
+  description: >
+    The Resiliency Monitoring Service (RMS) monitors system components and manages state transitions
+    for rack-level resiliency. It processes State Change Notifications (SCNs) from HMNFD and 
+    maintains rack-level resiliency awareness across the platform.
+
+    ## Resources
+
+    ### POST /scn
+      Handles State Change Notifications from HMNFD for component state changes:
+      - Processes node failures and determines if they represent rack or individual node failures
+      - Initiates monitoring when failures are detected
+      - Updates system state and timestamps accordingly
+
+    ### POST /api-ts
+      Updates API server start timestamp in the dynamic configmap
+      - Used for tracking API server status and uptime
+      - Maintains service state coordination
+
+servers:
+  - url: 'http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551'
+    description: The RMS server endpoint within the Kubernetes cluster
+
+tags:
+  - name: monitoring
+    description: Endpoints for handling state change notifications and monitoring status
+  - name: healthz
+    description: Kubernetes health check endpoints for service readiness and liveness probes
+  - name: version
+    description: API version information endpoint
+
+paths:
+  /scn:
+    post:
+      summary: Handle State Change Notifications
+      tags:
+        - monitoring
+      description: >
+        Processes incoming State Change Notifications (SCNs) from HMNFD about system component status changes.
+        Determines failure types and initiates monitoring procedures when failures are detected.
+      operationId: handleSCN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SCNRequestSchema'
+      responses:
+        '200':
+          description: SCN processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SCNSuccessResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api-ts:
+    post:
+      summary: Update API Timestamp
+      tags:
+        - monitoring
+      description: Updates the API server start timestamp in the dynamic configmap
+      operationId: updateApiTimestamp
+      responses:
+        '200':
+          description: API timestamp updated successfully
+          content:
+            application/json:
+              schema:
+                type: string
+                example: "API timestamp updated successfully"
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /healthz/ready:
+    get:
+      summary: Retrieve RMS Readiness Probe
+      operationId: get_healthz_ready
+      tags:
+        - healthz
+        - cli_ignore
+      description: Readiness probe for RMS used by Kubernetes to determine if service is ready
+      responses:
+        '200':
+          description: RMS is ready to accept requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyDict'
+        '500':
+          description: RMS is not able to accept requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyDict'
+
+  /healthz/live:
+    get:
+      summary: Retrieve RMS Liveness Probe
+      operationId: get_healthz_live
+      tags:
+        - healthz
+        - cli_ignore
+      description: Liveness probe for RMS used by Kubernetes to determine if service is responsive
+      responses:
+        '200':
+          description: RMS is responsive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyDict'
+        '500':
+          description: RMS is not responsive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyDict'
+
+  /version:
+    get:
+      summary: Get RMS version
+      tags:
+        - version
+        - cli_hidden
+      description: Retrieve the version of the RMS Service
+      operationId: getVersion
+      responses:
+        '200':
+          description: RMS Version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    SCNRequestSchema:
+      type: object
+      required:
+        - Components
+        - State
+      description: State Change Notification request payload from HMNFD
+      properties:
+        Components:
+          type: array
+          description: List of component xnames affected by the state change
+          items:
+            type: string
+          example: ["x3000c0s1b0n0", "x3000c0s1b0n1"]
+        State:
+          type: string
+          description: New state of the components
+          enum: ["On", "Off"]
+          example: "Off"
+
+    SCNSuccessResponse:
+      type: object
+      required:
+        - message
+      description: Success response for SCN processing
+      properties:
+        message:
+          type: string
+          description: Confirmation message
+          example: "POST call received"
+
+    RMSState:
+      type: string
+      description: Current state of the Resiliency Monitoring Service
+      enum:
+        - READY
+        - FAIL_NOTIFIED
+        - MONITORING
+        - INTERNAL_FAILURE
+        - WAITING
+        - STARTED
+
+    EmptyDict:
+      type: object
+      description: Empty response object for health check endpoints
+      additionalProperties: false
+
+    VersionResponse:
+      type: object
+      required: [version]
+      description: Version information for the RMS
+      properties:
+        version:
+          type: string
+          description: The current version of the RMS
+          example: "1.0.0"
+
+    ErrorDict:
+      type: object
+      required: [error]
+      description: Error response containing details about what went wrong
+      properties:
+        error:
+          type: string
+          description: Human-readable error message describing the failure
+
+  responses:
+    BadRequest:
+      description: Bad request - missing or invalid parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDict'
+
+    InternalServerError:
+      description: Internal server error occurred
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDict'
