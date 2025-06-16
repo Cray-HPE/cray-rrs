@@ -166,6 +166,15 @@ class ZoneDescribeSchema(TypedDict, total=False):
 
 # RRS OAS: #/components/schemas/ServiceBalanced
 ServiceBalanced = Literal["true", "false", "NA"]
+# RRS OAS: #/components/schemas/ServiceStatus
+ServiceStatus = Literal[
+    "error",
+    "Configured",
+    "PartiallyConfigured",
+    "NotConfigured",
+    "Running",
+    "Unconfigured",
+]
 ServiceType = Literal["Deployment", "StatefulSet"]
 
 
@@ -178,14 +187,7 @@ class CriticalServiceStatusItemSchema(TypedDict):
 
     name: str
     type: Literal["Deployment", "StatefulSet"]
-    status: Literal[
-        "error",
-        "Configured",
-        "PartiallyConfigured",
-        "NotConfigured",
-        "Running",
-        "Unconfigured",
-    ]
+    status: ServiceStatus
     balanced: ServiceBalanced
 
 
@@ -229,14 +231,7 @@ class CriticalServiceCmDynamicSchema(TypedDict):
 
     namespace: str
     type: ServiceType
-    status: Literal[
-        "error",
-        "Configured",
-        "PartiallyConfigured",
-        "NotConfigured",
-        "Running",
-        "Unconfigured",
-    ]
+    status: ServiceStatus
     balanced: ServiceBalanced
 
 
@@ -325,14 +320,7 @@ class CriticalServiceStatusDescribe(TypedDict):
     name: str
     namespace: str
     type: Literal["Deployment", "StatefulSet"]
-    status: Literal[
-        "error",
-        "Configured",
-        "PartiallyConfigured",
-        "NotConfigured",
-        "Running",
-        "Unconfigured",
-    ]
+    status: ServiceStatus
     balanced: ServiceBalanced
     configured_instances: int | None
     currently_running_instances: int
