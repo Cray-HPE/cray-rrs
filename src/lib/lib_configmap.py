@@ -250,7 +250,7 @@ class ConfigMapHelper:
                     logger.error("Failed to update ConfigMap: %s", e.reason)
                     raise
                 except Exception as e:
-                    logger.error("Unexpected error updating ConfigMap: %s", str(e))
+                    logger.error("Unexpected error updating ConfigMap: %s: %s", type(e).__name__, e)
                     raise
                 finally:
                     ConfigMapHelper.release_lock(namespace, configmap_name)
