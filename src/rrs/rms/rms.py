@@ -346,8 +346,8 @@ def check_and_create_hmnfd_subscription() -> None:
         for attempt in range(1, MAX_RETRIES + 1):
             post_data: hmnfdSubscribePostV2 = {
                 "Components": subscribing_components,
-                "Roles": ["Management"],
-                "States": ["Ready", "On", "Off", "Empty", "Unknown", "Populated"],
+                "Roles": ["management"],
+                "States": ["ready", "on", "off", "empty", "unknown", "populated"],
                 "Url": "http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551/scn",
             }
             try:

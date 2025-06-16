@@ -505,21 +505,24 @@ class hmnfdSubscriptionListArray(TypedDict, total=False):
     SubscriptionList: list[hmnfdSubscribePost]
 
 
+# Despite what the HMNFD schema claims, these enumerated types are actually not case sensitive.
+# I believe for data coming FROM HMNFD, these are always all lowercase, so that is what I am using
+# here, even though it does not match what is in the official schema
 # https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
 # #/components/schemas/Roles.1.0.0
-hmnfdRole = Literal["Compute", "System", "Application", "Storage", "Management"]
+hmnfdRole = Literal["compute", "system", "application", "storage", "management"]
 # #/components/schemas/HMSState.1.0.0
 hmnfdState = Literal[
-    "Unknown",
-    "Empty",
-    "Populated",
-    "Off",
-    "On",
-    "Active",
-    "Standby",
-    "Halt",
-    "Ready",
-    "Paused"
+    "unknown",
+    "empty",
+    "populated",
+    "off",
+    "on",
+    "active",
+    "standby",
+    "halt",
+    "ready",
+    "paused"
 ]
 
 
