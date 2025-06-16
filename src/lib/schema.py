@@ -187,7 +187,7 @@ class CriticalServiceStatusItemSchema(TypedDict):
     """
 
     name: str
-    type: Literal["Deployment", "StatefulSet"]
+    type: ServiceType
     status: ServiceStatus
     balanced: ServiceBalanced
 
@@ -320,7 +320,7 @@ class CriticalServiceStatusDescribe(TypedDict):
 
     name: str
     namespace: str
-    type: Literal["Deployment", "StatefulSet"]
+    type: ServiceType
     status: ServiceStatus
     balanced: ServiceBalanced
     configured_instances: int | None
