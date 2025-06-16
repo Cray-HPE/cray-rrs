@@ -199,6 +199,7 @@ components:
           type: string
           description: Confirmation message
           example: "POST call received"
+          enum: ["POST call received"]
 
     RMSState:
       type: string
