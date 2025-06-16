@@ -69,7 +69,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
 
         self.assertEqual(result["Update"], "Successful")
         self.assertEqual(result["Successfully_Added_Services"], ["xyz"])
-        self.assertEqual(result["Already_Existing_Services"], ["kube-proxy"])
+        self.assertEqual(result["Already_Existing_Services"], ["lab-proxy"])
 
     def test_update_critical_service_success_already_exist(self) -> None:
         """
@@ -84,7 +84,7 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         )
         self.app.logger.info(result)
         self.assertEqual(result["Update"], "Services Already Exist")
-        self.assertEqual(result["Already_Existing_Services"], ["kube-proxy"])
+        self.assertEqual(result["Already_Existing_Services"], ["lab-proxy"])
 
 
 if __name__ == "__main__":
