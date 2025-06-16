@@ -40,7 +40,7 @@ class Version(Resource):  # type: ignore[misc,no-any-unimported]
     def get(self) -> tuple[VersionInfo, Literal[HTTPStatus.OK]]:
         """
         Return RRS version information
-        
+
         RMS/RRS OAS: #/paths/version (get)
         """
 
