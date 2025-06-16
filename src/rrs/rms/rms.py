@@ -38,7 +38,7 @@ import sys
 import time
 import logging
 from datetime import datetime
-from typing import Optional, Literal
+from typing import Optional, Literal, cast
 from http import HTTPStatus
 import yaml
 from flask import Flask, request, jsonify, Response
@@ -62,7 +62,7 @@ from src.lib.rrs_constants import (
     STARTED_STATE,
     MAIN_LOOP_WAIT_TIME_INTERVAL,
 )
-from src.lib.schema import hmnfdSubscribePostV2
+from src.lib.schema import hmnfdSubscribePostV2, hmnfdSubscriptionListArray
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
 from src.rrs.rms.rms_monitor import (
@@ -304,14 +304,14 @@ def check_and_create_hmnfd_subscription() -> None:
     post_url = f"https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
 
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-    data = None
+    data: hmnfdSubscriptionListArray|None = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             get_response = requests.get(
                 get_url, headers=headers, timeout=REQUESTS_TIMEOUT, verify=False
             )
             get_response.raise_for_status()
-            data = get_response.json()
+            data = cast(hmnfdSubscriptionListArray, get_response.json())
             break  # GET succeeded
         except (requests.exceptions.RequestException, ValueError) as e:
             app.logger.error(
