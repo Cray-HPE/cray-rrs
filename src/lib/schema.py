@@ -85,6 +85,9 @@ class NodeSchema(TypedDict):
     status: Literal["Ready", "NotReady", "Unknown", "up", "down", ""]
 
 
+StatusReady = Literal["Ready", "NotReady"]
+
+
 @final
 class StorageNodeSchema(TypedDict):
     """
@@ -93,7 +96,7 @@ class StorageNodeSchema(TypedDict):
     """
 
     name: str
-    status: Literal["Ready", "NotReady"]
+    status: StatusReady
     osds: dict[str, list[str]]
 
 
@@ -104,7 +107,7 @@ class CephNodeInfo(TypedDict):
     """
 
     name: str
-    status: Literal["Ready", "NotReady"]
+    status: StatusReady
     osds: list[NodeSchema]
 
 
@@ -461,7 +464,7 @@ class ceph_tree_node_datatype(TypedDict, total=False):
     type: str
     name: str
     children: list[int]
-    status: Literal["Ready", "NotReady"]
+    status: StatusReady
 
 
 @final
