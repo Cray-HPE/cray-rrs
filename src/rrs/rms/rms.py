@@ -180,6 +180,8 @@ def update_api_timestamp() -> (
     ]
 ):
     """
+    RMS OAS: #/paths/api-ts (post)
+
     Endpoint to update the API server start timestamp in dynamic configmap.
     Returns:
         tuple[str, int]: A success message and HTTP status code.
@@ -201,6 +203,8 @@ def handleSCN() -> tuple[
     Literal[HTTPStatus.BAD_REQUEST, HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.OK],
 ]:
     """
+    RMS OAS: #/paths/scn (post)
+
     Handle incoming POST requests from HMNFD (Hardware Management Notification Framework Daemon).
     This endpoint processes system component notifications and initiates monitoring accordingly.
     Returns:

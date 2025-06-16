@@ -38,7 +38,11 @@ class Version(Resource):  # type: ignore[misc,no-any-unimported]
     """Return RRS version information"""
 
     def get(self) -> tuple[VersionInfo, Literal[HTTPStatus.OK]]:
-        """Return RRS version information"""
+        """
+        Return RRS version information
+        
+        RMS/RRS OAS: #/paths/version (get)
+        """
 
         # Generate or fetch a unique log ID for traceability
         log_id = get_log_id()

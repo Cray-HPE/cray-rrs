@@ -44,7 +44,7 @@ class Ready(Resource):  # type: ignore[misc,no-any-unimported]
         """
         Return k8s readiness check
 
-        OAS: #/paths/healthz/ready (get)
+        RMS/RRS OAS: #/paths/healthz/ready (get)
         """
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/ready.GET", log_id)  # Log readiness check call
@@ -59,7 +59,7 @@ class Live(Resource):  # type: ignore[misc,no-any-unimported]
         """
         Return k8s liveness check
 
-        OAS: #/paths/healthz/live (get)
+        RMS/RRS OAS: #/paths/healthz/live (get)
         """
         log_id = get_log_id()  # Get unique log ID for tracing the request
         app.logger.debug("%s ++ healthz/live.GET", log_id)  # Log liveness check call
