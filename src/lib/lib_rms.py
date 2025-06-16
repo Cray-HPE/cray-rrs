@@ -49,9 +49,10 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.schema import (
     cephNodesResultType,
+    cephNodesStatusResultType,
     k8sNodesResultType,
-    CephNodeInfo,
-    NodeSchema,
+    CephNodeStatusInfo,
+    OSDStatusSchema,
     CriticalServiceCmDynamicType,
     slsEntryDataType,
     podInfoType,
@@ -536,7 +537,7 @@ class cephHelper:
         return cephTreeDataType(), cast(list[cephHostDataType], [])
 
     @staticmethod
-    def get_ceph_status() -> tuple[cephNodesResultType, bool]:
+    def get_ceph_status() -> tuple[cephNodesStatusResultType, bool]:
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
@@ -551,7 +552,7 @@ class cephHelper:
                 if "hostname" in host and "status" in host:
                     host_status_map[host["hostname"]] = host["status"]
 
-            final_output: cephNodesResultType = {}
+            final_output: cephNodesStatusResultType = {}
             failed_hosts: list[str] = []
 
             for item in ceph_tree.get("nodes", []):
@@ -560,7 +561,7 @@ class cephHelper:
 
                 # rack_name = item["name"]
 
-                storage_nodes: list[CephNodeInfo] = []
+                storage_nodes: list[CephNodeStatusInfo] = []
                 children = item.get("children")
                 nodes = ceph_tree.get("nodes")
                 if children is None or nodes is None:
@@ -591,7 +592,7 @@ class cephHelper:
                             if osd.get("id") in osd_ids and osd.get("type") == "osd"
                         ]
 
-                    osd_status_list: list[NodeSchema] = []
+                    osd_status_list: list[OSDStatusSchema] = []
                     for osd in osds:
                         osd_name = osd.get("name", "")
                         osd_status = osd.get("status", "")

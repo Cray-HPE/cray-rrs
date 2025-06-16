@@ -82,8 +82,26 @@ class NodeSchema(TypedDict):
     """
 
     name: str
-    status: Literal["Ready", "NotReady", "Unknown", "up", "down", ""]
+    status: Literal["Ready", "NotReady", "Unknown"]
+@final
+class OSDStatusSchema(TypedDict):
+    """
+    Schema for a node, including its name and status.
+    RRS OAS: #/components/schemas/OSDStatusSchema
+    """
 
+    name: str
+    status: Literal["Ready", "NotReady", ""]
+
+@final
+class OSDSchema(TypedDict):
+    """
+    Schema for a node, including its name and status.
+    RRS OAS: #/components/schemas/OSDSchema
+    """
+
+    name: str
+    status: Literal["up", "down"]
 
 StatusReady = Literal["Ready", "NotReady"]
 
@@ -108,9 +126,17 @@ class CephNodeInfo(TypedDict):
 
     name: str
     status: StatusReady
-    osds: list[NodeSchema]
+    osds: list[OSDSchema]
 
+@final
+class CephNodeStatusInfo(TypedDict):
+    """
+    Schema representing a node containing OSDs.
+    """
 
+    name: str
+    status: StatusReady
+    osds: list[OSDStatusSchema]
 @final
 class ManagementKubernetesSchema(TypedDict):
     """
@@ -136,6 +162,7 @@ class k8sNodes(TypedDict, total=False):
 # Mappings from zone names to k8sNodes
 type k8sNodesResultType = dict[str, k8sNodes]
 # Mappings from zone names to list[CephNodeInfo]
+type cephNodesStatusResultType = dict[str, list[CephNodeStatusInfo]]
 type cephNodesResultType = dict[str, list[CephNodeInfo]]
 
 

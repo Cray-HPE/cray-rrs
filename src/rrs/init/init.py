@@ -39,7 +39,7 @@ import yaml
 from src.rrs.rms.rms_statemanager import RMSState
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.schema import cephNodesResultType, NodeSchema
+from src.lib.schema import cephNodesStatusResultType, NodeSchema
 from src.lib.rrs_constants import (
     NAMESPACE,
     DYNAMIC_CM,
@@ -81,7 +81,7 @@ def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
 def zone_discovery() -> tuple[
     bool,
     k8s_return_type,
-    cephNodesResultType,
+    cephNodesStatusResultType,
 ]:
     """Retrieving zone information and status of k8s and Ceph nodes
     Returns:
@@ -93,7 +93,7 @@ def zone_discovery() -> tuple[
     try:
         status = True
         updated_k8s_data: k8s_return_type = defaultdict(list)
-        updated_ceph_data: cephNodesResultType = {}
+        updated_ceph_data: cephNodesStatusResultType = {}
         nodes = k8sHelper.get_k8s_nodes()
         logger.info("Retrieving zone information and status of k8s and CEPH nodes")
 
