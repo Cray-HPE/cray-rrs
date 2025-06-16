@@ -933,11 +933,11 @@ class criticalServicesHelper:
         service_name: str, service_namespace: str, service_type: str
     ) -> tuple[Optional[int], Optional[int], Optional[dict[str, str]]]:
         """
-        Fetch the status of a Kubernetes service (Deployment, StatefulSet, or DaemonSet).
+        Fetch the status of a Kubernetes service (Deployment, StatefulSet).
         Args:
             service_name (str): Name of the service.
             service_namespace (str): Namespace where the service is deployed.
-            service_type (str): Type of the service ("Deployment", "StatefulSet", or "DaemonSet").
+            service_type (str): Type of the service ("Deployment", "StatefulSet").
         Returns:
             tuple:
                 - desired replicas (int or None)
@@ -977,21 +977,6 @@ class criticalServicesHelper:
                     statefulset.status.replicas,
                     statefulset.status.ready_replicas,
                     statefulset.spec.selector.match_labels,
-                )
-            if service_type == "DaemonSet":
-                daemonset = apps_v1.read_namespaced_daemon_set(
-                    service_name, service_namespace
-                )
-                if (
-                    daemonset.status is None
-                    or daemonset.spec is None
-                    or daemonset.spec.selector is None
-                ):
-                    return None, None, None
-                return (
-                    daemonset.status.desired_number_scheduled,
-                    daemonset.status.number_ready,
-                    daemonset.spec.selector.match_labels,
                 )
             logger.warning("Unsupported service type: %s", service_type)
             return None, None, None

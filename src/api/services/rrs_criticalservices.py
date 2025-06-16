@@ -94,8 +94,8 @@ class CriticalServices:
 
         # Loop through the services and organize them by their namespace
         for name, details in services.items():
-            namespace = details.get("namespace")
-            service_type = details.get("type")
+            namespace = details["namespace"]
+            service_type = details["type"]
 
             # If namespace is not already in the result, add it
             if namespace and namespace not in result["namespace"]:
@@ -104,7 +104,7 @@ class CriticalServices:
             # Append the service name and type under the respective namespace
             if namespace:
                 result["namespace"][namespace].append(
-                    {"name": name, "type": service_type or ""}
+                    {"name": name, "type": service_type}
                 )
 
         # Log the successful completion of the service formatting process
@@ -171,12 +171,12 @@ class CriticalServices:
         # Build the result dictionary
         result: CriticalServiceDescribeSchema = {
             "critical_service": {
-                "Name": data["critical_service"].get("Name", ""),
-                "Namespace": data["critical_service"].get("Namespace", ""),
-                "Type": data["critical_service"].get("Type", ""),
-                "Configured_Instances": data["critical_service"].get(
+                "Name": data["critical_service"]["Name"],
+                "Namespace": data["critical_service"]["Namespace"],
+                "Type": data["critical_service"]["Type"],
+                "Configured_Instances": data["critical_service"][
                     "Configured_Instances"
-                ),
+                ],
             }
         }
         # Log the successful retrieval of the service details
@@ -407,31 +407,17 @@ class CriticalServicesStatus:
                 resource_methods = {
                     "Deployment": apps_v1.read_namespaced_deployment,
                     "StatefulSet": apps_v1.read_namespaced_stateful_set,
-                    "DaemonSet": apps_v1.read_namespaced_daemon_set,
                 }
 
                 # Check the resource type and retrieve the configuration for the service
                 if resource_type in resource_methods:
                     resource = resource_methods[resource_type](service_name, namespace)
                     # Retrieve configured instances (number of replicas or desired instances)
-                    if resource_type == "DaemonSet":
-                        configured_instances = (
-                            getattr(resource, "status", None)
-                            and hasattr(
-                                getattr(resource, "status"), "desired_number_scheduled"
-                            )
-                            and getattr(
-                                getattr(resource, "status"),
-                                "desired_number_scheduled",
-                                None,
-                            )
-                        ) or None
-                    else:  # Deployment or StatefulSet
-                        configured_instances = (
-                            getattr(resource, "spec", None)
-                            and hasattr(getattr(resource, "spec"), "replicas")
-                            and getattr(getattr(resource, "spec"), "replicas", None)
-                        ) or None
+                    configured_instances = (
+                        getattr(resource, "spec", None)
+                        and hasattr(getattr(resource, "spec"), "replicas")
+                        and getattr(getattr(resource, "spec"), "replicas", None)
+                    ) or None
 
             # Log the success of retrieving service details
             app.logger.info(

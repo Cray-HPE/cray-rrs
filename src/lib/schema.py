@@ -176,7 +176,7 @@ class CriticalServiceStatusItemSchema(TypedDict):
     """
 
     name: str
-    type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod"]
+    type: Literal["Deployment", "StatefulSet", "Pod"]
     status: Literal[
         "error",
         "Configured",
@@ -196,7 +196,7 @@ class CriticalServiceItemSchema(TypedDict):
     """
 
     name: str
-    type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod", ""]
+    type: Literal["Deployment", "StatefulSet"]
 
 
 @final
@@ -207,7 +207,7 @@ class CriticalServiceCmStaticSchema(TypedDict):
     """
 
     namespace: str
-    type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod"]
+    type: Literal["Deployment", "StatefulSet"]
 
 
 @final
@@ -227,7 +227,7 @@ class CriticalServiceCmDynamicSchema(TypedDict):
     """
 
     namespace: str
-    type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod"]
+    type: Literal["Deployment", "StatefulSet"]
     status: Literal[
         "error",
         "Configured",
@@ -310,7 +310,7 @@ class CriticalServiceDescribe(TypedDict):
 
     Name: str
     Namespace: str
-    Type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod", ""]
+    Type: Literal["Deployment", "StatefulSet"]
     Configured_Instances: int | None
 
 
@@ -323,7 +323,7 @@ class CriticalServiceStatusDescribe(TypedDict):
 
     Name: str
     Namespace: str
-    Type: Literal["Deployment", "DaemonSet", "StatefulSet", "Pod"]
+    Type: Literal["Deployment", "StatefulSet"]
     Status: Literal[
         "error",
         "Configured",

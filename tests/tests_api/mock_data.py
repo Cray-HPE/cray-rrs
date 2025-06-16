@@ -37,7 +37,7 @@ ERR_FILE = {"from_file": """{"error": "string indices must be integers"}"""}
 # This response will come from configMap
 MOCK_CRITICAL_SERVICES_RESPONSE: dict[str, CriticalServiceCmStaticSchema] = {
     "coredns": {"namespace": "kube-system", "type": "Deployment"},
-    "kube-proxy": {"namespace": "kube-system", "type": "DaemonSet"},
+    "lab-proxy": {"namespace": "lab-system", "type": "StatefulSet"},
 }
 
 # This response will come from configMap
@@ -48,9 +48,9 @@ MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC: dict[str, CriticalServiceCmDynamicSchem
         "status": "Configured",
         "balanced": "true",
     },
-    "kube-proxy": {
-        "namespace": "kube-system",
-        "type": "DaemonSet",
+    "lab-proxy": {
+        "namespace": "lab-system",
+        "type": "StatefulSet",
         "status": "PartiallyConfigured",
         "balanced": "false",
     },
@@ -63,9 +63,9 @@ MOCK_CRITICAL_SERVICES_UPDATE_FILE = """{
          "namespace": "abc",
          "type": "Deployment"
       },
-      "kube-proxy": {
-         "namespace": "kube-system",
-         "type": "DaemonSet"
+      "lab-proxy": {
+         "namespace": "lab-system",
+         "type": "StatefulSet"
       }
    }
 }"""
@@ -73,9 +73,9 @@ MOCK_CRITICAL_SERVICES_UPDATE_FILE = """{
 # Mock file to test existing services in the configmap
 MOCK_ALREADY_EXISTING_FILE = """{
    "critical_services": {
-      "kube-proxy": {
-         "namespace": "kube-system",
-         "type": "DaemonSet"
+      "lab-proxy": {
+         "namespace": "lab-system",
+         "type": "StatefulSet"
       }
    }
 }"""

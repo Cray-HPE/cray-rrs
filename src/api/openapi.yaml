@@ -242,7 +242,7 @@ paths:
         a critical_services property containing namespaces with arrays of service objects
         including:
           - name: the name of the service
-          - type: the service type (Deployment, StatefulSet, DaemonSet)
+          - type: the service type (Deployment, StatefulSet)
       operationId: getCriticalServices
       responses:
         '200':
@@ -273,9 +273,6 @@ paths:
                         rack-resiliency:
                           - name: k8s-zone-api
                             type: Deployment
-                        kube-system:
-                          - name: kube-multus-ds
-                            type: DaemonSet
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -366,7 +363,7 @@ paths:
         Returns the status of all critical services with distribution details.
         Response provides namespaces containing services with their status information including:
           - name: the name of the critical service
-          - type: the service type (Deployment, StatefulSet, DaemonSet)
+          - type: the service type (Deployment, StatefulSet)
           - status: the current status (e.g., Configured, PartiallyConfigured)
           - balanced: indicates whether the service is properly distributed across zones
       operationId: getAllCriticalServicesStatus
@@ -411,10 +408,6 @@ paths:
                         kube-system:
                           - name: coredns
                             type: Deployment
-                            status: Configured
-                            balanced: "true"
-                          - name: kube-multus-ds
-                            type: DaemonSet
                             status: Configured
                             balanced: "true"
                         rack-resiliency:
@@ -715,7 +708,6 @@ components:
           type: string
           enum:
             - Deployment
-            - DaemonSet
             - StatefulSet
             - Pod
             - ""
@@ -746,7 +738,7 @@ components:
           type: string
           description: The type of Kubernetes resource
           example: "Deployment"
-          enum: ["Deployment", "DaemonSet", "StatefulSet", "Pod"]
+          enum: ["Deployment", "StatefulSet"]
       additionalProperties: false
       required: [namespace, type]
 
@@ -780,7 +772,6 @@ components:
               type: string
               enum:
                 - Deployment
-                - DaemonSet
                 - StatefulSet
                 - Pod
                 - ""
@@ -804,7 +795,6 @@ components:
               type: string
               enum:
               - Deployment
-              - DaemonSet
               - StatefulSet
               - Pod
             Status:
@@ -860,7 +850,6 @@ components:
           type: string
           enum:
             - Deployment
-            - DaemonSet
             - StatefulSet
             - Pod
         status:
