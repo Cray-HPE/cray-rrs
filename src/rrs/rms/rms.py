@@ -62,6 +62,7 @@ from src.lib.rrs_constants import (
     STARTED_STATE,
     MAIN_LOOP_WAIT_TIME_INTERVAL,
 )
+from src.lib.schema import hmnfdSubscribePostV2
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
 from src.rrs.rms.rms_monitor import (
@@ -343,10 +344,10 @@ def check_and_create_hmnfd_subscription() -> None:
             app.logger.error("Management xnames are empty or fetch failed")
             return
         for attempt in range(1, MAX_RETRIES + 1):
-            post_data = {
+            post_data: hmnfdSubscribePostV2 = {
                 "Components": subscribing_components,
                 "Roles": ["Management"],
-                "States": ["Ready", "on", "off", "empty", "unknown", "populated"],
+                "States": ["Ready", "On", "Off", "Empty", "Unknown", "Populated"],
                 "Url": "http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551/scn",
             }
             try:
