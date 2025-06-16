@@ -538,7 +538,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/VersionResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
@@ -546,48 +546,59 @@ components:
     ZonesResponse:
       type: object
       required: [Zones]
+      description: Response containing all configured zones in the system with their associated node configurations
       properties:
         Zones:
           type: array
+          description: Array of zone configurations showing Kubernetes topology and CEPH zone details
           items:
             $ref: '#/components/schemas/ZoneItemSchema'
     ZoneItemSchema:
       type: object
       required:
         - Zone_Name
+      description: Configuration details for a single zone including Kubernetes topology and CEPH zone information
       properties:
         Zone_Name:
           type: string
+          description: Unique identifier name for the zone
         Kubernetes_Topology_Zone:
           $ref: '#/components/schemas/KubernetesTopologyZoneSchema'
         CEPH_Zone:
           $ref: '#/components/schemas/CephZoneSchema'
     KubernetesTopologyZoneSchema:
       type: object
+      description: Kubernetes topology zone configuration containing master and worker node assignments
       properties:
         Management_Master_Nodes:
           type: array
+          description: List of Kubernetes master node names assigned to this zone
           items:
             type: string
         Management_Worker_Nodes:
           type: array
+          description: List of Kubernetes worker node names assigned to this zone
           items:
             type: string
     CephZoneSchema:
       type: object
       required: [Management_Storage_Nodes]
+      description: CEPH zone configuration containing storage node assignments
       properties:
         Management_Storage_Nodes:
           type: array
+          description: List of CEPH storage node names assigned to this zone
           items:
             type: string
     ZoneDetailResponse:
       type: object
       required:
         - Zone_Name
+      description: Detailed information about a specific zone including node counts, types, and individual node status
       properties:
         Zone_Name:
           type: string
+          description: Name of the zone being described
         Management_Master:
           $ref: '#/components/schemas/ManagementKubernetesSchema'
         Management_Worker:
@@ -600,16 +611,20 @@ components:
         - Count
         - Type
         - Nodes
+      description: Management information for Kubernetes nodes (master or worker) including count and individual node details
       properties:
         Count:
           type: integer
           minimum: 1
+          description: Total number of nodes of this type in the zone
         Type:
           type: string
+          description: Type classification indicating this is a Kubernetes topology zone
           enum:
             - "Kubernetes_Topology_Zone"
         Nodes:
           type: array
+          description: Detailed information about each individual node
           items:
             $ref: '#/components/schemas/NodeSchema'
     ManagementStorageSchema:
@@ -618,26 +633,33 @@ components:
         - Count
         - Type
         - Nodes
+      description: Management information for CEPH storage nodes including count and individual node details with OSD information
       properties:
         Count:
           type: integer
           minimum: 1
+          description: Total number of storage nodes in the zone
         Type:
           type: string
+          description: Type classification indicating this is a CEPH zone
           enum:
             - "CEPH_Zone"
         Nodes:
           type: array
+          description: Detailed information about each storage node including OSD status
           items:
             $ref: '#/components/schemas/StorageNodeSchema'
     NodeSchema:
       type: object
       required: [name, status]
+      description: Basic node information including name and operational status
       properties:
         name:
           type: string
+          description: Unique name identifier for the node
         status:
           type: string
+          description: Current operational status of the node
           enum:
             - Ready
             - NotReady
@@ -648,27 +670,34 @@ components:
     StorageNodeSchema:
       type: object
       required: [name, status, osds]
+      description: Storage node information including CEPH OSD (Object Storage Daemon) status details
       properties:
         name:
           type: string
+          description: Unique name identifier for the storage node
         status:
           type: string
+          description: Current operational status of the storage node
           enum:
             - Ready
             - NotReady
         osds:
           type: object
+          description: Object Storage Daemon status information showing which OSDs are operational
           properties:
             up:
               type: array
+              description: List of OSD identifiers that are currently operational
               items:
                 type: string
             down:
               type: array
+              description: List of OSD identifiers that are currently non-operational
               items:
                 type: string
     ServiceStatus:
       type: string
+      description: Current operational status of a critical service indicating its configuration and runtime state
       enum:
         - error
         - Configured
@@ -678,6 +707,7 @@ components:
         - Unconfigured
     ServiceBalanced:
       type: string
+      description: Indicates whether a service is properly distributed across zones for high availability
       enum:
         - "true"
         - "false"
@@ -685,13 +715,16 @@ components:
     CriticalServicesListSchema:
       type: object
       required: [critical_services]
+      description: Response containing all critical services organized by namespace
       properties:
         critical_services:
           type: object
           required: [namespace]
+          description: Critical services grouped by their Kubernetes namespaces
           properties:
             namespace:
               type: object
+              description: Mapping of namespace names to their contained critical services
               additionalProperties:
                 type: array
                 items:
@@ -701,11 +734,14 @@ components:
       required:
         - name
         - type
+      description: Basic information about a critical service including its name and Kubernetes resource type
       properties:
         name:
           type: string
+          description: Name of the critical service
         type:
           type: string
+          description: Kubernetes resource type of the service
           enum:
             - Deployment
             - StatefulSet
@@ -713,14 +749,11 @@ components:
             - ""
     CriticalServiceCmStaticType:
       type: object
-      description: |
-        A collection of critical services that need to be monitored for resiliency.
-        Each service is identified by name and contains namespace and type information.
+      description: Configuration payload for updating critical services in the system. Contains service definitions that need to be monitored for resiliency
       properties:
         critical_services:
           type: object
-          description: |
-            Mapping from service names to service configurations.
+          description: Mapping from service names to their configuration details for monitoring
           additionalProperties:
             $ref: '#/components/schemas/CriticalServiceCmStaticSchema'
       additionalProperties: false
@@ -728,7 +761,7 @@ components:
       
     CriticalServiceCmStaticSchema:
       type: object
-      description: Configuration details for a critical service
+      description: Static configuration details for a critical service that needs to be monitored
       properties:
         namespace:
           type: string
@@ -736,7 +769,7 @@ components:
           example: "rack-resiliency"
         type:
           type: string
-          description: The type of Kubernetes resource
+          description: The type of Kubernetes resource that implements this service
           example: "Deployment"
           enum: ["Deployment", "StatefulSet"]
       additionalProperties: false
@@ -745,31 +778,40 @@ components:
     CriticalServiceUpdateSchema:
       type: object
       required: [Update, Successfully_Added_Services, Already_Existing_Services]
+      description: Response indicating the result of updating critical services configuration
       properties:
         Update:
           type: string
+          description: Overall status of the update operation
         Successfully_Added_Services:
           type: array
+          description: List of service names that were successfully added to the configuration
           items:
             type: string
         Already_Existing_Services:
           type: array
+          description: List of service names that were already present in the configuration
           items:
             type: string
     CriticalServiceDescribeSchema:
       type: object
       required: [critical_service]
+      description: Summarized view of a critical service without runtime details
       properties:
         critical_service:
           type: object
           required: [Name, Namespace, Type, Configured_Instances]
+          description: Basic configuration information about the critical service
           properties:
             Name:
               type: string
+              description: Name of the critical service
             Namespace:
               type: string
+              description: Kubernetes namespace where the service is deployed
             Type:
               type: string
+              description: Kubernetes resource type of the service
               enum:
                 - Deployment
                 - StatefulSet
@@ -779,20 +821,26 @@ components:
               type: integer
               minimum: 1
               nullable: true
+              description: Number of instances configured for this service (replicas for Deployments/StatefulSets, pod count for Pods)
     CriticalServiceStatusDescribeSchema:
       type: object
       required: [critical_service]
+      description: Detailed status information for a critical service including runtime details and pod information
       properties:
         critical_service:
           type: object
           required: [Name, Namespace, Type, Status, Balanced, Configured_Instances, Currently_Running_Instances, Pods]
+          description: Complete status information including configuration and runtime details
           properties:
             Name:
               type: string
+              description: Name of the critical service
             Namespace:
               type: string
+              description: Kubernetes namespace where the service is deployed
             Type:
               type: string
+              description: Kubernetes resource type of the service
               enum:
               - Deployment
               - StatefulSet
@@ -805,23 +853,30 @@ components:
               type: integer
               minimum: 1
               nullable: true
+              description: Number of instances configured for this service
             Currently_Running_Instances:
               type: integer
               minimum: 0
+              description: Number of instances currently running and healthy
             Pods:
               type: array
+              description: Detailed information about each pod instance of this service
               items:
                 $ref: '#/components/schemas/PodSchema'
     PodSchema:
       type: object
       required: [Name, Node, Status, Zone]
+      description: Information about an individual pod instance including its location and status
       properties:
         Name:
           type: string
+          description: Unique name of the pod instance
         Node:
           type: string
+          description: Kubernetes node where the pod is scheduled to run
         Status:
           type: string
+          description: Current operational status of the pod
           enum:
             - Running
             - Pending
@@ -829,25 +884,32 @@ components:
             - Terminating
         Zone:
           type: string
+          description: Zone where the pod is located based on its assigned node
     CriticalServicesStatusListSchema:
       type: object
+      description: Status overview of all critical services organized by namespace, showing their operational state and distribution
       properties:
         critical_services:
           type: object
+          description: Critical services grouped by namespace with their status information
           properties:
             namespace:
               type: object
+              description: Mapping of namespace names to their contained critical services with status
               additionalProperties:
                 type: array
                 items:
                   $ref: '#/components/schemas/CriticalServiceStatusItemSchema'
     CriticalServiceStatusItemSchema:
       type: object
+      description: Status summary for a critical service showing its operational state and distribution across zones
       properties:
         name:
           type: string
+          description: Name of the critical service
         type:
           type: string
+          description: Kubernetes resource type of the service
           enum:
             - Deployment
             - StatefulSet
@@ -856,21 +918,34 @@ components:
           $ref: '#/components/schemas/ServiceStatus'
         balanced:
           $ref: '#/components/schemas/ServiceBalanced'
+    VersionResponse:
+      type: object
+      required: [version]
+      description: Version information for the Rack Resiliency Service
+      properties:
+        version:
+          type: string
+          description: The current version of the RRS Service
+          example: "1.0.0"    
     ErrorDict:
       type: object
       required: [error]
+      description: Error response containing details about what went wrong
       properties:
         error:
           type: string
+          description: Human-readable error message describing the failure
     InformationDict:
       type: object
-      required: [Information]      
+      required: [Information]
+      description: Informational response providing context about the request or system state
       properties:
         Information:
           type: string
+          description: Human-readable informational message
     EmptyDict:
       type: object
-      description: Empty object returned by health check endpoints
+      description: Empty response object typically returned by health check endpoints to indicate successful operation
       additionalProperties: false
   responses:
     BadRequest:
