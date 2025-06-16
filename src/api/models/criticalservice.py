@@ -114,7 +114,7 @@ class CriticalServiceHelper:
             # Check if any owner reference matches our criteria
             is_matching = any(
                 owner.kind == expected_owner_kind
-                and owner.name.rsplit("-", 1)[0] == service_name
+                and service_name in (owner.name, owner.name.rsplit("-", 1)[0])
                 for owner in pod.metadata.owner_references
             )
 
