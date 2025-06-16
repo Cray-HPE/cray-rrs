@@ -304,7 +304,7 @@ def check_and_create_hmnfd_subscription() -> None:
     post_url = f"https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
 
     headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
-    data: hmnfdSubscriptionListArray|None = None
+    data: hmnfdSubscriptionListArray | None = None
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             get_response = requests.get(
