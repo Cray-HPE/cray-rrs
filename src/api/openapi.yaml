@@ -664,9 +664,6 @@ components:
             - Ready
             - NotReady
             - Unknown
-            - up
-            - down
-            - ""
     StorageNodeSchema:
       type: object
       required: [name, status, osds]
