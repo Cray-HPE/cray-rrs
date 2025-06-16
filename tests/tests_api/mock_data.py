@@ -28,20 +28,20 @@ This module contains mock responses and test data used across various test cases
 for testing Kubernetes and Ceph zone mapping functionality.
 """
 
-from src.api.models.criticalservice import CriticalServiceType
+from src.lib.schema import CriticalServiceCmStaticSchema, CriticalServiceCmDynamicSchema
 from src.lib.schema import k8sNodesResultType, cephNodesResultType
 
 
 ERR_FILE = {"from_file": """{"error": "string indices must be integers"}"""}
 
 # This response will come from configMap
-MOCK_CRITICAL_SERVICES_RESPONSE: CriticalServiceType = {
+MOCK_CRITICAL_SERVICES_RESPONSE: dict[str, CriticalServiceCmStaticSchema] = {
     "coredns": {"namespace": "kube-system", "type": "Deployment"},
     "kube-proxy": {"namespace": "kube-system", "type": "DaemonSet"},
 }
 
 # This response will come from configMap
-MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC: CriticalServiceType = {
+MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC: dict[str, CriticalServiceCmDynamicSchema] = {
     "coredns": {
         "namespace": "kube-system",
         "type": "Deployment",
