@@ -249,7 +249,7 @@ class CriticalServiceCmDynamicType(TypedDict):
 class CriticalServicesItem(TypedDict):
     """
     Schema for critical services grouped by namespace.
-    OAS: Part of #/components/schemas/CriticalServiceItemSchema
+    OAS: Part of #/components/schemas/CriticalServicesListSchema
     """
 
     namespace: dict[str, list[CriticalServiceItemSchema]]
