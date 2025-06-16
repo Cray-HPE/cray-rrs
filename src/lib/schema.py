@@ -88,7 +88,7 @@ class NodeSchema(TypedDict):
 @final
 class OSDStatusSchema(TypedDict):
     """
-    Schema for a node, including its name and status.
+    Schema for an OSD, including its name and status.
     RRS OAS: #/components/schemas/OSDStatusSchema
     """
 
@@ -99,7 +99,7 @@ class OSDStatusSchema(TypedDict):
 @final
 class OSDSchema(TypedDict):
     """
-    Schema for a node, including its name and status.
+    Schema for an OSD, including its name and status.
     RRS OAS: #/components/schemas/OSDSchema
     """
 
