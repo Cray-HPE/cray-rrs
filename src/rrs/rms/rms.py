@@ -508,4 +508,3 @@ if __name__ == "__main__":
             else:
                 app.logger.info("Not running main loop as monitoring is running")
                 time.sleep(MAIN_LOOP_WAIT_TIME_INTERVAL)
-                # Development for future scope
