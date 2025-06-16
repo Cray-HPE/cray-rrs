@@ -695,6 +695,13 @@ components:
               description: List of OSD identifiers that are currently non-operational
               items:
                 type: string
+    ServiceBalanced:
+      type: string
+      description: Indicates whether a service is properly distributed across zones for high availability
+      enum:
+        - "true"
+        - "false"
+        - "NA"
     ServiceStatus:
       type: string
       description: Current operational status of a critical service indicating its configuration and runtime state
@@ -705,13 +712,12 @@ components:
         - NotConfigured
         - Running
         - Unconfigured
-    ServiceBalanced:
+    ServiceType:
       type: string
-      description: Indicates whether a service is properly distributed across zones for high availability
-      enum:
-        - "true"
-        - "false"
-        - "NA"
+      description: Kubernetes resource type of the service
+        enum:
+          - Deployment
+          - StatefulSet
     CriticalServicesListSchema:
       type: object
       required: [critical_services]
@@ -740,11 +746,7 @@ components:
           type: string
           description: Name of the critical service
         type:
-          type: string
-          description: Kubernetes resource type of the service
-          enum:
-            - Deployment
-            - StatefulSet
+          $ref: '#/components/schemas/ServiceType'
     CriticalServiceCmStaticType:
       type: object
       description: Configuration payload for updating critical services in the system. Contains service definitions that need to be monitored for resiliency
@@ -766,10 +768,7 @@ components:
           description: The Kubernetes namespace where the service is deployed
           example: "rack-resiliency"
         type:
-          type: string
-          description: The type of Kubernetes resource that implements this service
-          example: "Deployment"
-          enum: ["Deployment", "StatefulSet"]
+          $ref: '#/components/schemas/ServiceType'
       additionalProperties: false
       required: [namespace, type]
 
@@ -808,11 +807,7 @@ components:
               type: string
               description: Kubernetes namespace where the service is deployed
             type:
-              type: string
-              description: Kubernetes resource type of the service
-              enum:
-                - Deployment
-                - StatefulSet
+              $ref: '#/components/schemas/ServiceType'
             configured_instances:
               type: integer
               minimum: 1
@@ -835,11 +830,7 @@ components:
               type: string
               description: Kubernetes namespace where the service is deployed
             type:
-              type: string
-              description: Kubernetes resource type of the service
-              enum:
-              - Deployment
-              - StatefulSet
+              $ref: '#/components/schemas/ServiceType'
             status:
               $ref: '#/components/schemas/ServiceStatus'
             balanced:
@@ -903,11 +894,7 @@ components:
           type: string
           description: Name of the critical service
         type:
-          type: string
-          description: Kubernetes resource type of the service
-          enum:
-            - Deployment
-            - StatefulSet
+          $ref: '#/components/schemas/ServiceType'
         status:
           $ref: '#/components/schemas/ServiceStatus'
         balanced:

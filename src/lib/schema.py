@@ -175,6 +175,7 @@ ServiceStatus = Literal[
     "Running",
     "Unconfigured",
 ]
+# RRS OAS: #/components/schemas/ServiceType
 ServiceType = Literal["Deployment", "StatefulSet"]
 
 
