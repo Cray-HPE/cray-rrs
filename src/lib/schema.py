@@ -35,7 +35,7 @@ from typing import TypedDict, Literal, final, Required, NotRequired, NamedTuple
 class KubernetesTopologyZoneSchema(TypedDict, total=False):
     """
     Schema for Kubernetes topology zone, including master and worker nodes.
-    OAS: #/components/schemas/KubernetesTopologyZoneSchema
+    RRS OAS: #/components/schemas/KubernetesTopologyZoneSchema
     """
 
     Management_Master_Nodes: list[str]
@@ -46,7 +46,7 @@ class KubernetesTopologyZoneSchema(TypedDict, total=False):
 class CephZoneSchema(TypedDict):
     """
     Schema for Ceph zone, including storage nodes.
-    OAS: #/components/schemas/CephZoneSchema
+    RRS OAS: #/components/schemas/CephZoneSchema
     """
 
     Management_Storage_Nodes: list[str]
@@ -56,7 +56,7 @@ class CephZoneSchema(TypedDict):
 class ZoneItemSchema(TypedDict, total=False):
     """
     Schema for a single zone item, including its name and associated zones.
-    OAS: #/components/schemas/ZoneItemSchema
+    RRS OAS: #/components/schemas/ZoneItemSchema
     """
 
     Zone_Name: Required[str]
@@ -68,7 +68,7 @@ class ZoneItemSchema(TypedDict, total=False):
 class ZoneListSchema(TypedDict):
     """
     Schema for a list of zones.
-    OAS: #/components/schemas/ZonesResponse
+    RRS OAS: #/components/schemas/ZonesResponse
     """
 
     Zones: list[ZoneItemSchema]
@@ -78,7 +78,7 @@ class ZoneListSchema(TypedDict):
 class NodeSchema(TypedDict):
     """
     Schema for a node, including its name and status.
-    OAS: #/components/schemas/NodeSchema
+    RRS OAS: #/components/schemas/NodeSchema
     """
 
     name: str
@@ -89,7 +89,7 @@ class NodeSchema(TypedDict):
 class StorageNodeSchema(TypedDict):
     """
     Schema for a storage node, including its name, status, and OSDs.
-    OAS: #/components/schemas/StorageNodeSchema
+    RRS OAS: #/components/schemas/StorageNodeSchema
     """
 
     name: str
@@ -112,7 +112,7 @@ class CephNodeInfo(TypedDict):
 class ManagementKubernetesSchema(TypedDict):
     """
     Schema for management master or worker nodes in a Kubernetes topology zone.
-    OAS: #/components/schemas/ManagementKubernetesSchema
+    RRS OAS: #/components/schemas/ManagementKubernetesSchema
     """
 
     Count: int
@@ -140,7 +140,7 @@ type cephNodesResultType = dict[str, list[CephNodeInfo]]
 class ManagementStorageSchema(TypedDict):
     """
     Schema for management storage nodes in a Ceph zone.
-    OAS: #/components/schemas/ManagementStorageSchema
+    RRS OAS: #/components/schemas/ManagementStorageSchema
     """
 
     Count: int
@@ -152,7 +152,7 @@ class ManagementStorageSchema(TypedDict):
 class ZoneDescribeSchema(TypedDict, total=False):
     """
     Schema for describing a zone, including its name and management details.
-    OAS: #/components/schemas/ZoneDetailResponse
+    RRS OAS: #/components/schemas/ZoneDetailResponse
     """
 
     Zone_Name: Required[str]
@@ -164,7 +164,7 @@ class ZoneDescribeSchema(TypedDict, total=False):
 # Critical Service Schemas
 ################################################
 
-# OAS: #/components/schemas/ServiceBalanced
+# RRS OAS: #/components/schemas/ServiceBalanced
 ServiceBalanced = Literal["true", "false", "NA"]
 ServiceType = Literal["Deployment", "StatefulSet"]
 
@@ -173,7 +173,7 @@ ServiceType = Literal["Deployment", "StatefulSet"]
 class CriticalServiceStatusItemSchema(TypedDict):
     """
     Schema for a critical service entry, including its name, type, and status, balanced.
-    OAS: #/components/schemas/CriticalServiceStatusItemSchema
+    RRS OAS: #/components/schemas/CriticalServiceStatusItemSchema
     """
 
     name: str
@@ -193,7 +193,7 @@ class CriticalServiceStatusItemSchema(TypedDict):
 class CriticalServiceItemSchema(TypedDict):
     """
     Schema for a critical service entry, including its name and type.
-    OAS: #/components/schemas/CriticalServiceItemSchema
+    RRS OAS: #/components/schemas/CriticalServiceItemSchema
     """
 
     name: str
@@ -204,7 +204,7 @@ class CriticalServiceItemSchema(TypedDict):
 class CriticalServiceCmStaticSchema(TypedDict):
     """
     Schema for a critical service configuration in static ConfigMap.
-    OAS: #/components/schemas/CriticalServiceCmStaticSchema
+    RRS OAS: #/components/schemas/CriticalServiceCmStaticSchema
     """
 
     namespace: str
@@ -215,7 +215,7 @@ class CriticalServiceCmStaticSchema(TypedDict):
 class CriticalServiceCmStaticType(TypedDict):
     """
     Schema for critical services in static ConfigMap.
-    OAS: #/components/schemas/CriticalServiceCmStaticType
+    RRS OAS: #/components/schemas/CriticalServiceCmStaticType
     """
 
     critical_services: dict[str, CriticalServiceCmStaticSchema]
@@ -273,7 +273,7 @@ class CriticalServicesStatusItem(TypedDict):
 class CriticalServicesListSchema(TypedDict):
     """
     Schema for a list of critical services.
-    OAS: #/components/schemas/CriticalServicesListSchema
+    RRS OAS: #/components/schemas/CriticalServicesListSchema
     """
 
     critical_services: CriticalServicesItem
@@ -283,7 +283,7 @@ class CriticalServicesListSchema(TypedDict):
 class CriticalServicesStatusListSchema(TypedDict):
     """
     Schema for a list of critical services.
-    OAS: #/components/schemas/CriticalServicesStatusListSchema
+    RRS OAS: #/components/schemas/CriticalServicesStatusListSchema
     """
 
     critical_services: CriticalServicesStatusItem
@@ -293,7 +293,7 @@ class CriticalServicesStatusListSchema(TypedDict):
 class PodSchema(TypedDict):
     """
     Schema for a pod, including its name, status, node, and zone.
-    OAS: #/components/schemas/PodSchema
+    RRS OAS: #/components/schemas/PodSchema
     """
 
     name: str
@@ -343,7 +343,7 @@ class CriticalServiceStatusDescribe(TypedDict):
 class CriticalServiceDescribeSchema(TypedDict):
     """
     Schema for describing a critical service.
-    OAS: #/components/schemas/CriticalServiceDescribeSchema
+    RRS OAS: #/components/schemas/CriticalServiceDescribeSchema
     """
 
     critical_service: CriticalServiceDescribe
@@ -353,7 +353,7 @@ class CriticalServiceDescribeSchema(TypedDict):
 class CriticalServiceStatusDescribeSchema(TypedDict):
     """
     Schema for describing a critical service.
-    OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
+    RRS OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
     """
 
     critical_service: CriticalServiceStatusDescribe
@@ -363,7 +363,7 @@ class CriticalServiceStatusDescribeSchema(TypedDict):
 class CriticalServiceUpdateSchema(TypedDict):
     """
     Schema for response to updating critical services, including added and existing services.
-    OAS: #/components/schemas/CriticalServiceUpdateSchema
+    RRS OAS: #/components/schemas/CriticalServiceUpdateSchema
     """
 
     Update: str
@@ -376,7 +376,7 @@ class CriticalServiceUpdateSchema(TypedDict):
 class ErrorDict(TypedDict):
     """
     Schema for error responses.
-    OAS: #/components/schemas/ErrorDict
+    RRS OAS: #/components/schemas/ErrorDict
     """
 
     error: str
@@ -386,7 +386,7 @@ class ErrorDict(TypedDict):
 class InformationDict(TypedDict):
     """
     Schema for informational responses.
-    OAS: #/components/schemas/InformationDict
+    RRS OAS: #/components/schemas/InformationDict
     """
 
     Information: str
@@ -526,13 +526,13 @@ class EmptyDict(TypedDict):
     """
     The API spec dictates an empty dict response for calls to the Healthz endpoints
     A final TypedDict with no keys covers this
-    OAS: #/components/schemas/EmptyDict
+    RMS/RRS OAS: #/components/schemas/EmptyDict
     """
 
 
 @final
 class VersionInfo(TypedDict):
     """
-    OAS: #/components/schemas/VersionSchema
+    RMS/RRS OAS: #/components/schemas/VersionSchema
     """
     version: str
