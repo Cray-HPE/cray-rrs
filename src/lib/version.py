@@ -30,13 +30,14 @@ from http import HTTPStatus
 from flask import current_app as app
 from flask_restful import Resource
 from src.lib.rrs_logging import get_log_id
+from src.lib.schema import VersionInfo
 
 
 # Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
 class Version(Resource):  # type: ignore[misc,no-any-unimported]
     """Return RRS version information"""
 
-    def get(self) -> tuple[dict[str, str], Literal[HTTPStatus.OK]]:
+    def get(self) -> tuple[VersionInfo, Literal[HTTPStatus.OK]]:
         """Return RRS version information"""
 
         # Generate or fetch a unique log ID for traceability
@@ -44,9 +45,7 @@ class Version(Resource):  # type: ignore[misc,no-any-unimported]
         app.logger.info("%s ++ version.GET", log_id)
 
         # Construct the version response from Flask config
-        return_value = {
-            "version": app.config["VERSION"],
-        }
+        return_value = VersionInfo(version=app.config["VERSION"])
 
         # Log the constructed response for debugging
         app.logger.debug("%s Returning json response: %s", log_id, return_value)

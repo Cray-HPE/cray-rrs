@@ -528,3 +528,11 @@ class EmptyDict(TypedDict):
     A final TypedDict with no keys covers this
     OAS: #/components/schemas/EmptyDict
     """
+
+
+@final
+class VersionInfo(TypedDict):
+    """
+    OAS: #/components/schemas/VersionSchema
+    """
+    version: str

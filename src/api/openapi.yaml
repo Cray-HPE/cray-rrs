@@ -538,7 +538,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VersionResponse'
+                $ref: '#/components/schemas/VersionSchema'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
@@ -918,7 +918,7 @@ components:
           $ref: '#/components/schemas/ServiceStatus'
         balanced:
           $ref: '#/components/schemas/ServiceBalanced'
-    VersionResponse:
+    VersionSchema:
       type: object
       required: [version]
       description: Version information for the Rack Resiliency Service
