@@ -129,7 +129,7 @@ class ZoneTopologyService:
         # Parsing the data
         k8s_zones = parsed_data["zone"]["k8s_zones"]
 
-        zone_mapping = k8sNodesResultType()
+        zone_mapping: k8sNodesResultType = {}
 
         for zone_name, nodes in k8s_zones.items():
             zone_mapping[zone_name] = {"masters": [], "workers": []}
