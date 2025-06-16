@@ -83,6 +83,8 @@ class NodeSchema(TypedDict):
 
     name: str
     status: Literal["Ready", "NotReady", "Unknown"]
+
+
 @final
 class OSDStatusSchema(TypedDict):
     """
@@ -93,6 +95,7 @@ class OSDStatusSchema(TypedDict):
     name: str
     status: Literal["Ready", "NotReady", ""]
 
+
 @final
 class OSDSchema(TypedDict):
     """
@@ -102,6 +105,7 @@ class OSDSchema(TypedDict):
 
     name: str
     status: Literal["up", "down"]
+
 
 StatusReady = Literal["Ready", "NotReady"]
 
@@ -128,6 +132,7 @@ class CephNodeInfo(TypedDict):
     status: StatusReady
     osds: list[OSDSchema]
 
+
 @final
 class CephNodeStatusInfo(TypedDict):
     """
@@ -137,6 +142,8 @@ class CephNodeStatusInfo(TypedDict):
     name: str
     status: StatusReady
     osds: list[OSDStatusSchema]
+
+
 @final
 class ManagementKubernetesSchema(TypedDict):
     """
