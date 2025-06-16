@@ -715,9 +715,9 @@ components:
     ServiceType:
       type: string
       description: Kubernetes resource type of the service
-        enum:
-          - Deployment
-          - StatefulSet
+      enum:
+        - Deployment
+        - StatefulSet
     CriticalServicesListSchema:
       type: object
       required: [critical_services]
