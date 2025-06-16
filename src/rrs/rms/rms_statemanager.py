@@ -30,12 +30,12 @@ management of state transitions for the Rack Resiliency Service (RRS) monitoring
 """
 
 import threading
-from enum import Enum
+from enum import StrEnum
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import NAMESPACE, DYNAMIC_CM
 
 
-class RMSState(Enum):
+class RMSState(StrEnum):
     """Enum representing the states of the Rack Resiliency Service (RRS)."""
 
     READY = "Ready"
