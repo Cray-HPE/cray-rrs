@@ -1039,7 +1039,7 @@ class criticalServicesHelper:
                 logger.warning("Failed to fetch pods, returning original services data")
                 return services_data
 
-            critical_services = services_data.get("critical_services", {})
+            critical_services = services_data["critical_services"]
             logger.info("Number of critical services are - %d", len(critical_services))
             imbalanced_services: list[str] = []
             unconfigured_services: list[str] = []
