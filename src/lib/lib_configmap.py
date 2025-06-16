@@ -305,7 +305,7 @@ class ConfigMapHelper:
 
         except client.exceptions.ApiException as e:
             logger.exception("[%s] API error fetching ConfigMap", log_id)
-            return {"error": f"API error: {str(e)}"}
+            return {"error": f"API error: {e}"}
         except Exception as e:
             logger.exception("[%s] Unexpected error fetching ConfigMap", log_id)
-            return {"error": f"Unexpected error: {str(e)}"}
+            return {"error": f"Unexpected error: {e}"}
