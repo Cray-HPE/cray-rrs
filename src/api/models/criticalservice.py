@@ -149,10 +149,10 @@ class CriticalServiceHelper:
 
             result.append(
                 {
-                    "Name": pod.metadata.name,
-                    "Status": pod_status if pod_status else "Unknown",
-                    "Node": node_name,
-                    "Zone": zone,
+                    "name": pod.metadata.name,
+                    "status": pod_status if pod_status else "Unknown",
+                    "node": node_name,
+                    "zone": zone,
                 }
             )
 

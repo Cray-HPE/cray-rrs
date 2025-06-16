@@ -166,6 +166,7 @@ class ZoneDescribeSchema(TypedDict, total=False):
 
 # OAS: #/components/schemas/ServiceBalanced
 ServiceBalanced = Literal["true", "false", "NA"]
+ServiceType = Literal["Deployment", "StatefulSet"]
 
 
 @final
@@ -196,7 +197,7 @@ class CriticalServiceItemSchema(TypedDict):
     """
 
     name: str
-    type: Literal["Deployment", "StatefulSet"]
+    type: ServiceType
 
 
 @final
@@ -207,7 +208,7 @@ class CriticalServiceCmStaticSchema(TypedDict):
     """
 
     namespace: str
-    type: Literal["Deployment", "StatefulSet"]
+    type: ServiceType
 
 
 @final
@@ -227,7 +228,7 @@ class CriticalServiceCmDynamicSchema(TypedDict):
     """
 
     namespace: str
-    type: Literal["Deployment", "StatefulSet"]
+    type: ServiceType
     status: Literal[
         "error",
         "Configured",
@@ -295,10 +296,10 @@ class PodSchema(TypedDict):
     OAS: #/components/schemas/PodSchema
     """
 
-    Name: str
-    Status: Literal["Running", "Pending", "Failed", "Terminating"]
-    Node: str
-    Zone: str
+    name: str
+    status: Literal["Running", "Pending", "Failed", "Terminating"]
+    node: str
+    zone: str
 
 
 @final
@@ -308,10 +309,10 @@ class CriticalServiceDescribe(TypedDict):
     OAS: Part of #/components/schemas/CriticalServiceDescribeSchema
     """
 
-    Name: str
-    Namespace: str
-    Type: Literal["Deployment", "StatefulSet"]
-    Configured_Instances: int | None
+    name: str
+    namespace: str
+    type: ServiceType
+    configured_instances: int | None
 
 
 @final
@@ -321,10 +322,10 @@ class CriticalServiceStatusDescribe(TypedDict):
     OAS: Part of #/components/schemas/CriticalServiceStatusDescribeSchema
     """
 
-    Name: str
-    Namespace: str
-    Type: Literal["Deployment", "StatefulSet"]
-    Status: Literal[
+    name: str
+    namespace: str
+    type: Literal["Deployment", "StatefulSet"]
+    status: Literal[
         "error",
         "Configured",
         "PartiallyConfigured",
@@ -332,10 +333,10 @@ class CriticalServiceStatusDescribe(TypedDict):
         "Running",
         "Unconfigured",
     ]
-    Balanced: ServiceBalanced
-    Configured_Instances: int | None
-    Currently_Running_Instances: int
-    Pods: list[PodSchema]
+    balanced: ServiceBalanced
+    configured_instances: int | None
+    currently_running_instances: int
+    pods: list[PodSchema]
 
 
 @final

@@ -62,10 +62,10 @@ class TestCriticalServicesDescribe(unittest.TestCase):
             MOCK_CRITICAL_SERVICES_RESPONSE_DYNAMIC, "coredns", True
         )
         self.assertIn("critical_service", result)
-        self.assertIn("Name", result["critical_service"])
-        self.assertEqual(result["critical_service"]["Name"], "coredns")
-        self.assertIn("Type", result["critical_service"])
-        self.assertEqual(result["critical_service"]["Type"], "Deployment")
+        self.assertIn("name", result["critical_service"])
+        self.assertEqual(result["critical_service"]["name"], "coredns")
+        self.assertIn("type", result["critical_service"])
+        self.assertEqual(result["critical_service"]["type"], "Deployment")
 
     def test_describe_critical_service_not_found(self) -> None:
         """

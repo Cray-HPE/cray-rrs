@@ -64,13 +64,13 @@ class TestCriticalServicesDescribe(unittest.TestCase):
             test=True,
         )
         self.assertIn("critical_service", result)
-        self.assertIn("Name", result["critical_service"])
-        self.assertEqual(result["critical_service"]["Name"], "coredns")
-        self.assertIn("Type", result["critical_service"])
-        self.assertEqual(result["critical_service"]["Type"], "Deployment")
-        self.assertEqual(result["critical_service"]["Status"], "Configured")
-        self.assertEqual(result["critical_service"]["Balanced"], "true")
-        self.assertEqual(result["critical_service"]["Namespace"], "kube-system")
+        self.assertIn("name", result["critical_service"])
+        self.assertEqual(result["critical_service"]["name"], "coredns")
+        self.assertIn("type", result["critical_service"])
+        self.assertEqual(result["critical_service"]["type"], "Deployment")
+        self.assertEqual(result["critical_service"]["status"], "Configured")
+        self.assertEqual(result["critical_service"]["balanced"], "true")
+        self.assertEqual(result["critical_service"]["namespace"], "kube-system")
 
     def test_describe_critical_service_not_found(self) -> None:
         """

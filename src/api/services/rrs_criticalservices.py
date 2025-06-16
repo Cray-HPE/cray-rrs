@@ -171,11 +171,11 @@ class CriticalServices:
         # Build the result dictionary
         result: CriticalServiceDescribeSchema = {
             "critical_service": {
-                "Name": data["critical_service"]["Name"],
-                "Namespace": data["critical_service"]["Namespace"],
-                "Type": data["critical_service"]["Type"],
-                "Configured_Instances": data["critical_service"][
-                    "Configured_Instances"
+                "name": data["critical_service"]["name"],
+                "namespace": data["critical_service"]["namespace"],
+                "type": data["critical_service"]["type"],
+                "configured_instances": data["critical_service"][
+                    "configured_instances"
                 ],
             }
         }
@@ -427,14 +427,14 @@ class CriticalServicesStatus:
             # Return a structured dictionary containing the service details
             return {
                 "critical_service": {
-                    "Name": service_name,
-                    "Namespace": namespace,
-                    "Type": resource_type,
-                    "Status": status,
-                    "Balanced": balance,
-                    "Configured_Instances": configured_instances,
-                    "Currently_Running_Instances": running_pods,
-                    "Pods": filtered_pods,
+                    "name": service_name,
+                    "namespace": namespace,
+                    "type": resource_type,
+                    "status": status,
+                    "balanced": balance,
+                    "configured_instances": configured_instances,
+                    "currently_running_instances": running_pods,
+                    "pods": filtered_pods,
                 }
             }
 
