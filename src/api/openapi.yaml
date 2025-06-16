@@ -679,19 +679,21 @@ components:
             - Ready
             - NotReady
         osds:
-          type: object
-          description: Object Storage Daemon status information showing which OSDs are operational
-          properties:
-            up:
-              type: array
-              description: List of OSD identifiers that are currently operational
-              items:
-                type: string
-            down:
-              type: array
-              description: List of OSD identifiers that are currently non-operational
-              items:
-                type: string
+          $ref: '#/components/schemas/OSDStatesSchema'
+    OSDStatesSchema:
+      type: object
+      description: Object Storage Daemon status information showing which OSDs are operational and non-operational
+      properties:
+        up:
+          type: array
+          description: List of OSD identifiers that are currently operational
+          items:
+            type: string
+        down:
+          type: array
+          description: List of OSD identifiers that are currently non-operational
+          items:
+            type: string
     ServiceBalanced:
       type: string
       description: Indicates whether a service is properly distributed across zones for high availability

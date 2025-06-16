@@ -109,6 +109,16 @@ class OSDSchema(TypedDict):
 
 
 @final
+class OSDStatesSchema(TypedDict, total=False):
+    """
+    Schema for OSD states with up and down fields.
+    """
+
+    up: list[str]
+    down: list[str]
+
+
+@final
 class StorageNodeSchema(TypedDict):
     """
     Schema for a storage node, including its name, status, and OSDs.
@@ -117,7 +127,7 @@ class StorageNodeSchema(TypedDict):
 
     name: str
     status: StatusReady
-    osds: dict[str, list[str]]
+    osds: OSDStatesSchema
 
 
 @final

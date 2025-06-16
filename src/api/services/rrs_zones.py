@@ -45,6 +45,7 @@ from src.lib.schema import (
     KubernetesTopologyZoneSchema,
     ZoneDescribeSchema,
     StorageNodeSchema,
+    OSDStatesSchema,
     NodeSchema,
     CephNodeInfo,
     ErrorDict,
@@ -208,7 +209,7 @@ class ZoneService:
         if storage:
             storage_nodes: list[StorageNodeSchema] = []
             for node in storage:
-                osd_status_map: dict[str, list[str]] = {}
+                osd_status_map: OSDStatesSchema = {}
                 for osd in node.get("osds", []):
                     osd_status_map.setdefault(osd["status"], []).append(osd["name"])
 
