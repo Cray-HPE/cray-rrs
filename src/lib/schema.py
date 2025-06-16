@@ -85,6 +85,9 @@ class NodeSchema(TypedDict):
     status: Literal["Ready", "NotReady", "Unknown"]
 
 
+StatusReady = Literal["Ready", "NotReady"]
+
+
 @final
 class OSDStatusSchema(TypedDict):
     """
@@ -92,7 +95,7 @@ class OSDStatusSchema(TypedDict):
     """
 
     name: str
-    status: Literal["Ready", "NotReady", ""]
+    status: StatusReady
 
 
 @final
@@ -103,9 +106,6 @@ class OSDSchema(TypedDict):
 
     name: str
     status: Literal["up", "down"]
-
-
-StatusReady = Literal["Ready", "NotReady"]
 
 
 @final
@@ -559,4 +559,5 @@ class VersionInfo(TypedDict):
     """
     RMS/RRS OAS: #/components/schemas/VersionSchema
     """
+
     version: str

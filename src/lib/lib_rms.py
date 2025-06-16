@@ -594,7 +594,7 @@ class cephHelper:
                     osd_status_list: list[OSDStatusSchema] = []
                     for osd in osds:
                         osd_name = osd.get("name", "")
-                        osd_status = osd.get("status", "")
+                        osd_status = osd["status"]
                         osd_status_list.append({"name": osd_name, "status": osd_status})
 
                     node_status = host_status_map.get(host_node_name, "No Status")
