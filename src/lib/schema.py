@@ -167,6 +167,7 @@ class ZoneDescribeSchema(TypedDict, total=False):
 # OAS: #/components/schemas/ServiceBalanced
 ServiceBalanced = Literal["true", "false", "NA"]
 
+
 @final
 class CriticalServiceStatusItemSchema(TypedDict):
     """
