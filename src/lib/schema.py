@@ -89,7 +89,6 @@ class NodeSchema(TypedDict):
 class OSDStatusSchema(TypedDict):
     """
     Schema for an OSD, including its name and status.
-    RRS OAS: #/components/schemas/OSDStatusSchema
     """
 
     name: str
@@ -100,7 +99,6 @@ class OSDStatusSchema(TypedDict):
 class OSDSchema(TypedDict):
     """
     Schema for an OSD, including its name and status.
-    RRS OAS: #/components/schemas/OSDSchema
     """
 
     name: str
