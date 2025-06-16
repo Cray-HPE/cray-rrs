@@ -889,6 +889,7 @@ components:
     CriticalServiceStatusItemSchema:
       type: object
       description: Status summary for a critical service showing its operational state and distribution across zones
+      required: [name, type, status, balanced]
       properties:
         name:
           type: string
