@@ -250,7 +250,7 @@ def handleSCN() -> tuple[
         return jsonify({"message": "POST call received"}), HTTPStatus.OK
 
     except Exception as e:
-        app.logger.error("Error processing the request: %s", e)
+        app.logger.error("Error processing the request: %s: %s", type(e).__name__, e)
         state_manager.set_state(RMSState.INTERNAL_FAILURE)
         Helper.update_state_timestamp(
             state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
