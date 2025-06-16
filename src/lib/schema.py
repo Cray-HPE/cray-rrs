@@ -534,7 +534,7 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
     """
     Components: list[str]
     Roles: list[hmnfdRole]
-    Status: list[hmnfdState]
+    States: list[hmnfdState]
     Url: str
 
 
