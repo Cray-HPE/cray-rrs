@@ -874,10 +874,12 @@ components:
     CriticalServicesStatusListSchema:
       type: object
       description: Status overview of all critical services organized by namespace, showing their operational state and distribution
+      required: [critical_services]
       properties:
         critical_services:
           type: object
           description: Critical services grouped by namespace with their status information
+          required: [namespace]
           properties:
             namespace:
               type: object
