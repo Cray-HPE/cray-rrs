@@ -163,7 +163,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VersionResponse'
+                $ref: '#/components/schemas/VersionSchema'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -215,7 +215,7 @@ components:
       description: Empty response object for health check endpoints
       additionalProperties: false
 
-    VersionResponse:
+    VersionSchema:
       type: object
       required: [version]
       description: Version information for the RMS
