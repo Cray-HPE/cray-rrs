@@ -48,7 +48,6 @@ from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.schema import (
-    cephNodesResultType,
     cephNodesStatusResultType,
     k8sNodesResultType,
     CephNodeStatusInfo,
