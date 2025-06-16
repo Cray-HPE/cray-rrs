@@ -395,7 +395,7 @@ class extra_properties(TypedDict, total=False):
 
 
 @final
-class slsEntryDataType(TypedDict):
+class slsEntryDataType(TypedDict, total=False):
     """
     This represents one of the entries in the response to a GET request to the
     SLS 'v1/search/hardware' URI.
@@ -405,10 +405,10 @@ class slsEntryDataType(TypedDict):
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
 
-    Parent: NotRequired[str]
-    Xname: str
-    Type: NotRequired[str]
-    ExtraProperties: NotRequired[extra_properties]
+    Parent: str
+    Xname: Required[str]
+    Type: str
+    ExtraProperties: extra_properties
 
 
 @final
