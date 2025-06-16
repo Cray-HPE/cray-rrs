@@ -67,8 +67,8 @@ info:
           - type
 
       ### PATCH /criticalservices
-        Update the critical services configuration based on provided input. This endpoint allows
-        you to modify how critical services are configured in the system
+        Update the critical services configuration based on provided input. This endpoint
+        modifies which critical services are monitored.
 
       ### GET /criticalservices/status
         Retrieve the status of all critical services including service status and distribution details.
