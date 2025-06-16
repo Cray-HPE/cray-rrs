@@ -67,7 +67,7 @@ info:
           - Type
 
       ### PATCH /criticalservices
-        Update the critical services configuration based on a provided file input. This endpoint allows
+        Update the critical services configuration based on provided input. This endpoint allows
         you to modify how critical services are configured in the system
 
       ### GET /criticalservices/status
