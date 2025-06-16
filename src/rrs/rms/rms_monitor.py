@@ -97,7 +97,7 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
             app.logger.error(f"{DYNAMIC_DATA_KEY} not found in the configmap")
             sys.exit(1)
         dynamic_data = yaml.safe_load(yaml_content)
-        zone_info = dynamic_data[zone"]
+        zone_info = dynamic_data["zone"]
         k8s_info = zone_info["k8s_zones"]
         k8s_info_old = copy.deepcopy(k8s_info)
 
