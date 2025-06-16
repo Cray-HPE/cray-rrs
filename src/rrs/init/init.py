@@ -93,7 +93,7 @@ def zone_discovery() -> tuple[
     try:
         status = True
         updated_k8s_data: k8s_return_type = defaultdict(list)
-        updated_ceph_data: cephNodesStatusResultType = {}
+        updated_ceph_data = cephNodesStatusResultType()
         nodes = k8sHelper.get_k8s_nodes()
         logger.info("Retrieving zone information and status of k8s and CEPH nodes")
 

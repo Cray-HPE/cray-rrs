@@ -140,7 +140,7 @@ class ZoneService:
             zone_data: ZoneItemSchema = {"Zone_Name": zone_name}
 
             if masters or workers:
-                k8s_topology: KubernetesTopologyZoneSchema = {}
+                k8s_topology = KubernetesTopologyZoneSchema()
                 if masters:
                     k8s_topology["Management_Master_Nodes"] = masters
                 if workers:

@@ -551,7 +551,7 @@ class cephHelper:
                 if "hostname" in host and "status" in host:
                     host_status_map[host["hostname"]] = host["status"]
 
-            final_output: cephNodesStatusResultType = {}
+            final_output = cephNodesStatusResultType()
             failed_hosts: list[str] = []
 
             for item in ceph_tree.get("nodes", []):
@@ -781,7 +781,7 @@ class k8sHelper:
                 logger.debug("Failed to retrieve k8s nodes")
                 return None
 
-            zone_mapping: k8sNodesResultType = {}
+            zone_mapping = k8sNodesResultType()
 
             for node in nodes:
                 if node.metadata is None:
