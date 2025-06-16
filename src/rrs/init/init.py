@@ -83,7 +83,7 @@ def zone_discovery() -> tuple[
     k8s_return_type,
     cephNodesResultType,
 ]:
-    """Retrieving zone information and status of k8s and CEPH nodes
+    """Retrieving zone information and status of k8s and Ceph nodes
     Returns:
         tuple containing:
             - A boolean indicating if discovery was successful.
