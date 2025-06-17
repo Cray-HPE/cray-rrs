@@ -25,17 +25,32 @@
 """Gunicorn settings for cray-rrs-api"""
 import os
 
+# Server socket
 bind = "0.0.0.0:80"
-# workers = int(os.environ.get('WORKERS', 1))
 
-# Worker
-# http://docs.gunicorn.org/en/stable/settings.html#worker-class
-# worker_class = os.environ.get('WORKER_CLASS', 'gevent')
+# Worker processes
+workers = int(os.environ.get('GUNICORN_WORKERS', 4))
 
-# Long s3 operations (with large files) can take more than the 30 sec default timeout
-timeout = int(os.environ.get('GUNICORN_WORKER_TIMEOUT', 3600))  # seconds
+# Worker class - use gthread for I/O bound API operations
+worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'gthread')
+
+# Threads per worker (only applies to gthread worker class)
+threads = int(os.environ.get('GUNICORN_THREADS', 2))
+
+# Worker timeout - reasonable for API operations
+timeout = int(os.environ.get('GUNICORN_WORKER_TIMEOUT', 120))  # 2 minutes
+
+# Preload application for better performance
+preload_app = True
+
+# Worker recycling - prevents memory leaks in long-running services
+max_requests = int(os.environ.get('GUNICORN_MAX_REQUESTS', 1000))
+max_requests_jitter = int(os.environ.get('GUNICORN_MAX_REQUESTS_JITTER', 100))
 
 # Logging
 accesslog = "-"  # stdout
 errorlog = "-"   # stderr
-loglevel = os.environ.get('LOG_LEVEL', 'info').lower()
+loglevel = os.environ.get('GUNICORN_LOG_LEVEL', 'info').lower()
+
+# Performance
+keepalive = int(os.environ.get('GUNICORN_KEEPALIVE', 5))

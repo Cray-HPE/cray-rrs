@@ -55,11 +55,17 @@ FROM base AS application
 
 COPY src/ /app/src/
 
-# Set Flask environment and app path
-ENV FLASK_APP=/app/src/api/app.py
-ENV PYTHONPATH=/app/src
+# Set environment variables for production
+ENV PYTHONPATH=/app
+ENV FLASK_ENV=production
+
+# Gunicorn configuration via environment variables
+ENV GUNICORN_WORKERS=4
+ENV GUNICORN_THREADS=2
+ENV GUNICORN_WORKER_TIMEOUT=120
+ENV GUNICORN_LOG_LEVEL=info
 
 EXPOSE 80
 
-# Final application entrypoint
-CMD ["gunicorn", "-c", "/app/src/api/controllers/gunicorn.py", "src.api.app:app"]
+# Use Gunicorn with the config file
+CMD ["gunicorn", "-c", "src/api/controllers/gunicorn.py", "src.api.app:app"]
