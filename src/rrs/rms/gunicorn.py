@@ -22,23 +22,23 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-"""Gunicorn settings for cray-rrs-api"""
+"""Gunicorn settings for cray-rrs-rms production deployment"""
 import os
 
 # Server socket
-bind = "0.0.0.0:80"
+bind = "0.0.0.0:8551"
 
-# Worker processes
-workers = int(os.environ.get("GUNICORN_WORKERS", 4))
+# Worker processes - fewer workers for RMS since it's lightweight
+workers = int(os.environ.get("GUNICORN_WORKERS", 2))
 
-# Worker class - use gthread for I/O bound API operations
-worker_class = os.environ.get("GUNICORN_WORKER_CLASS", "gthread")
+# Worker class - use gthread for I/O bound operations
+worker_class = "gthread"
 
-# Threads per worker (only applies to gthread worker class)
+# Threads per worker
 threads = int(os.environ.get("GUNICORN_THREADS", 2))
 
-# Worker timeout - reasonable for API operations
-timeout = int(os.environ.get("GUNICORN_WORKER_TIMEOUT", 120))  # 2 minutes
+# Worker timeout - reasonable for HMNFD notifications
+timeout = int(os.environ.get("GUNICORN_WORKER_TIMEOUT", 120))
 
 # Preload application for better performance
 preload_app = True

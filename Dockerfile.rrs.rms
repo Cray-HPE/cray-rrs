@@ -41,8 +41,15 @@ RUN python3 -m venv $VIRTUAL_ENV && \
 
 FROM base AS build
 
+# Set environment variables for production
 ENV PYTHONPATH=/app
-ENV FLASK_APP=""
+ENV FLASK_ENV=production
+
+# Gunicorn environment variables for RMS
+ENV GUNICORN_WORKERS=2
+ENV GUNICORN_THREADS=2
+ENV GUNICORN_WORKER_TIMEOUT=120
+ENV GUNICORN_LOG_LEVEL=info
 
 EXPOSE 8551
 
@@ -55,4 +62,5 @@ RUN mkdir -p /var/run/sshd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config && \
     ssh-keygen -A
 
+# Production entrypoint - RMS handles Gunicorn internally
 CMD /usr/sbin/sshd && python3 -m src.rrs.rms.rms

@@ -491,6 +491,7 @@ class hmnfdSubscribePost(TypedDict, total=False):
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
+
     Subscriber: str
     SubscriberAgent: str
 
@@ -502,6 +503,7 @@ class hmnfdSubscriptionListArray(TypedDict, total=False):
     https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
     #/components/schemas/SubscriptionListArray
     """
+
     SubscriptionList: list[hmnfdSubscribePost]
 
 
@@ -522,7 +524,7 @@ hmnfdState = Literal[
     "standby",
     "halt",
     "ready",
-    "paused"
+    "paused",
 ]
 
 
@@ -535,6 +537,7 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
     #/components/schemas/SubscribePostV2
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
     """
+
     Components: list[str]
     Roles: list[hmnfdRole]
     States: list[hmnfdState]

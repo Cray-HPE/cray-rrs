@@ -37,6 +37,9 @@ import threading
 import sys
 import time
 import logging
+import subprocess
+import os
+import signal
 from datetime import datetime
 from typing import Optional, Literal, cast
 from http import HTTPStatus
@@ -74,6 +77,12 @@ from src.rrs.rms.rms_monitor import (
 app = Flask(__name__)
 api = Api(app)
 
+# Production configuration
+app.config.update(
+    DEBUG=False,
+    TESTING=False,
+)
+
 # Logging setup
 if app.logger.hasHandlers():
     app.logger.handlers.clear()
@@ -92,6 +101,8 @@ with app.app_context():
 state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager, app)
 
+# Global variable to store the Gunicorn process
+gunicorn_process: Optional[subprocess.Popen] = None
 
 # Until certificates are being used to talk to Redfish endpoints the basic
 # auth method will be used. To do so, SSL verification needs to be turned
@@ -449,17 +460,113 @@ def initial_check_and_update() -> bool:
     return was_monitoring
 
 
-def run_flask() -> None:
-    """Run the Flask app in a separate thread for listening to HMNFD notifications"""
+def signal_handler(signum, _frame):
+    """Handle shutdown signals gracefully"""
+    global gunicorn_process  # pylint: disable=global-statement
+    app.logger.info("Received shutdown signal %s. Cleaning up...", signum)
+
+    # Set RMS state to indicate shutdown
+    try:
+        state_manager.set_state(RMSState.INTERNAL_FAILURE)
+        Helper.update_state_timestamp(
+            state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+        )
+    except Exception as e:
+        app.logger.error("Failed to update state during shutdown: %s", e)
+
+    # Terminate Gunicorn process
+    if gunicorn_process and gunicorn_process.poll() is None:
+        app.logger.info("Terminating Gunicorn process...")
+        gunicorn_process.terminate()
+        try:
+            gunicorn_process.wait(timeout=10)
+            app.logger.info("Gunicorn terminated gracefully")
+        except subprocess.TimeoutExpired:
+            app.logger.warning("Gunicorn didn't terminate gracefully, killing...")
+            gunicorn_process.kill()
+        finally:
+            gunicorn_process = None
+
+    app.logger.info("RMS shutdown complete")
+    sys.exit(0)
+
+
+def run_flask_with_gunicorn() -> None:
+    """Run the Flask app using Gunicorn for production"""
+    global gunicorn_process  # pylint: disable=global-statement
+
     app.logger.info(
-        "Running flask on 8551 port on localhost to recieve notifications from HMNFD"
+        "Starting Gunicorn server on port 8551 to receive notifications from HMNFD"
     )
-    app.run(host="0.0.0.0", port=8551, threaded=True, debug=False)
+
+    # Set up environment for Gunicorn
+    env = os.environ.copy()
+    env["PYTHONPATH"] = "/app"
+
+    # Gunicorn command using config file
+    gunicorn_cmd = ["gunicorn", "-c", "src/rrs/rms/gunicorn.py", "src.rrs.rms.rms:app"]
+
+    try:
+        # Start Gunicorn as a subprocess
+        # Note: We can't use 'with' here because we need the process to remain alive
+        # after this function returns for the monitoring loop
+        gunicorn_process = subprocess.Popen(  # pylint: disable=consider-using-with
+            gunicorn_cmd,
+            env=env,
+            cwd="/app",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+        )
+
+        app.logger.info(
+            "Gunicorn server started successfully with PID: %s", gunicorn_process.pid
+        )
+
+        # Monitor Gunicorn process in a separate thread
+        def monitor_gunicorn():
+            """Monitor Gunicorn process health"""
+            while True:
+                if gunicorn_process and gunicorn_process.poll() is not None:
+                    app.logger.error(
+                        "Gunicorn process died unexpectedly with return code: %s",
+                        gunicorn_process.returncode,
+                    )
+                    # Update RMS state to indicate Flask service failure
+                    state_manager.set_state(RMSState.INTERNAL_FAILURE)
+                    Helper.update_state_timestamp(
+                        state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+                    )
+                    app.logger.critical(
+                        "RMS Flask service is down - HMNFD notifications will not be received"
+                    )
+                    break
+                time.sleep(5)
+
+        monitor_thread = threading.Thread(target=monitor_gunicorn, daemon=True)
+        monitor_thread.start()
+
+        # Give Gunicorn a moment to start
+        time.sleep(2)
+
+        if gunicorn_process.poll() is not None:
+            raise subprocess.SubprocessError(
+                f"Gunicorn failed to start, return code: {gunicorn_process.returncode}"
+            )
+
+    except (OSError, subprocess.SubprocessError) as e:
+        app.logger.error("Failed to start Gunicorn server: %s", e)
+        state_manager.set_state(RMSState.INTERNAL_FAILURE)
+        Helper.update_state_timestamp(
+            state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
     # Main entry point for the RMS service.
-    # This block performs the following steps within the Flask application context:
+    # This block performs the following steps within the Flask (gunicorn) application context:
 
     # 1. Performs initial checks and also determine whether a monitoring loop needs to be resumed.
     # 2. If RMS was previously in a 'Monitoring' state, resumes the monitoring loop in the background.
@@ -470,24 +577,33 @@ if __name__ == "__main__":
 
     # The loop runs indefinitely - checking HMNFD subscription, critical services and CEPH status every 600 seconds.
 
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     with app.app_context():
         if not NAMESPACE or not DYNAMIC_CM or not STATIC_CM:
             app.logger.error(
                 "One or more missing environment variables - namespace, static configmap, dynamic configmap"
             )
             sys.exit(1)
+
         launch_monitoring = initial_check_and_update()
-        flask_thread = threading.Thread(target=run_flask, daemon=True)
-        flask_thread.start()
+
+        # Start Gunicorn server for Flask endpoints
+        run_flask_with_gunicorn()
+
         check_and_create_hmnfd_subscription()
         if launch_monitoring:
             app.logger.info(
                 "RMS was in 'Monitoring' state - starting monitoring loop to resume previous incomplete process"
             )
             threading.Thread(target=monitor.monitoring_loop, daemon=True).start()
+
         update_critical_services(state_manager, True)
         update_zone_status(state_manager)
         app.logger.info("Starting the main loop")
+
         while True:
             if state_manager.get_state() != RMSState.MONITORING:
                 rms_state = RMSState.WAITING
