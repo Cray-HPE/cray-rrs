@@ -38,7 +38,6 @@ import sys
 import time
 import logging
 import subprocess
-import os
 import signal
 from datetime import datetime
 from typing import Optional, Literal, cast
@@ -499,10 +498,6 @@ def run_flask_with_gunicorn() -> None:
         "Starting Gunicorn server on port 8551 to receive notifications from HMNFD"
     )
 
-    # Set up environment for Gunicorn
-    env = os.environ.copy()
-    env["PYTHONPATH"] = "/app"
-
     # Gunicorn command using config file
     gunicorn_cmd = ["gunicorn", "-c", "src/rrs/rms/gunicorn.py", "src.rrs.rms.rms:app"]
 
@@ -512,7 +507,6 @@ def run_flask_with_gunicorn() -> None:
         # after this function returns for the monitoring loop
         gunicorn_process = subprocess.Popen(  # pylint: disable=consider-using-with
             gunicorn_cmd,
-            env=env,
             cwd="/app",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
