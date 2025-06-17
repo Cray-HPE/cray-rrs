@@ -6,3 +6,4 @@ flask-restful
 PyYAML
 requests
 urllib3
+gunicorn

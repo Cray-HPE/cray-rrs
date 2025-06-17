@@ -42,6 +42,7 @@ Usage:
     Import and call `create_app` to initialize the Flask application with the defined routes
 """
 
+import os
 import sys
 import logging
 import time
@@ -91,6 +92,8 @@ def create_app() -> Flask:
     )
     stream_handler.setFormatter(formatter)
     app.logger.addHandler(stream_handler)
+    # Update the logging line in routes.py
+    app.logger.info("Gunicorn worker timeout: %s", os.getenv('GUNICORN_WORKER_TIMEOUT', '-1'))
 
     # Timestamp logging via API call
     with app.app_context():

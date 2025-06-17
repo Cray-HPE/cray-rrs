@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2020, 2021-2022 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -21,16 +21,20 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-"""
-This is the entry point for the Rack Resiliency Service (RRS) application.
-It initializes and runs the API Server by creating an instance of the app.
+"""Gunicorn settings for cray-rrs-api"""
+import os
 
-Usage:
-    Run this file to start the Rack Resiliency Service:
-"""
-from src.api.controllers.routes import create_app
+bind = "0.0.0.0:80"
+# workers = int(os.environ.get('WORKERS', 1))
 
-app = create_app()
+# Worker
+# http://docs.gunicorn.org/en/stable/settings.html#worker-class
+# worker_class = os.environ.get('WORKER_CLASS', 'gevent')
 
-if __name__ == "__main__":
-    app.run()
+# Long s3 operations (with large files) can take more than the 30 sec default timeout
+timeout = int(os.environ.get('GUNICORN_WORKER_TIMEOUT', 3600))  # seconds
+
+# Logging
+accesslog = "-"  # stdout
+errorlog = "-"   # stderr
+loglevel = os.environ.get('LOG_LEVEL', 'info').lower()
