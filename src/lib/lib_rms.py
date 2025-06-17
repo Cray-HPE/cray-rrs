@@ -50,6 +50,7 @@ from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.schema import (
     cephNodesStatusResultType,
     cephOrchPsService,
+    cephStatus,
     k8sNodesResultType,
     CephNodeStatusInfo,
     OSDStatusSchema,
@@ -444,7 +445,7 @@ class cephHelper:
             if not status_output:
                 logger.warning("Could not fetch CEPH health")
                 return ceph_healthy
-            ceph_status = json.loads(status_output)
+            ceph_status: cephStatus = json.loads(status_output)
             health_status = ceph_status.get("health", {}).get("status", "UNKNOWN")
 
             if "HEALTH_OK" not in health_status:

@@ -608,6 +608,53 @@ class cephHostDataType(TypedDict, total=False):
 
 
 @final
+class cephStatusHealthChecksPgDegradedSummary(TypedDict, total=False):
+    """
+    This represents the "health"."checks"."PG_DEGRADED"."summary" field in the output of `ceph -s -f json`
+    """
+
+    message: str
+
+
+@final
+class cephStatusHealthChecksPgDegraded(TypedDict, total=False):
+    """
+    This represents the "health"."checks"."PG_DEGRADED" field in the output of `ceph -s -f json`
+    """
+
+    summary: cephStatusHealthChecksPgDegradedSummary
+
+
+@final
+class cephStatusHealthChecks(TypedDict, total=False):
+    """
+    This represents the "health"."checks" field in the output of `ceph -s -f json`
+    """
+
+    PG_DEGRADED: cephStatusHealthChecksPgDegraded
+
+
+@final
+class cephStatusHealth(TypedDict, total=False):
+    """
+    This represents the "health" field in the output of `ceph -s -f json`
+    """
+
+    checks: cephStatusHealthChecks
+    status: str
+
+
+@final
+class cephStatus(TypedDict, total=False):
+    """
+    This represents partial output of the `ceph -s -f json` command
+    """
+
+    health: cephStatusHealth
+    pgmap: dict[str, object]
+
+
+@final
 class podInfoType(TypedDict):
     """
     This represents one of the entries in the list that is maintained internally to store pod details.
