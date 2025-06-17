@@ -102,7 +102,7 @@ state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager, app)
 
 # Global variable to store the Gunicorn process
-gunicorn_process: Optional[subprocess.Popen] = None
+gunicorn_process: Optional[subprocess.Popen[str]] = None
 
 # Until certificates are being used to talk to Redfish endpoints the basic
 # auth method will be used. To do so, SSL verification needs to be turned
@@ -460,7 +460,7 @@ def initial_check_and_update() -> bool:
     return was_monitoring
 
 
-def signal_handler(signum, _frame):
+def signal_handler(signum: int, _frame: object) -> None:
     """Handle shutdown signals gracefully"""
     global gunicorn_process  # pylint: disable=global-statement
     app.logger.info("Received shutdown signal %s. Cleaning up...", signum)
@@ -525,7 +525,7 @@ def run_flask_with_gunicorn() -> None:
         )
 
         # Monitor Gunicorn process in a separate thread
-        def monitor_gunicorn():
+        def monitor_gunicorn() -> None:
             """Monitor Gunicorn process health"""
             while True:
                 if gunicorn_process and gunicorn_process.poll() is not None:
