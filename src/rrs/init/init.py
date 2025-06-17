@@ -39,7 +39,11 @@ import yaml
 from src.rrs.rms.rms_statemanager import RMSState
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.schema import cephNodesStatusResultType, NodeSchema
+from src.lib.schema import (
+    cephNodesStatusResultType,
+    CriticalServiceCmStaticType,
+    NodeSchema
+)
 from src.lib.rrs_constants import (
     NAMESPACE,
     DYNAMIC_CM,
@@ -147,7 +151,7 @@ def check_critical_services_and_timers() -> bool:
         static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
         critical_svc = static_cm_data.get(CRITICAL_SERVICE_KEY, None)
         if critical_svc:
-            services_data = json.loads(critical_svc)
+            services_data: CriticalServiceCmStaticType = json.loads(critical_svc)
             if not services_data["critical_services"]:
                 logger.error(
                     "Critical services are not defined for Rack Resiliency Service"
