@@ -38,6 +38,7 @@ from src.lib.rrs_constants import CmType, DYNAMIC_CM, STATIC_CM
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.schema import (
+    k8sNodeTypeTuple,
     PodSchema,
     CriticalServiceCmStaticType,
     CriticalServiceCmDynamicType,
@@ -88,8 +89,10 @@ class CriticalServiceHelper:
         node_zone_map = {}
 
         for zone, node_types in nodes_data.items():
-            for node_type in ["masters", "workers"]:
-                node_list = node_types.get(node_type, [])
+            for node_type in k8sNodeTypeTuple:
+                if node_type not in node_types:
+                    continue
+                node_list = node_types[node_type]
                 if not isinstance(node_list, list):
                     continue
 

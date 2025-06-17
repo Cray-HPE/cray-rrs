@@ -174,6 +174,10 @@ class k8sNodes(TypedDict, total=False):
     workers: list[NodeSchema]
 
 
+k8sNodeTypes = Literal["masters", "workers"]
+k8sNodeTypeTuple: tuple[k8sNodeTypes, k8sNodeTypes] = ("masters", "workers")
+
+
 # Mappings from zone names to k8sNodes
 type k8sNodesResultType = dict[str, k8sNodes]
 # Mappings from zone names to list[CephNodeInfo]
