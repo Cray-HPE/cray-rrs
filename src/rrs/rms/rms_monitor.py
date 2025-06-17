@@ -38,7 +38,7 @@ import json
 import copy
 import threading
 from logging import Logger
-from typing import Optional
+from typing import Optional, cast
 from flask import Flask, current_app as app
 import yaml
 from src.lib import lib_rms
@@ -60,6 +60,10 @@ from src.lib.rrs_constants import (
     DEFAULT_CEPH_PRE_MONITORING_DELAY,
     STARTED_STATE,
     COMPLETED_STATE,
+)
+from src.lib.schema import (
+    CriticalServiceCmDynamicType,
+    CriticalServiceCmStaticType,
 )
 
 
@@ -153,6 +157,7 @@ def update_critical_services(
     """
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
+        services_data: CriticalServiceCmDynamicType | CriticalServiceCmStaticType | None = None
         if reloading:
             static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
             app.logger.info(
@@ -167,8 +172,12 @@ def update_critical_services(
         if json_content is None:
             app.logger.error(f"{CRITICAL_SERVICE_KEY} not found in the configmap")
             sys.exit(1)
-
-        services_data = json.loads(json_content)
+        if reloading:
+            # static CM data
+            services_data = cast(CriticalServiceCmStaticType, json.loads(json_content))
+        else:
+            # dynamic CM data
+            services_data = cast(CriticalServiceCmDynamicType, json.loads(json_content))
         updated_services = criticalServicesHelper.get_critical_services_status(
             services_data
         )

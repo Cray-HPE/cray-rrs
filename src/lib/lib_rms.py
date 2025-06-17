@@ -747,10 +747,10 @@ class k8sHelper:
         try:
             if not nodes:
                 nodes = k8sHelper.get_k8s_nodes()
-                if not nodes:
-                    logger.error("Failed to retrieve k8s nodes")
-                    return "Unknown"
 
+            if not nodes:
+                logger.error("Failed to retrieve k8s nodes")
+                return "Unknown"
             for node in nodes:
                 if node.metadata is not None and node.metadata.name == node_name:
                     # If the node has conditions, we check the last one
