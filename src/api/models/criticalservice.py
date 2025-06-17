@@ -46,9 +46,6 @@ from src.lib.schema import (
     CriticalServiceCmStaticSchema,
 )
 
-# This is for the format present in the configmap
-# CriticalServiceType = dict[str, CriticalServiceCmSchema]
-
 
 class CriticalServiceHelper:
     """Helper class for fetching critical services and pod data"""
