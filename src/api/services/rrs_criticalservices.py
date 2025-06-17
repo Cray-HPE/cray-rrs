@@ -219,7 +219,7 @@ class CriticalServices:
             existing_services[service_name] = new_services[service_name]
 
         # Prepare new ConfigMap data
-        new_cm_data = json.dumps({"critical_services": existing_services}, indent=2)
+        new_cm_data = json.dumps(CriticalServiceCmStaticType(critical_services=existing_services), indent=2)
         if not test:  # Only update ConfigMap if not in test mode
             ConfigMapHelper.update_configmap_data(
                 None, CRITICAL_SERVICE_KEY, new_cm_data, NAMESPACE, STATIC_CM
