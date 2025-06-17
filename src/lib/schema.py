@@ -557,6 +557,18 @@ class openidTokenResponse(TypedDict, total=False):
 
 
 @final
+class cephOrchPsService(TypedDict):
+    """
+    This represents one entry in the list output of `ceph orch ps -f json`
+    Not all fields are specified -- only the ones we care about
+    """
+
+    hostname: str
+    service_name: str
+    status_desc: str
+
+
+@final
 class ceph_tree_node_datatype(TypedDict, total=False):
     """
     This represents one of the entries in the nodes list in the output of the "ceph osd tree -f json" command

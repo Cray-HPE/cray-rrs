@@ -49,6 +49,7 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.schema import (
     cephNodesStatusResultType,
+    cephOrchPsService,
     k8sNodesResultType,
     CephNodeStatusInfo,
     OSDStatusSchema,
@@ -390,7 +391,7 @@ class cephHelper:
             if not services_output:
                 logger.warning("Could not fetch CEPH services status")
                 return ceph_healthy
-            ceph_services = json.loads(services_output)
+            ceph_services: list[cephOrchPsService] = json.loads(services_output)
             failed_services = []
             for service in ceph_services:
                 if service["status_desc"] != "running":
