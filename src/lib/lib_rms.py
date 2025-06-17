@@ -519,8 +519,8 @@ class cephHelper:
             if not tree_output or not host_output:
                 logger.warning("Could not fetch CEPH output")
                 return {}, []
-            ceph_tree = json.loads(tree_output)
-            ceph_hosts = json.loads(host_output)
+            ceph_tree: cephTreeDataType = json.loads(tree_output)
+            ceph_hosts: list[cephHostDataType] = json.loads(host_output)
 
             logger.debug("CEPH OSD Tree Output: %s", ceph_tree)
             logger.debug("CEPH Host list Output: %s", ceph_hosts)
