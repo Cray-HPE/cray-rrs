@@ -92,6 +92,8 @@ class RMSStateManager:
 
     def start_monitoring(self) -> bool:
         """Thread-safe method to initiate monitoring."""
+        if self.monitor_running:
+            return False
         with self.lock:
             if self.monitor_running:
                 return False
@@ -100,5 +102,7 @@ class RMSStateManager:
 
     def stop_monitoring(self) -> None:
         """Thread-safe method to stop the monitoring process."""
+        if not self.monitor_running:
+            return
         with self.lock:
             self.monitor_running = False

@@ -201,17 +201,6 @@ components:
           example: "POST call received"
           enum: ["POST call received"]
 
-    RMSState:
-      type: string
-      description: Current state of the Resiliency Monitoring Service
-      enum:
-        - READY
-        - FAIL_NOTIFIED
-        - MONITORING
-        - INTERNAL_FAILURE
-        - WAITING
-        - STARTED
-
     EmptyDict:
       type: object
       description: Empty response object for health check endpoints

@@ -341,7 +341,7 @@ def check_and_create_hmnfd_subscription() -> None:
     exists = False
     if data:
         exists = any(
-            "rms" in subscription.get("Subscriber", "")
+            "rms" == subscription.get("SubscriberAgent", "")
             for subscription in data.get("SubscriptionList", [])
         )
 

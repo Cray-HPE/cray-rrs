@@ -79,7 +79,7 @@ class ConfigMapHelper:
             config.load_kube_config()  # type: ignore[attr-defined]
 
     @staticmethod
-    def create_configmap(namespace: str, configmap_lock_name: str) -> None:
+    def create_configmap(namespace: str, configmap_lock_name: str) -> bool:
         """Create a ConfigMap with the provided name in the given namespace."""
         try:
             ConfigMapHelper.load_k8s_config()
@@ -90,6 +90,8 @@ class ConfigMapHelper:
             v1.create_namespaced_config_map(namespace=namespace, body=config_map)
         except client.exceptions.ApiException as e:
             logger.error("Error creating ConfigMap %s: %s", configmap_lock_name, e)
+            return False
+        return True
 
     @staticmethod
     def acquire_lock(namespace: str, configmap_name: str) -> bool:
@@ -115,10 +117,10 @@ class ConfigMapHelper:
                         "Config map %s is not present, creating the lock configmap",
                         configmap_lock_name,
                     )
-                    ConfigMapHelper.create_configmap(namespace, configmap_lock_name)
-                    return True  # Returning True as the lock is acquired
+                    return ConfigMapHelper.create_configmap(namespace, configmap_lock_name)
+                    # Returning True as the lock is acquired
                 logger.error("Error checking for lock: %s", e)
-                break  # Exit the loop in case of error
+                return False   # Exit the loop in case of error
         logger.error("Max retries reached. Could not acquire Configmap lock")
         return False  # Return False if lock could not be acquired
 
@@ -145,7 +147,7 @@ class ConfigMapHelper:
                     )
                 except ApiException as e:
                     if e.status == 404:
-                        logger.debug(
+                        logger.warning(
                             "Lock ConfigMap %s does not exist in namespace %s; nothing to release",
                             configmap_lock_name,
                             namespace,
