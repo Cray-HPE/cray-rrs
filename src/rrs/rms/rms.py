@@ -64,7 +64,11 @@ from src.lib.rrs_constants import (
     STARTED_STATE,
     MAIN_LOOP_WAIT_TIME_INTERVAL,
 )
-from src.lib.schema import hmnfdSubscribePostV2, hmnfdSubscriptionListArray
+from src.lib.schema import (
+    hmnfdNotificationPost,
+    hmnfdSubscribePostV2,
+    hmnfdSubscriptionListArray
+)
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
 from src.rrs.rms.rms_monitor import (
@@ -226,11 +230,11 @@ def handleSCN() -> tuple[
     """
     app.logger.info("Notification received from HMNFD")
     try:
-        notification_json = request.get_json()
+        notification_json: hmnfdNotificationPost = request.get_json()
         app.logger.debug("JSON data received: %s", notification_json)
 
         # Extract components and state
-        components = notification_json.get("Components", [])
+        components = notification_json["Components"]
         comp_state = notification_json.get("State", "")
 
         if not components or not comp_state:
