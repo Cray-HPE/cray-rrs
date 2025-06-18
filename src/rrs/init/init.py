@@ -265,7 +265,7 @@ def init() -> None:
         zone_name = None
         for rack, nodes_list in updated_k8s_data.items():
             for node in nodes_list:
-                if node.get("name") == node_name:
+                if node["name"] == node_name:
                     zone_name = rack
                     break
             if zone_name:
