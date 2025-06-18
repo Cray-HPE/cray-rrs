@@ -236,8 +236,8 @@ def init() -> None:
         if rms_state:
             logger.info("RMS is in %s state. Resetting to init state", rms_state)
             # Get the node and zone location of the previously running pod
-            pod_zone = dynamic_data.get("cray_rrs_pod").get("zone")
-            pod_node = dynamic_data.get("cray_rrs_pod").get("node")
+            pod_zone = dynamic_data["cray_rrs_pod"]["zone"]
+            pod_node = dynamic_data["cray_rrs_pod"]["node"]
             if pod_zone and pod_node:
                 check_previous_rrs_pod_node_status(pod_node, pod_zone)
             if RMSState(rms_state) == RMSState.MONITORING:
