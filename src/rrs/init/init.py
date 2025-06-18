@@ -42,7 +42,7 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.schema import (
     cephNodesStatusResultType,
     CriticalServiceCmStaticType,
-    NodeSchema
+    NodeSchema,
 )
 from src.lib.rrs_constants import (
     NAMESPACE,

@@ -44,7 +44,7 @@ Usage:
 import traceback
 from typing import Literal, Union
 from http import HTTPStatus
-from flask import request
+from flask import request, Response
 from flask_restful import Resource
 from src.lib.rrs_logging import log_event
 from src.api.services.rrs_zones import ZoneService
@@ -57,12 +57,15 @@ from src.lib.schema import (
     CriticalServiceDescribeSchema,
     CriticalServiceCmStaticType,
     CriticalServiceUpdateSchema,
-    ErrorDict,
-    InformationDict,
 )
 from src.api.services.rrs_criticalservices import (
     CriticalServices,
     CriticalServicesStatus,
+)
+from src.api.models.errors import (
+    generate_internal_server_error_response,
+    generate_missing_input_response,
+    generate_resource_not_found_response,
 )
 
 
@@ -80,8 +83,9 @@ class ZoneListResource(Resource):  # type: ignore[misc,no-any-unimported]
         self,
     ) -> Union[
         tuple[ZoneListSchema, Literal[HTTPStatus.OK]],
-        tuple[ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]],
-        tuple[InformationDict, Literal[HTTPStatus.NOT_FOUND]],
+        tuple[
+            Response, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+        ],
     ]:
         """
         Get the list of all zones.
@@ -99,12 +103,15 @@ class ZoneListResource(Resource):  # type: ignore[misc,no-any-unimported]
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                generate_internal_server_error_response(f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "Information" in zones:
             log_event(f"{zones}", level="ERROR")
-            return zones, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(zones["Information"]),
+                HTTPStatus.NOT_FOUND,
+            )
         return zones, HTTPStatus.OK
 
 
@@ -121,9 +128,8 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc,no-any-unimported]
     def get(self, zone_name: str) -> Union[
         tuple[ZoneDescribeSchema, Literal[HTTPStatus.OK]],
         tuple[
-            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
-        ],
-        tuple[InformationDict, Literal[HTTPStatus.NOT_FOUND]],
+            Response, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+        ]
     ]:
         """
         Get the description of a specific zone by its name.
@@ -144,15 +150,21 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc,no-any-unimported]
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                generate_internal_server_error_response(f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "Information" in zone:
             log_event(f"{zone}", level="ERROR")
-            return zone, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(zone["Information"]),
+                HTTPStatus.NOT_FOUND,
+            )
         if "error" in zone:
             log_event(f"{zone}", level="ERROR")
-            return zone, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(zone["error"]),
+                HTTPStatus.NOT_FOUND,
+            )
         return zone, HTTPStatus.OK
 
 
@@ -171,7 +183,7 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc,no-any-unimpor
     ) -> Union[
         tuple[CriticalServicesListSchema, Literal[HTTPStatus.OK]],
         tuple[
-            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+            Response, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
         ],
     ]:
         """
@@ -190,12 +202,15 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc,no-any-unimpor
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                generate_internal_server_error_response(f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "error" in critical_services:
             log_event(f"{critical_services}", level="ERROR")
-            return critical_services, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(critical_services["error"]),
+                HTTPStatus.NOT_FOUND,
+            )
         # Return the list of critical services
         return critical_services, HTTPStatus.OK
 
@@ -213,7 +228,7 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc,no-any-uni
     def get(self, service_name: str) -> Union[
         tuple[CriticalServiceDescribeSchema, Literal[HTTPStatus.OK]],
         tuple[
-            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+            Response, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
         ],
     ]:
         """
@@ -235,12 +250,15 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc,no-any-uni
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                generate_internal_server_error_response(f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "error" in result:
             log_event(f"{result}", level="ERROR")
-            return result, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(result["error"]),
+                HTTPStatus.NOT_FOUND,
+            )
         return result, HTTPStatus.OK
 
 
@@ -258,7 +276,7 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc,no-any-unimp
     ) -> Union[
         tuple[CriticalServiceUpdateSchema, Literal[HTTPStatus.OK]],
         tuple[
-            ErrorDict,
+            Response,
             Literal[
                 HTTPStatus.BAD_REQUEST,
                 HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -281,18 +299,21 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc,no-any-unimp
             new_data: CriticalServiceCmStaticType = request.get_json()
             # If no data is provided, return an error
             if not new_data:
-                log_event("No data provided for update", level="ERROR")
-                return ErrorDict(error="No data provided"), HTTPStatus.BAD_REQUEST
+                log_event("No POST data accompanied in POST Request", level="ERROR")
+                return generate_missing_input_response(), HTTPStatus.BAD_REQUEST
             updated_services = CriticalServices.update_critical_services(new_data)
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                generate_internal_server_error_response(f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "error" in updated_services:
             log_event(f"{updated_services}", level="ERROR")
-            return updated_services, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(updated_services["error"]),
+                HTTPStatus.NOT_FOUND,
+            )
         return updated_services, HTTPStatus.OK
 
 
@@ -311,7 +332,7 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc,no-any-u
     ) -> Union[
         tuple[CriticalServicesStatusListSchema, Literal[HTTPStatus.OK]],
         tuple[
-            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+            Response, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
         ],
     ]:
         """
@@ -330,12 +351,15 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc,no-any-u
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                generate_internal_server_error_response(f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "error" in status:
             log_event(f"{status}", level="ERROR")
-            return status, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(status["error"]),
+                HTTPStatus.NOT_FOUND,
+            )
         return status, HTTPStatus.OK
 
 
@@ -352,7 +376,7 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc,no-a
     def get(self, service_name: str) -> Union[
         tuple[CriticalServiceStatusDescribeSchema, Literal[HTTPStatus.OK]],
         tuple[
-            ErrorDict, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
+            Response, Literal[HTTPStatus.INTERNAL_SERVER_ERROR, HTTPStatus.NOT_FOUND]
         ],
     ]:
         """
@@ -375,10 +399,13 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc,no-a
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return (
-                ErrorDict(error=f"{type(e).__name__}: {e}"),
+                generate_internal_server_error_response(f"{type(e).__name__}: {e}"),
                 HTTPStatus.INTERNAL_SERVER_ERROR,
             )
         if "error" in service:
             log_event(f"{service}", level="ERROR")
-            return service, HTTPStatus.NOT_FOUND
+            return (
+                generate_resource_not_found_response(service["error"]),
+                HTTPStatus.NOT_FOUND,
+            )
         return service, HTTPStatus.OK

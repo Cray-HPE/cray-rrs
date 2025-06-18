@@ -157,7 +157,9 @@ def update_critical_services(
     """
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
-        services_data: CriticalServiceCmDynamicType | CriticalServiceCmStaticType | None = None
+        services_data: (
+            CriticalServiceCmDynamicType | CriticalServiceCmStaticType | None
+        ) = None
         if reloading:
             static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
             app.logger.info(

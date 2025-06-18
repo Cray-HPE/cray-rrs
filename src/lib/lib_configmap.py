@@ -117,10 +117,12 @@ class ConfigMapHelper:
                         "Config map %s is not present, creating the lock configmap",
                         configmap_lock_name,
                     )
-                    return ConfigMapHelper.create_configmap(namespace, configmap_lock_name)
+                    return ConfigMapHelper.create_configmap(
+                        namespace, configmap_lock_name
+                    )
                     # Returning True as the lock is acquired
                 logger.error("Error checking for lock: %s", e)
-                return False   # Exit the loop in case of error
+                return False  # Exit the loop in case of error
         logger.error("Max retries reached. Could not acquire Configmap lock")
         return False  # Return False if lock could not be acquired
 

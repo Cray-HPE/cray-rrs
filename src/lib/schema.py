@@ -421,6 +421,12 @@ class ErrorDict(TypedDict):
 
 
 @final
+class ErrorSchema(TypedDict):
+    title: str
+    detail: ErrorDict
+
+
+@final
 class InformationDict(TypedDict):
     """
     Schema for informational responses.
