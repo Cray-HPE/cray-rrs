@@ -725,7 +725,7 @@ class TimestampsSchema(TypedDict, total=False):
 class StateSchema(TypedDict):
     ceph_monitoring: str
     k8s_monitoring: str
-    rms_state: str
+    rms_state: str | None
  
 # Zone Schema
 class ZoneDataSchema(TypedDict):

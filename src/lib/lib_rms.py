@@ -62,6 +62,9 @@ from src.lib.schema import (
     cephTreeDataType,
     cephHostDataType,
     skewReturn,
+    DynamicDataSchema,
+    StateSchema,
+    TimestampsSchema
 )
 from src.lib.rrs_constants import (
     NAMESPACE,
@@ -131,20 +134,29 @@ class Helper:
         logger.exception("All hosts failed for command: %s", command)
         return ""
 
-    @staticmethod
+    @staticmethod 
     def update_state_timestamp(
         state_manager: RMSStateManager,
-        state_field: Optional[str] = None,
+        state_field: Optional[Literal["ceph_monitoring", "k8s_monitoring", "rms_state"]] = None,
         new_state: Optional[str] = None,
-        timestamp_field: Optional[str] = None,
+        timestamp_field: Optional[Literal[
+            "end_timestamp_ceph_monitoring",
+            "end_timestamp_k8s_monitoring", 
+            "init_timestamp",
+            "last_update_timestamp",
+            "start_timestamp_api",
+            "start_timestamp_ceph_monitoring",
+            "start_timestamp_k8s_monitoring",
+            "start_timestamp_rms"
+        ]] = None
     ) -> None:
         """
         Update the RMS state and/or a timestamp field in the dynamic ConfigMap.
         Args:
             state_manager (RMSStateManager): The state manager instance handling ConfigMap interactions.
-            state_field (Optional[str]): The key in the 'state' section of the ConfigMap to update.
+            state_field (Optional[Literal]): The key in the 'state' section to update.
             new_state (Optional[str]): The value to assign to the specified state field.
-            timestamp_field (Optional[str]): The key in the 'timestamps' section to update with the current UTC time.
+            timestamp_field (Optional[Literal]): The key in the 'timestamps' section to update.
         Returns:
             None
         """
@@ -153,21 +165,22 @@ class Helper:
             yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
             if yaml_content is None:
                 return
-            dynamic_data = yaml.safe_load(yaml_content)
-            if new_state:
+                
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
+            
+            if state_field is not None and new_state is not None:
                 logger.info("Updating state %s to %s", state_field, new_state)
-                state = dynamic_data.get("state", {})
+                state = dynamic_data["state"]
                 state[state_field] = new_state
-            if timestamp_field:
+                dynamic_data["state"] = state
+                
+            if timestamp_field is not None:
                 logger.info("Updating timestamp %s", timestamp_field)
-                timestamp = dynamic_data.get("timestamps", {})
-                timestamp[timestamp_field] = datetime.now().strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
-                )
+                timestamp = dynamic_data["timestamps"]
+                timestamp[timestamp_field] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+                dynamic_data["timestamps"] = timestamp
 
-            dynamic_cm_data[DYNAMIC_DATA_KEY] = yaml.dump(
-                dynamic_data, default_flow_style=False
-            )
+            dynamic_cm_data[DYNAMIC_DATA_KEY] = yaml.dump(dynamic_data, default_flow_style=False)
             state_manager.set_dynamic_cm_data(dynamic_cm_data)
             ConfigMapHelper.update_configmap_data(
                 dynamic_cm_data,
