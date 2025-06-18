@@ -25,12 +25,12 @@
 API Error formatting for the Artifact Repository Service which conforms to
 RFC 7807. Also, some frequently used errors encapsulated in functions.
 """
-import http.client
+from http import HTTPStatus
 from flask import Response
 from httpproblem import problem_http_response
 
 
-def problemify(*args, **kwargs) -> Response:  # type: ignore[no-untyped-def]
+def problemify(status: HTTPStatus, detail: str) -> Response:
     """
     Wrapper for httpproblem.problem_http_response that returns a Flask
     Response object. Conforms to RFC7807 HTTP Problem Details for HTTP APIs.
@@ -51,7 +51,7 @@ def problemify(*args, **kwargs) -> Response:  # type: ignore[no-untyped-def]
 
     Returns: flask.Response object of an error in RFC 7807 format
     """
-    problem = problem_http_response(*args, **kwargs)
+    problem = problem_http_response(status=status, detail=detail)
     return Response(
         problem["body"], status=problem["statusCode"], headers=problem["headers"]
     )
@@ -64,7 +64,7 @@ def generate_missing_input_response() -> Response:
     Returns: results of problemify
     """
     return problemify(
-        status=http.client.BAD_REQUEST,
+        status=HTTPStatus.BAD_REQUEST,
         detail="No input provided. Determine the specific information that is missing or invalid and "
         "then re-run the request with valid information.",
     )
@@ -76,7 +76,7 @@ def generate_resource_not_found_response(detail: str) -> Response:
 
     Returns: results of problemify
     """
-    return problemify(status=http.client.NOT_FOUND, detail=detail)
+    return problemify(status=HTTPStatus.NOT_FOUND, detail=detail)
 
 
 def generate_internal_server_error_response(detail: str) -> Response:
@@ -85,4 +85,4 @@ def generate_internal_server_error_response(detail: str) -> Response:
 
     Returns: results of problemify
     """
-    return problemify(status=http.client.INTERNAL_SERVER_ERROR, detail=detail)
+    return problemify(status=HTTPStatus.INTERNAL_SERVER_ERROR, detail=detail)
