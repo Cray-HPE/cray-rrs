@@ -311,7 +311,7 @@ def init() -> None:
 if __name__ == "__main__":
     if not NAMESPACE or not DYNAMIC_CM or not STATIC_CM:
         logger.error(
-            "One or more missing environment variables - namespace, static configmap, dynamic configmap"
+            "One or more missing environment variables - NAMESPACE, DYNAMIC_CM, STATIC_CM"
         )
         sys.exit(1)
     init()
