@@ -518,11 +518,16 @@ class hmnfdSubscriptionListArray(TypedDict, total=False):
 
 
 # Despite what the HMNFD schema claims, these enumerated types are actually not case sensitive.
-# I believe for data coming FROM HMNFD, these are always all lowercase, so that is what I am using
-# here, even though it does not match what is in the official schema
+# When listing subscriptions from HMNFD with a GET, all of these values are all lowercase.
+# When receiving a change POST notification from HMNFD, these values have their first letter capitalized.
+# And when accepting values as input, it accepts either way (and possibly may be completely case insensitive).
+# This is not reflected in the official schema.
 # https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+
 # #/components/schemas/Roles.1.0.0
 hmnfdRole = Literal["compute", "system", "application", "storage", "management"]
+hmnfdNotificationRole = Literal["Compute", "System", "Application", "Storage", "Management"]
+
 # #/components/schemas/HMSState.1.0.0
 hmnfdState = Literal[
     "unknown",
@@ -535,6 +540,18 @@ hmnfdState = Literal[
     "halt",
     "ready",
     "paused",
+]
+hmnfdNotificationState = Literal[
+    "Unknown",
+    "Empty",
+    "Populated",
+    "Off",
+    "On",
+    "Active",
+    "Standby",
+    "Halt",
+    "Ready",
+    "Paused",
 ]
 
 
@@ -552,6 +569,29 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
     Roles: list[hmnfdRole]
     States: list[hmnfdState]
     Url: str
+
+
+@final
+class hmnfdNotificationPost(TypedDict, total=False):
+    """
+    This represents the request body for a POST request made from HMNFD to RMS, notifying
+    of a state or role change.
+    OAS: #/components/responses/SCNRequestSchema
+
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/StateChanges
+
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    I also note that the actual object appears to always contain a Timestamp field, which is not documented
+    in the HMNFD spec. We do not use it, so I also omit it here.
+
+    RMS subscribes to notifications for changes in State or Role. So one of these objects is guaranteed to have
+    one of those fields, but is not required to have either one specifically. There is no way to capture that in a
+    single TypeDict definition, so for simplicity we will mark both as not required.
+    """
+    Components: Required[list[str]]
+    Role: hmnfdNotificationRole
+    State: hmnfdNotificationState
 
 
 @final
