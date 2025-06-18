@@ -33,7 +33,7 @@ from flask import current_app as app
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.lib.rrs_constants import DYNAMIC_DATA_KEY
-from src.lib.schema import cephNodesResultType, k8sNodesResultType, NodeSchema
+from src.lib.schema import cephNodesResultType, k8sNodesResultType, NodeSchema, DynamicDataSchema
 
 CM_NAMESPACE: str = os.getenv("namespace", "")
 CM_NAME: str = os.getenv("dynamic_cm_name", "")
@@ -68,7 +68,7 @@ class ZoneTopologyService:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
             if "error" in configmap_yaml:
                 raise ValueError(configmap_yaml["error"])
-            parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
+            parsed_data: DynamicDataSchema = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
         except yaml.YAMLError as e:
             app.logger.exception(f"[{log_id}] YAML parsing error: {e}")
             raise yaml.YAMLError(f"YAML parsing error: {e}") from e
@@ -77,7 +77,7 @@ class ZoneTopologyService:
             raise TypeError(f"Invalid type passed to safe_load: {e}") from e
 
         # Parsing the data
-        ceph_zones = parsed_data["zone"]["ceph_zones"]
+        ceph_zones: cephNodesResultType = parsed_data["zone"]["ceph_zones"]
 
         zone_mapping: cephNodesResultType = {
             zone_name: [
@@ -118,7 +118,7 @@ class ZoneTopologyService:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
             if "error" in configmap_yaml:
                 raise ValueError(configmap_yaml["error"])
-            parsed_data = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
+            parsed_data: DynamicDataSchema = yaml.safe_load(configmap_yaml[DYNAMIC_DATA_KEY])
         except yaml.YAMLError as e:
             app.logger.exception(f"[{log_id}] YAML parsing error: {e}")
             raise yaml.YAMLError(f"YAML parsing error: {e}") from e
@@ -127,7 +127,7 @@ class ZoneTopologyService:
             raise TypeError(f"Invalid type passed to safe_load: {e}") from e
 
         # Parsing the data
-        k8s_zones = parsed_data["zone"]["k8s_zones"]
+        k8s_zones: dict[str, list[NodeSchema]] = parsed_data["zone"]["k8s_zones"]
 
         zone_mapping: k8sNodesResultType = {}
 
