@@ -709,7 +709,8 @@ class CrayRRSPod(TypedDict):
     node: str
     rack: str
     zone: str
- 
+
+
 # Timestamps Schema
 class TimestampsSchema(TypedDict, total=False):
     end_timestamp_ceph_monitoring: str
@@ -720,18 +721,21 @@ class TimestampsSchema(TypedDict, total=False):
     start_timestamp_ceph_monitoring: str
     start_timestamp_k8s_monitoring: str
     start_timestamp_rms: str
- 
+
+
 # State Schema
 class StateSchema(TypedDict):
     ceph_monitoring: str
     k8s_monitoring: str
     rms_state: str | None
- 
+
+
 # Zone Schema
 class ZoneDataSchema(TypedDict):
     ceph_zones: cephNodesResultType
     k8s_zones: dict[str, list[NodeSchema]]
- 
+
+
 # Dynamic Data Schema
 class DynamicDataSchema(TypedDict):
     cray_rrs_pod: CrayRRSPod
