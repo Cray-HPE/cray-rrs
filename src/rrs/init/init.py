@@ -253,10 +253,10 @@ def init() -> None:
         )
         logger.debug("Updated init_timestamp and rms_state in %s configmap", DYNAMIC_CM)
 
-        # Retrieve k8s and CEPH node/zone information and update in rrs-dynamic configmap
-        zone_info = dynamic_data.get("zone", None)
+        # Retrieve k8s and CEPH node/zone information and update in rrs-dynamic configmap        
         discovery_status, updated_k8s_data, updated_ceph_data = zone_discovery()
         if discovery_status:
+            zone_info = dynamic_data["zone"]
             zone_info["k8s_zones"] = updated_k8s_data
             zone_info["ceph_zones"] = updated_ceph_data
 
