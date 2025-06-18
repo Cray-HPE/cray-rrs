@@ -225,7 +225,7 @@ def init() -> None:
         # update init timestamp in rrs-dynamic configmap
         timestamps = dynamic_data.get("timestamps", {})
         init_timestamp = timestamps.get("init_timestamp", None)
-        state = dynamic_data.get("state", {})
+        state = dynamic_data["state"]
         rms_state = state.get("rms_state", None)
         if init_timestamp:
             logger.debug("Init time already present in configmap")

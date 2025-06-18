@@ -45,6 +45,7 @@ from src.lib.rrs_constants import (
     DYNAMIC_DATA_KEY,
 )
 from src.lib.rrs_logging import get_log_id
+from src.lib.schema import DynamicDataSchema
 
 
 logger = logging.getLogger(__name__)
@@ -224,7 +225,7 @@ class ConfigMapHelper:
             configmap_data[key] = new_data
             # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
             if configmap_name == DYNAMIC_CM:
-                dynamic_data = yaml.safe_load(configmap_data[DYNAMIC_DATA_KEY])
+                dynamic_data: DynamicDataSchema = yaml.safe_load(configmap_data[DYNAMIC_DATA_KEY])
                 dynamic_data["timestamps"][
                     "last_update_timestamp"
                 ] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
