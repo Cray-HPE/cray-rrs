@@ -30,7 +30,7 @@ from flask import Response
 from httpproblem import problem_http_response
 
 
-def problemify(*args, **kwargs) -> Response: # type: ignore[no-untyped-def]
+def problemify(*args, **kwargs) -> Response:  # type: ignore[no-untyped-def]
     """
     Wrapper for httpproblem.problem_http_response that returns a Flask
     Response object. Conforms to RFC7807 HTTP Problem Details for HTTP APIs.
