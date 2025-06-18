@@ -158,17 +158,9 @@ paths:
                           Management_Storage_Nodes:
                             - ncn-s001
         '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/InformationDict'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
   /zones/{zone_name}:
     get:
       summary: Get Detailed Zone Information
@@ -237,19 +229,9 @@ paths:
                               - osd.24
                               - osd.27
         '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                oneOf:
-                  - $ref: '#/components/schemas/ErrorDict'
-                  - $ref: '#/components/schemas/InformationDict'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices:
     get:
       summary: Get Critical Services
@@ -292,17 +274,9 @@ paths:
                           - name: k8s-zone-api
                             type: Deployment
         '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
     patch:
       summary: Update Critical Services ConfigMap
       tags:
@@ -336,23 +310,11 @@ paths:
                       - coredns
                       - kube-proxy
         '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/BadRequest'
         '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices/{critical_service_name}:
     get:
       summary: Get Critical Service Details (Summarized)
@@ -389,17 +351,9 @@ paths:
                       type: Deployment
                       configured_instances: 3
         '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices/status:
     get:
       summary: Get Critical Services Status
@@ -462,17 +416,9 @@ paths:
                             status: Configured
                             balanced: "true"
         '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
   /criticalservices/status/{critical_service_name}:
     get:
       summary: Get Critical Service Status by Name (Detailed)
@@ -529,17 +475,9 @@ paths:
                           node: ncn-w001
                           zone: cscs-rack-x3000
         '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
   /healthz/ready:
     get:
       summary: Retrieve RRS Readiness Probe
@@ -602,11 +540,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/VersionSchema'
         '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorDict'
+          $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
     ZonesResponse:
@@ -943,11 +877,16 @@ components:
       properties:
         critical_services:
           type: object
-          description: Critical services grouped by namespace with their status information - direct mapping from namespace names to arrays of services
-          additionalProperties:
-            type: array
-            items:
-              $ref: '#/components/schemas/CriticalServiceStatusItemSchema'
+          description: Critical services grouped by namespace with their status information
+          required: [namespace]
+          properties:
+            namespace:
+              type: object
+              description: Mapping of namespace names to their contained critical services with status
+              additionalProperties:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CriticalServiceStatusItemSchema'
     CriticalServiceStatusItemSchema:
       type: object
       description: Status summary for a critical service showing its operational state and distribution across zones
@@ -991,3 +930,24 @@ components:
       type: object
       description: Empty response object typically returned by health check endpoints to indicate successful operation
       additionalProperties: false
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDict'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '#/components/schemas/ErrorDict'
+              - $ref: '#/components/schemas/InformationDict'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorDict'
