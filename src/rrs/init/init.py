@@ -272,7 +272,7 @@ def init() -> None:
                 break
         rack_name = Helper.get_rack_name_for_node(node_name)
 
-        rrs_pod_placement = dynamic_data.get("cray_rrs_pod", None)
+        rrs_pod_placement = dynamic_data["cray_rrs_pod"]
         rrs_pod_placement["zone"] = zone_name
         rrs_pod_placement["node"] = node_name
         rrs_pod_placement["rack"] = rack_name
