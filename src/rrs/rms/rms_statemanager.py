@@ -78,7 +78,9 @@ class RMSStateManager:
     def get_dynamic_cm_data(self) -> dict[str, str]:
         """Method to retrieve the dynamic ConfigMap data."""
         if not self.dynamic_cm_data:
-            self.dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+            with self.lock:
+                if not self.dynamic_cm_data:
+                    self.dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
         return self.dynamic_cm_data
 
     def is_monitoring(self) -> bool:
