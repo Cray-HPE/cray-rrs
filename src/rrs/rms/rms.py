@@ -75,6 +75,7 @@ from src.lib.schema import (
     SCNInternalServerErrorResponse,
     ApiTimestampSuccessResponse,
     ApiTimestampFailedResponse,
+    HMNFD_STATES,
 )
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
@@ -392,18 +393,7 @@ def check_and_create_hmnfd_subscription() -> None:
         for attempt in range(1, MAX_RETRIES + 1):
             post_data: hmnfdSubscribePostV2 = {
                 "Components": subscribing_components,
-                "States": [
-                    "ready",
-                    "on",
-                    "off",
-                    "empty",
-                    "unknown",
-                    "populated",
-                    "active",
-                    "standby",
-                    "halt",
-                    "paused",
-                ],
+                "States": list(HMNFD_STATES),
                 "Url": "http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551/scn",
             }
             try:
