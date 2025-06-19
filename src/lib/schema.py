@@ -373,7 +373,7 @@ class CriticalServiceStatusDescribe(TypedDict):
     status: ServiceStatus
     balanced: ServiceBalanced
     configured_instances: int | None
-    currently_running_instances: int
+    currently_running_instances: int | None
     pods: list[PodSchema]
 
 

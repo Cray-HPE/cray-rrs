@@ -53,7 +53,7 @@ class CriticalServiceHelper:
     @staticmethod
     def get_namespaced_pods(
         service_info: CriticalServiceCmDynamicSchema, service_name: str
-    ) -> tuple[list[PodSchema], int]:
+    ) -> list[PodSchema]:
         """
         Fetch the pods in a namespace and the number of instances using Kube-config.
 
@@ -102,7 +102,6 @@ class CriticalServiceHelper:
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
             raise
 
-        running_pods = 0
         result: list[PodSchema] = []
         expected_owner_kind = CriticalServiceHelper.resolve_owner_kind(resource_type)
 
@@ -134,9 +133,6 @@ class CriticalServiceHelper:
             else:
                 pod_status = "Pending"
 
-            if pod_status == "Running" and not is_terminating:
-                running_pods += 1
-
             if not pod.spec:
                 continue
             node_name = pod.spec.node_name
@@ -155,8 +151,7 @@ class CriticalServiceHelper:
                     "zone": zone,
                 }
             )
-        app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
-        return result, running_pods
+        return result
 
     @staticmethod
     def resolve_owner_kind(resource_type: str) -> str:

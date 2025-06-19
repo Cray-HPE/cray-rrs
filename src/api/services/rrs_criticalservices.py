@@ -392,13 +392,13 @@ class CriticalServicesStatus:
 
             # Initialize variables for filtering pods and counting running pods
             filtered_pods: list[PodSchema] = []
-            running_pods: int = 0
+            running_pods: Optional[int] = None
             configured_instances: Optional[int] = None
 
             # If not a test run, fetch real pod data
             if not test:
                 # Get namespaced pods for the service using the helper
-                filtered_pods, running_pods = CriticalServiceHelper.get_namespaced_pods(
+                filtered_pods = CriticalServiceHelper.get_namespaced_pods(
                     service_info, service_name
                 )
 
@@ -419,6 +419,12 @@ class CriticalServicesStatus:
                         getattr(resource, "spec", None)
                         and hasattr(getattr(resource, "spec"), "replicas")
                         and getattr(getattr(resource, "spec"), "replicas", None)
+                    ) or None
+
+                    running_pods = (
+                        getattr(resource, "spec", None)
+                        and hasattr(getattr(resource, "spec"), "ready_replicas")
+                        and getattr(getattr(resource, "spec"), "ready_replicas", None)
                     ) or None
 
             # Log the success of retrieving service details
