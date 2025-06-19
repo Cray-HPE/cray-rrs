@@ -218,27 +218,27 @@ class ConfigMapHelper:
         try:
             ConfigMapHelper.load_k8s_config()
             v1 = client.CoreV1Api()
-            if configmap_data is None:
-                configmap_data = ConfigMapHelper.read_configmap(
-                    namespace, configmap_name
-                )
-            configmap_data[key] = new_data
-            # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
-            if configmap_name == DYNAMIC_CM:
-                dynamic_data: DynamicDataSchema = yaml.safe_load(
-                    configmap_data[DYNAMIC_DATA_KEY]
-                )
-                dynamic_data["timestamps"][
-                    "last_update_timestamp"
-                ] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-                configmap_data[DYNAMIC_DATA_KEY] = yaml.dump(
-                    dynamic_data, default_flow_style=False
-                )
-            configmap_body = client.V1ConfigMap(
-                metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
-            )
-
             if ConfigMapHelper.acquire_lock(namespace, configmap_name):
+                if configmap_data is None:
+                    configmap_data = ConfigMapHelper.read_configmap(
+                        namespace, configmap_name
+                    )
+                configmap_data[key] = new_data
+                # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
+                if configmap_name == DYNAMIC_CM:
+                    dynamic_data: DynamicDataSchema = yaml.safe_load(
+                        configmap_data[DYNAMIC_DATA_KEY]
+                    )
+                    dynamic_data["timestamps"][
+                        "last_update_timestamp"
+                    ] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+                    configmap_data[DYNAMIC_DATA_KEY] = yaml.dump(
+                        dynamic_data, default_flow_style=False
+                    )
+                configmap_body = client.V1ConfigMap(
+                    metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
+                )
+
                 try:
                     logger.info(
                         "Updating ConfigMap %s in namespace %s",
