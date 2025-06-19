@@ -421,12 +421,6 @@ class ErrorDict(TypedDict):
 
 
 @final
-class ErrorSchema(TypedDict):
-    title: str
-    detail: ErrorDict
-
-
-@final
 class InformationDict(TypedDict):
     """
     Schema for informational responses.
@@ -748,7 +742,11 @@ class VersionInfo(TypedDict):
 
 
 ################################################
+# The schemas for dynamic-data fror dynamic configmap
 class CrayRRSPod(TypedDict):
+    """
+    Schema for capturing Cray RRS Pod location details.
+    """
     node: str
     rack: str
     zone: str
@@ -756,6 +754,9 @@ class CrayRRSPod(TypedDict):
 
 # Timestamps Schema
 class TimestampsSchema(TypedDict, total=False):
+    """
+    Schema for tracking system-wide monitoring and service timestamps.
+    """
     end_timestamp_ceph_monitoring: str
     end_timestamp_k8s_monitoring: str
     init_timestamp: str
@@ -768,6 +769,9 @@ class TimestampsSchema(TypedDict, total=False):
 
 # State Schema
 class StateSchema(TypedDict):
+    """
+    Schema for tracking monitoring states across different system components.
+    """
     ceph_monitoring: str
     k8s_monitoring: str
     rms_state: str | None
@@ -775,12 +779,20 @@ class StateSchema(TypedDict):
 
 # Zone Schema
 class ZoneDataSchema(TypedDict):
+    """
+    Schema for organizing zone-specific information about storage and compute nodes.
+    """
     ceph_zones: cephNodesResultType
     k8s_zones: dict[str, list[NodeSchema]]
 
 
 # Dynamic Data Schema
 class DynamicDataSchema(TypedDict):
+    """
+    Root schema for the dynamic configuration data used in RRS/RMS services.
+    This schema represents the complete structure stored in the dynamic ConfigMap
+    and encompasses all monitoring aspects of the system.
+    """
     cray_rrs_pod: CrayRRSPod
     state: StateSchema
     timestamps: TimestampsSchema

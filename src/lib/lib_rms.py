@@ -1062,7 +1062,8 @@ class criticalServicesHelper:
                 logger.warning("Failed to fetch pods, returning original services data")
                 return services_data
 
-            # Since function will add "status" and "balanced" field, so if initial type for service_data is - CriticalServiceCmStaticType then the cast is needed.
+            # Since function will add "status" and "balanced" field,
+            # so if initial type for service_data is - CriticalServiceCmStaticType then the cast is needed.
             critical_services = cast(
                 dict[str, CriticalServiceCmDynamicSchema],
                 services_data["critical_services"],
