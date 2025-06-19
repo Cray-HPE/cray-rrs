@@ -108,7 +108,8 @@ def create_app() -> Flask:
                 try:
                     response = requests.post(ts_url, timeout=REQUESTS_TIMEOUT)
                     if response.status_code == HTTPStatus.OK:
-                        app.logger.info("Response: %s", response.text.strip())
+                        response_data = response.json()
+                        app.logger.info(response_data)
                         success = True
                         break
                 except (requests.exceptions.RequestException, ValueError) as e:

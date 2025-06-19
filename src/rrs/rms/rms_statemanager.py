@@ -67,9 +67,8 @@ class RMSStateManager:
             self.rms_state = new_state
 
     def get_state(self) -> RMSState:
-        """Thread-safe method to retrieve the current RMS state."""
-        with self.lock:
-            return self.rms_state
+        """Method to retrieve the current RMS state."""
+        return self.rms_state
 
     def set_dynamic_cm_data(self, data: dict[str, str]) -> None:
         """Thread-safe method to update the dynamic ConfigMap data."""
@@ -77,18 +76,14 @@ class RMSStateManager:
             self.dynamic_cm_data = data
 
     def get_dynamic_cm_data(self) -> dict[str, str]:
-        """Thread-safe method to retrieve the dynamic ConfigMap data."""
-        with self.lock:
-            if not self.dynamic_cm_data:
-                self.dynamic_cm_data = ConfigMapHelper.read_configmap(
-                    NAMESPACE, DYNAMIC_CM
-                )
-            return self.dynamic_cm_data
+        """Method to retrieve the dynamic ConfigMap data."""
+        if not self.dynamic_cm_data:
+            self.dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+        return self.dynamic_cm_data
 
     def is_monitoring(self) -> bool:
-        """Thread-safe check to determine if monitoring is currently active."""
-        with self.lock:
-            return self.monitor_running
+        """Check to determine if monitoring is currently active."""
+        return self.monitor_running
 
     def start_monitoring(self) -> bool:
         """Thread-safe method to initiate monitoring."""

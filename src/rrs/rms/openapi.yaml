@@ -175,8 +175,8 @@ components:
       required:
         - Components
       description: >
-        State/Role Change Notification request payload from HMNFD.
-        There are other possible fields in theory, but RMS only subscribes to changes for Role and State.
+        State Change Notification request payload from HMNFD.
+        There are other possible fields in theory, but RMS only subscribes to changes for State.
         https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
         #/components/schemas/StateChanges
       properties:
@@ -186,16 +186,6 @@ components:
           items:
             type: string
           example: ["x3000c0s1b0n0", "x3000c0s1b0n1"]
-        Role:
-          type: string
-          description: New role of the components
-          enum:
-            - Compute
-            - System
-            - Application
-            - Storage
-            - Management
-          example: Management
         State:
           type: string
           description: New state of the components
@@ -203,8 +193,8 @@ components:
             - Unknown
             - Empty
             - Populated
-            - Off
-            - On
+            - 'Off'
+            - 'On'
             - Active
             - Standby
             - Halt

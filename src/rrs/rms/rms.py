@@ -187,13 +187,10 @@ api.add_resource(Version, "/version")
 
 
 @app.route("/api-ts", methods=["POST"])
-def update_api_timestamp() -> (
-    tuple[Literal["API timestamp updated successfully"], Literal[HTTPStatus.OK]]
-    | tuple[
-        Literal["Failed to update API timestamp"],
-        Literal[HTTPStatus.INTERNAL_SERVER_ERROR],
-    ]
-):
+def update_api_timestamp() -> tuple[
+    Response,
+    Literal[HTTPStatus.OK, HTTPStatus.INTERNAL_SERVER_ERROR],
+]:
     """
     RMS OAS: #/paths/api-ts (post)
 
@@ -206,10 +203,13 @@ def update_api_timestamp() -> (
         Helper.update_state_timestamp(
             state_manager, timestamp_field="start_timestamp_api"
         )
-        return "API timestamp updated successfully", HTTPStatus.OK
+        return jsonify({"message": "API timestamp updated successfully"}), HTTPStatus.OK
     except Exception:
         app.logger.exception("Failed to update API timestamp")
-        return "Failed to update API timestamp", HTTPStatus.INTERNAL_SERVER_ERROR
+        return (
+            jsonify({"error": "Failed to update API timestamp"}),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
 
 @app.route("/scn", methods=["POST"])
@@ -360,8 +360,18 @@ def check_and_create_hmnfd_subscription() -> None:
         for attempt in range(1, MAX_RETRIES + 1):
             post_data: hmnfdSubscribePostV2 = {
                 "Components": subscribing_components,
-                "Roles": ["management"],
-                "States": ["ready", "on", "off", "empty", "unknown", "populated"],
+                "States": [
+                    "ready",
+                    "on",
+                    "off",
+                    "empty",
+                    "unknown",
+                    "populated",
+                    "active",
+                    "standby",
+                    "halt",
+                    "paused",
+                ],
                 "Url": "http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551/scn",
             }
             try:
