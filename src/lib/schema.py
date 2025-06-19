@@ -300,7 +300,7 @@ class CriticalServiceCmMixedType(TypedDict):
     Schema for critical services in a configmap, including the service name and its details.
     """
 
-    critical_services: dict[str, CriticalServiceCmDynamicSchema|CriticalServiceCmStaticSchema]
+    critical_services: dict[str, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema]
 
 
 @final

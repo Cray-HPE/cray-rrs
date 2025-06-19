@@ -142,20 +142,24 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
         app.logger.error(f"An unexpected error occurred: {e}")
         return False
 
+
 @overload
 def update_critical_services(
     state_manager: RMSStateManager, reloading: Literal[False]
 ) -> Optional[CriticalServiceCmDynamicType]: ...
+
 
 @overload
 def update_critical_services(
     state_manager: RMSStateManager, reloading: Literal[True]
 ) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]: ...
 
+
 @overload
 def update_critical_services(
     state_manager: RMSStateManager, reloading: bool
 ) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]: ...
+
 
 def update_critical_services(
     state_manager: RMSStateManager, reloading: bool

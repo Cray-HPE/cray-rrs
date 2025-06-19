@@ -1206,7 +1206,9 @@ class criticalServicesHelper:
 
         # If we've reached here, then this means that if the input type was static, the output
         # type will be mixed.
-        mixed_service_data: dict[str, CriticalServiceCmDynamicSchema|CriticalServiceCmStaticSchema] = {
+        mixed_service_data: dict[
+            str, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema
+        ] = {
             service_name: (
                 updated_critical_services.get(service_name, critical_services[service_name])
             )
