@@ -743,6 +743,7 @@ class VersionInfo(TypedDict):
 
 ################################################
 # The schemas for dynamic-data from dynamic configmap
+@final
 class CrayRRSPod(TypedDict):
     """
     Schema for capturing Cray RRS Pod location details.
@@ -753,6 +754,7 @@ class CrayRRSPod(TypedDict):
 
 
 # Timestamps Schema
+@final
 class TimestampsSchema(TypedDict, total=False):
     """
     Schema for tracking system-wide monitoring and service timestamps.
@@ -768,6 +770,7 @@ class TimestampsSchema(TypedDict, total=False):
 
 
 # State Schema
+@final
 class StateSchema(TypedDict):
     """
     Schema for tracking monitoring states across different system components.
@@ -778,6 +781,7 @@ class StateSchema(TypedDict):
 
 
 # Zone Schema
+@final
 class ZoneDataSchema(TypedDict):
     """
     Schema for organizing zone-specific information about storage and compute nodes.
@@ -787,6 +791,7 @@ class ZoneDataSchema(TypedDict):
 
 
 # Dynamic Data Schema
+@final
 class DynamicDataSchema(TypedDict):
     """
     Root schema for the dynamic configuration data used in RRS/RMS services.
@@ -797,3 +802,52 @@ class DynamicDataSchema(TypedDict):
     state: StateSchema
     timestamps: TimestampsSchema
     zone: ZoneDataSchema
+
+
+# RMS API schemas
+
+@final
+class SCNSuccessResponse(TypedDict):
+    """
+    This represents the response body to a successful POST call to the /scn RMS endpoint.
+    OAS: #/components/schemas/SCNSuccessResponse
+    """
+    message: Literal["POST call received"]
+
+
+@final
+class SCNBadRequestResponse(TypedDict):
+    """
+    This represents the response body to a POST call to the /scn RMS endpoint with bad data.
+    OAS: #/components/schemas/SCNBadRequestResponse
+    """
+    error: Literal["Missing 'Components' or 'State' in the request"]
+
+
+@final
+class SCNInternalServerErrorResponse(TypedDict):
+    """
+    This represents the response body to an unsuccessful POST call to the /scn RMS endpoint.
+    OAS: #/components/schemas/SCNInternalServerErrorResponse
+    """
+    error: Literal["Internal server error"]
+
+
+@final
+class ApiTimestampSuccessResponse(TypedDict):
+    """
+    This represents the response body to a successful POST call to the /api-ts RMS endpoint.
+    OAS: #/components/schemas/ApiTimestampSuccessResponse
+    """
+    message: Literal["API timestamp updated successfully"]
+
+
+@final
+class ApiTimestampFailedResponse(TypedDict):
+    """
+    This represents the response body to an unsuccessful POST call to the /api-ts RMS endpoint.
+    OAS: #/components/schemas/ApiTimestampFailedResponse
+    """
+    error: Literal["Failed to update API timestamp"]
+
+

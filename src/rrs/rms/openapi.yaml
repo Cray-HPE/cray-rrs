@@ -83,9 +83,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/SCNSuccessResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Bad SCN request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SCNBadRequestResponse'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SCNInternalServerErrorResponse'
 
   /api-ts:
     post:
@@ -102,7 +110,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ApiTimestampSuccessResponse'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: API timestamp update failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiTimestampFailedResponse'
 
   /healthz/ready:
     get:
@@ -211,6 +223,30 @@ components:
           example: "POST call received"
           enum: ["POST call received"]
 
+    SCNBadRequestResponse:
+      type: object
+      required:
+        - error
+      description: Response to bad requests data for SCN
+      properties:
+        error:
+          type: string
+          description: Failure message
+          example: "Missing 'Components' or 'State' in the request"
+          enum: ["Missing 'Components' or 'State' in the request"]
+
+    SCNInternalServerErrorResponse:
+      type: object
+      required:
+        - error
+      description: Failure response for SCN
+      properties:
+        error:
+          type: string
+          description: Failure message
+          example: "Internal server error"
+          enum: ["Internal server error"]
+
     ApiTimestampSuccessResponse:
       type: object
       required:
@@ -222,6 +258,18 @@ components:
           description: Confirmation message
           example: "API timestamp updated successfully"
           enum: ["API timestamp updated successfully"]
+
+    ApiTimestampFailedResponse:
+      type: object
+      required:
+        - error
+      description: Failure response for API timestamp update
+      properties:
+        error:
+          type: string
+          description: Failure message
+          example: "Failed to update API timestamp"
+          enum: ["Failed to update API timestamp"]
 
     EmptyDict:
       type: object
@@ -248,12 +296,6 @@ components:
           description: Human-readable error message describing the failure
 
   responses:
-    BadRequest:
-      description: Bad request - missing or invalid parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorDict'
 
     InternalServerError:
       description: Internal server error occurred
