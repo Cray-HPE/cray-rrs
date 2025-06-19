@@ -742,7 +742,7 @@ class VersionInfo(TypedDict):
 
 
 ################################################
-# The schemas for dynamic-data fror dynamic configmap
+# The schemas for dynamic-data from dynamic configmap
 class CrayRRSPod(TypedDict):
     """
     Schema for capturing Cray RRS Pod location details.
