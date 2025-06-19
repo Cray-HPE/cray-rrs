@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Literal, Optional, cast
+from typing import Literal, Optional, cast, overload
 import requests
 import urllib3
 import yaml
@@ -54,7 +54,6 @@ from src.lib.schema import (
     k8sNodesResultType,
     CephNodeStatusInfo,
     OSDStatusSchema,
-    CriticalServiceCmDynamicType,
     slsEntryDataType,
     podInfoType,
     hsmDataType,
@@ -63,8 +62,12 @@ from src.lib.schema import (
     cephHostDataType,
     skewReturn,
     DynamicDataSchema,
+    CriticalServiceCmDynamicType,
     CriticalServiceCmStaticType,
     CriticalServiceCmDynamicSchema,
+    CriticalServiceCmStaticSchema,
+    CriticalServiceCmMixedType,
+    ServiceStatus,
 )
 from src.lib.rrs_constants import (
     NAMESPACE,
@@ -1044,10 +1047,20 @@ class criticalServicesHelper:
 
         return filtered_pods
 
+    @overload
+    @staticmethod
+    def get_critical_services_status(services_data: CriticalServiceCmDynamicType) -> CriticalServiceCmDynamicType: ...
+
+    @overload
+    @staticmethod
+    def get_critical_services_status(services_data: CriticalServiceCmStaticType) -> (
+        CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType
+    ): ...
+
     @staticmethod
     def get_critical_services_status(
         services_data: CriticalServiceCmDynamicType | CriticalServiceCmStaticType,
-    ) -> CriticalServiceCmDynamicType | CriticalServiceCmStaticType:
+    ) -> CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType:
         """
         Update critical service info with status and balanced values
         Args:
@@ -1056,23 +1069,41 @@ class criticalServicesHelper:
             CriticalServiceCmType:
             Updated services_data with 'status' and 'balanced' flags added per service.
         """
+        # Since function will set "status" and "balanced" fields.
+        # If the input type is CriticalServiceCmDynamicType, that will also be the output type.
+        # But if initial type for service_data is CriticalServiceCmStaticType, then it is possible the result
+        # will be CriticalServiceCmMixedType or CriticalServiceCmDynamicType or CriticalServiceCmStaticType
+        # To begin, we will optimistically assume that we will not hit errors
         try:
+            critical_services = services_data["critical_services"]
+            # In the unlikely case that we are sent no services, we can just return immediately, as
+            # there is nothing to update
+            if not critical_services:
+                # This is one scenario in which we could return CriticalServiceCmStaticType,
+                # if the input type was CriticalServiceCmStaticType
+                return services_data
+
             all_pods = k8sHelper.fetch_all_pods()
             if all_pods is None:
                 logger.warning("Failed to fetch pods, returning original services data")
-                return services_data
-
-            # Since function will add "status" and "balanced" field,
-            # so if initial type for service_data is - CriticalServiceCmStaticType then the cast is needed.
-            critical_services = cast(
-                dict[str, CriticalServiceCmDynamicSchema],
-                services_data["critical_services"],
+                # This is another scenario in which we could return CriticalServiceCmStaticType,
+                # if the input type was CriticalServiceCmStaticType
+                return services_data                        
+        except Exception as e:
+            logger.exception(
+                "Unexpected error while updating critical service statuses: %s", e
             )
-            logger.info("Number of critical services are - %d", len(critical_services))
-            imbalanced_services: list[str] = []
-            unconfigured_services: list[str] = []
-            partially_configured_services: list[str] = []
+            # This is another scenario in which we could return CriticalServiceCmStaticType,
+            # if the input type was CriticalServiceCmStaticType
+            return services_data  # Return original data
 
+        updated_critical_services: dict[str, CriticalServiceCmDynamicSchema] = {}
+        logger.info("Number of critical services are - %d", len(critical_services))
+        imbalanced_services: list[str] = []
+        unconfigured_services: list[str] = []
+        partially_configured_services: list[str] = []
+
+        try:
             for service_name, service_info in critical_services.items():
                 service_namespace = service_info["namespace"]
                 service_type = service_info["type"]
@@ -1084,22 +1115,24 @@ class criticalServicesHelper:
 
                 if desired_replicas is None or ready_replicas is None or labels is None:
                     unconfigured_services.append(service_name)
-                    service_info.update({"status": "Unconfigured", "balanced": "NA"})
+                    updated_critical_services[service_name] = CriticalServiceCmDynamicSchema(
+                        namespace=service_namespace,
+                        type=service_type,
+                        status="Unconfigured",
+                        balanced="NA",
+                    )
                     continue
 
                 if ready_replicas == 0:
                     unconfigured_services.append(service_name)
-                    service_info.update({"status": "Unconfigured", "balanced": "NA"})
+                    updated_critical_services[service_name] = CriticalServiceCmDynamicSchema(
+                        namespace=service_namespace,
+                        type=service_type,
+                        status="Unconfigured",
+                        balanced="NA",
+                    )
                     continue
-                status: Literal[
-                    "error",
-                    "Configured",
-                    "PartiallyConfigured",
-                    "NotConfigured",
-                    "Running",
-                    "Unconfigured",
-                ]
-                status = "Configured"
+                status: ServiceStatus = "Configured"
                 if ready_replicas < desired_replicas:
                     partially_configured_services.append(service_name)
                     status = "PartiallyConfigured"
@@ -1129,11 +1162,11 @@ class criticalServicesHelper:
                 if balance_details.balanced == "false":
                     imbalanced_services.append(service_name)
 
-                service_info.update(
-                    {
-                        "status": status,
-                        "balanced": balance_details.balanced,
-                    }
+                updated_critical_services[service_name] = CriticalServiceCmDynamicSchema(
+                    namespace=service_namespace,
+                    type=service_type,
+                    status=status,
+                    balanced=balance_details.balanced,
                 )
 
             if partially_configured_services:
@@ -1150,9 +1183,43 @@ class criticalServicesHelper:
                     "list of unconfigured services are - %s", unconfigured_services
                 )
 
-            return services_data
+            # This is the good path. In this case, regardless of the input type, we are
+            # returning dynamic data
+            return CriticalServiceCmDynamicType(critical_services=updated_critical_services)
         except Exception as e:
             logger.exception(
                 "Unexpected error while updating critical service statuses: %s", e
             )
-            return services_data  # Return original or partially updated data
+
+        # It is possible the exception was raised before a single service was added to
+        # updated_critical_services. In this case, just return the original data.
+        # This is the final scenario in which we could return purely static data (in the case
+        # where the input data was static)
+        if not updated_critical_services:
+            return services_data
+
+        # It is possible, but highly unlikely, that the exception was raised after all of the services
+        # had been updated, but before the function returned. In this case, we will still be returning
+        # purely dynamic data.
+        if len(updated_critical_services) == len(services_data):
+            return CriticalServiceCmDynamicType(critical_services=updated_critical_services)
+
+        # If we've reached here, then this means that if the input type was static, the output
+        # type will be mixed.
+        mixed_service_data: dict[str, CriticalServiceCmDynamicSchema|CriticalServiceCmStaticSchema] = {
+            service_name: (
+                updated_critical_services.get(service_name, critical_services[service_name])
+            )
+            for service_name in critical_services
+        }
+
+        # We previously verified that the critical_services list is not empty
+        if "status" in iter(critical_services.values()).__next__():
+            # This means the data is actually not mixed -- our input type must have been dynamic
+            # But mypy is not clever enough to realize this, so here we use cast
+            return CriticalServiceCmDynamicType(
+                critical_services=cast(dict[str, CriticalServiceCmDynamicSchema], mixed_service_data)
+            )
+
+        # The data actually is a mix of static and dynamic in this case
+        return CriticalServiceCmMixedType(critical_services=mixed_service_data)
