@@ -193,7 +193,7 @@ api.add_resource(Live, "/healthz/live")
 api.add_resource(Version, "/version")
 
 
-def jsonify_response[**P, T1, T2](func: Callable[P, tuple[T1, T2]]) -> Callable[P, tuple[str, T2]]:
+def jsonify_response[**P, T1, T2](func: Callable[P, tuple[T1, T2]]) -> Callable[P, tuple[Response, T2]]:
     """
     Decorator for functions that return a tuple of 2 values.
     Calls jsonify() on the first value, and leaves the second unchanged.
