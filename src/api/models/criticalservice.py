@@ -153,7 +153,7 @@ class CriticalServiceHelper:
 
             if pod.status.container_statuses:
                 for container_status in pod.status.container_statuses:
-                    if container_status.state and container_status.state.running:
+                    if container_status.ready:
                         running_containers += 1
 
             result.append(
