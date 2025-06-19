@@ -423,8 +423,8 @@ class CriticalServicesStatus:
 
                     running_pods = (
                         getattr(resource, "spec", None)
-                        and hasattr(getattr(resource, "spec"), "ready_replicas")
-                        and getattr(getattr(resource, "spec"), "ready_replicas", None)
+                        and hasattr(getattr(resource, "status"), "ready_replicas")
+                        and getattr(getattr(resource, "status"), "ready_replicas", None)
                     ) or None
 
             # Log the success of retrieving service details
