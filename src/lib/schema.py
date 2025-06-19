@@ -526,7 +526,9 @@ class hmnfdSubscriptionListArray(TypedDict, total=False):
 
 # #/components/schemas/Roles.1.0.0
 hmnfdRole = Literal["compute", "system", "application", "storage", "management"]
-hmnfdNotificationRole = Literal["Compute", "System", "Application", "Storage", "Management"]
+hmnfdNotificationRole = Literal[
+    "Compute", "System", "Application", "Storage", "Management"
+]
 
 # #/components/schemas/HMSState.1.0.0
 hmnfdState = Literal[
@@ -589,6 +591,7 @@ class hmnfdNotificationPost(TypedDict, total=False):
     one of those fields, but is not required to have either one specifically. There is no way to capture that in a
     single TypeDict definition, so for simplicity we will mark both as not required.
     """
+
     Components: Required[list[str]]
     Role: hmnfdNotificationRole
     State: hmnfdNotificationState

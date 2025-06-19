@@ -63,8 +63,8 @@ from src.lib.schema import (
     cephHostDataType,
     skewReturn,
     DynamicDataSchema,
-    StateSchema,
-    TimestampsSchema,
+    CriticalServiceCmStaticType,
+    CriticalServiceCmDynamicSchema,
 )
 from src.lib.rrs_constants import (
     NAMESPACE,
@@ -1046,8 +1046,8 @@ class criticalServicesHelper:
 
     @staticmethod
     def get_critical_services_status(
-        services_data: CriticalServiceCmDynamicType,
-    ) -> CriticalServiceCmDynamicType:
+        services_data: CriticalServiceCmDynamicType | CriticalServiceCmStaticType,
+    ) -> CriticalServiceCmDynamicType | CriticalServiceCmStaticType:
         """
         Update critical service info with status and balanced values
         Args:
@@ -1062,7 +1062,11 @@ class criticalServicesHelper:
                 logger.warning("Failed to fetch pods, returning original services data")
                 return services_data
 
-            critical_services = services_data["critical_services"]
+            # Since function will add "status" and "balanced" field, so if initial type for service_data is - CriticalServiceCmStaticType then the cast is needed.
+            critical_services = cast(
+                dict[str, CriticalServiceCmDynamicSchema],
+                services_data["critical_services"],
+            )
             logger.info("Number of critical services are - %d", len(critical_services))
             imbalanced_services: list[str] = []
             unconfigured_services: list[str] = []

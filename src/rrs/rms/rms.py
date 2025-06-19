@@ -67,7 +67,7 @@ from src.lib.rrs_constants import (
 from src.lib.schema import (
     hmnfdNotificationPost,
     hmnfdSubscribePostV2,
-    hmnfdSubscriptionListArray
+    hmnfdSubscriptionListArray,
 )
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
