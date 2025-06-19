@@ -265,7 +265,6 @@ class RMSMonitor:
                 "start_timestamp_k8s_monitoring",
             )
             start = time.time()
-            latest_services_json = None
             unrecovered_services: list[str] = []
             unconfigured_services: list[str] = []
             while time.time() - start < total_time:
