@@ -849,5 +849,3 @@ class ApiTimestampFailedResponse(TypedDict):
     OAS: #/components/schemas/ApiTimestampFailedResponse
     """
     error: Literal["Failed to update API timestamp"]
-
-

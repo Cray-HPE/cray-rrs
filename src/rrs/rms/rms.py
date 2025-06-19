@@ -201,14 +201,14 @@ def jsonify_response[**P, T1, T2](func: Callable[P, tuple[T1, T2]]) -> Callable[
     their responses.
     """
     @wraps(func)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> tuple[str, T2]: 
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> tuple[Response, T2]:
         """
         Calls the wrapper function with the specified arguments.
         Calls jsonify() on the first value, and leaves the second unchanged.
         Returns the resulting tuple.
         """
         a, b = func(*args, **kwargs)
-        return str(a), b
+        return jsonify(a), b
     return wrapper
 
 
