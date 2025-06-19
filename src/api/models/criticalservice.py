@@ -147,15 +147,24 @@ class CriticalServiceHelper:
             if not pod.metadata.name:
                 continue
 
+            # Getting the container details of Pod
+            running_containers = 0
+            total_containers = len(pod.spec.containers) if pod.spec.containers else 0
+
+            if pod.status.container_statuses:
+                for container_status in pod.status.container_statuses:
+                    if container_status.state and container_status.state.running:
+                        running_containers += 1
+
             result.append(
                 {
                     "name": pod.metadata.name,
                     "status": pod_status if pod_status else "Unknown",
                     "node": node_name,
                     "zone": zone,
+                    "containers_running": f"{running_containers}/{total_containers}",
                 }
             )
-
         app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
         return result, running_pods
 

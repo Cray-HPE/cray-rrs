@@ -345,6 +345,7 @@ class PodSchema(TypedDict):
     status: Literal["Running", "Pending", "Failed", "Terminating"]
     node: str
     zone: str
+    containers_running: str
 
 
 @final
@@ -518,6 +519,12 @@ class hmnfdSubscriptionListArray(TypedDict, total=False):
 # This is not reflected in the official schema.
 # https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
 
+# #/components/schemas/Roles.1.0.0
+hmnfdRole = Literal["compute", "system", "application", "storage", "management"]
+hmnfdNotificationRole = Literal[
+    "Compute", "System", "Application", "Storage", "Management"
+]
+
 # #/components/schemas/HMSState.1.0.0
 hmnfdState = Literal[
     "unknown",
@@ -556,6 +563,7 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
     """
 
     Components: list[str]
+    Roles: list[hmnfdRole]
     States: list[hmnfdState]
     Url: str
 
@@ -564,7 +572,7 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
 class hmnfdNotificationPost(TypedDict, total=False):
     """
     This represents the request body for a POST request made from HMNFD to RMS, notifying
-    of a state change.
+    of a state or role change.
     OAS: #/components/responses/SCNRequestSchema
 
     https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
@@ -574,12 +582,13 @@ class hmnfdNotificationPost(TypedDict, total=False):
     I also note that the actual object appears to always contain a Timestamp field, which is not documented
     in the HMNFD spec. We do not use it, so I also omit it here.
 
-    RMS subscribes to notifications for changes in State. So one of these objects is guaranteed to have
+    RMS subscribes to notifications for changes in State or Role. So one of these objects is guaranteed to have
     one of those fields, but is not required to have either one specifically. There is no way to capture that in a
     single TypeDict definition, so for simplicity we will mark both as not required.
     """
 
     Components: Required[list[str]]
+    Role: hmnfdNotificationRole
     State: hmnfdNotificationState
 
 
@@ -739,7 +748,6 @@ class CrayRRSPod(TypedDict):
     """
     Schema for capturing Cray RRS Pod location details.
     """
-
     node: str
     rack: str
     zone: str
@@ -750,7 +758,6 @@ class TimestampsSchema(TypedDict, total=False):
     """
     Schema for tracking system-wide monitoring and service timestamps.
     """
-
     end_timestamp_ceph_monitoring: str
     end_timestamp_k8s_monitoring: str
     init_timestamp: str
@@ -766,7 +773,6 @@ class StateSchema(TypedDict):
     """
     Schema for tracking monitoring states across different system components.
     """
-
     ceph_monitoring: str
     k8s_monitoring: str
     rms_state: str | None
@@ -777,7 +783,6 @@ class ZoneDataSchema(TypedDict):
     """
     Schema for organizing zone-specific information about storage and compute nodes.
     """
-
     ceph_zones: cephNodesResultType
     k8s_zones: dict[str, list[NodeSchema]]
 
@@ -789,7 +794,6 @@ class DynamicDataSchema(TypedDict):
     This schema represents the complete structure stored in the dynamic ConfigMap
     and encompasses all monitoring aspects of the system.
     """
-
     cray_rrs_pod: CrayRRSPod
     state: StateSchema
     timestamps: TimestampsSchema
