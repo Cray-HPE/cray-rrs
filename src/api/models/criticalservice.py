@@ -51,6 +51,20 @@ class CriticalServiceHelper:
     """Helper class for fetching critical services and pod data"""
 
     @staticmethod
+    def build_node_zone_map() -> dict[str, str]:
+        """Build a mapping of node names to zones."""
+        nodes_data = ZoneTopologyService.fetch_k8s_zones()
+        node_zone_map = {}
+        for zone, node_types in nodes_data.items():
+            for node_type in k8sNodeTypeTuple:
+                if node_type not in node_types:
+                    continue
+                node_list = node_types[node_type]
+                if isinstance(node_list, list):
+                    node_zone_map.update({node["name"]: zone for node in node_list})
+        return node_zone_map
+
+    @staticmethod
     def get_namespaced_pods(
         service_info: CriticalServiceCmDynamicSchema, service_name: str
     ) -> tuple[list[PodSchema], int]:
@@ -79,22 +93,8 @@ class CriticalServiceHelper:
         namespace = service_info["namespace"]
         resource_type = service_info["type"]
 
-        # Load K8s zone data
-        nodes_data = ZoneTopologyService.fetch_k8s_zones()
-
         # Build node to zone mapping
-        node_zone_map = {}
-
-        for zone, node_types in nodes_data.items():
-            for node_type in k8sNodeTypeTuple:
-                if node_type not in node_types:
-                    continue
-                node_list = node_types[node_type]
-                if not isinstance(node_list, list):
-                    continue
-
-                valid_nodes = {node["name"]: zone for node in node_list}
-                node_zone_map.update(valid_nodes)
+        node_zone_map = CriticalServiceHelper.build_node_zone_map()
 
         try:
             pod_list = v1.list_namespaced_pod(namespace, label_selector="rrflag")
