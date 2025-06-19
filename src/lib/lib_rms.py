@@ -1088,7 +1088,7 @@ class criticalServicesHelper:
                 logger.warning("Failed to fetch pods, returning original services data")
                 # This is another scenario in which we could return CriticalServiceCmStaticType,
                 # if the input type was CriticalServiceCmStaticType
-                return services_data                        
+                return services_data
         except Exception as e:
             logger.exception(
                 "Unexpected error while updating critical service statuses: %s", e
@@ -1214,7 +1214,7 @@ class criticalServicesHelper:
         }
 
         # We previously verified that the critical_services list is not empty
-        if "status" in iter(critical_services.values()).__next__():
+        if "status" in next(iter(critical_services.values())):
             # This means the data is actually not mixed -- our input type must have been dynamic
             # But mypy is not clever enough to realize this, so here we use cast
             return CriticalServiceCmDynamicType(
