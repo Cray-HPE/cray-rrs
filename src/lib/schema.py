@@ -527,12 +527,6 @@ class hmnfdSubscriptionListArray(TypedDict, total=False):
 # This is not reflected in the official schema.
 # https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
 
-# #/components/schemas/Roles.1.0.0
-hmnfdRole = Literal["compute", "system", "application", "storage", "management"]
-hmnfdNotificationRole = Literal[
-    "Compute", "System", "Application", "Storage", "Management"
-]
-
 # #/components/schemas/HMSState.1.0.0
 hmnfdState = Literal[
     "unknown",
@@ -571,7 +565,6 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
     """
 
     Components: list[str]
-    Roles: list[hmnfdRole]
     States: list[hmnfdState]
     Url: str
 
@@ -596,7 +589,6 @@ class hmnfdNotificationPost(TypedDict, total=False):
     """
 
     Components: Required[list[str]]
-    Role: hmnfdNotificationRole
     State: hmnfdNotificationState
 
 
