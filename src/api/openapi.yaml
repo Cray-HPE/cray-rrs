@@ -842,6 +842,7 @@ components:
             currently_running_instances:
               type: integer
               minimum: 0
+              nullable: true
               description: Number of instances currently running and healthy
             pods:
               type: array
