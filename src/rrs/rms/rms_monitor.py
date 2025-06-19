@@ -38,7 +38,7 @@ import json
 import copy
 import threading
 from logging import Logger
-from typing import Optional, cast
+from typing import Literal, Optional, cast, overload
 from flask import Flask, current_app as app
 import yaml
 from src.lib import lib_rms
@@ -63,9 +63,9 @@ from src.lib.rrs_constants import (
 )
 from src.lib.schema import (
     CriticalServiceCmDynamicType,
+    CriticalServiceCmMixedType,
     CriticalServiceCmStaticType,
 )
-
 
 logger = None
 
@@ -142,10 +142,24 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
         app.logger.error(f"An unexpected error occurred: {e}")
         return False
 
+@overload
+def update_critical_services(
+    state_manager: RMSStateManager, reloading: Literal[False]
+) -> Optional[CriticalServiceCmDynamicType]: ...
+
+@overload
+def update_critical_services(
+    state_manager: RMSStateManager, reloading: Literal[True]
+) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]: ...
+
+@overload
+def update_critical_services(
+    state_manager: RMSStateManager, reloading: bool
+) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]: ...
 
 def update_critical_services(
-    state_manager: RMSStateManager, reloading: bool = False
-) -> Optional[str]:
+    state_manager: RMSStateManager, reloading: bool
+) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]:
     """
     Update critical service status and configuration in the dynamic ConfigMap.
     Args:
@@ -196,7 +210,7 @@ def update_critical_services(
                 CRITICAL_SERVICE_KEY,
                 services_json,
             )
-        return services_json
+        return updated_services
     except json.JSONDecodeError:
         app.logger.error(f"Failed to decode {CRITICAL_SERVICE_KEY} from configmap")
         return None
@@ -257,11 +271,10 @@ class RMSMonitor:
             while time.time() - start < total_time:
                 app.logger.info("Checking k8s services")
                 # Retrieve and update critical services status
-                latest_services_json = update_critical_services(self.state_manager)
+                services_data = update_critical_services(self.state_manager, False)
 
                 try:
-                    if latest_services_json:
-                        services_data = json.loads(latest_services_json)
+                    if services_data:
                         unrecovered_services = []
                         unconfigured_services = []
 
@@ -277,10 +290,10 @@ class RMSMonitor:
                                 unconfigured_services.append(service)
                     else:
                         app.logger.critical(
-                            "Services JSON data is not available to process"
+                            "Services data is not available to process"
                         )
                         sys.exit(1)
-                except (json.JSONDecodeError, KeyError) as e:
+                except KeyError as e:
                     app.logger.error(f"Error processing services data: {e}")
 
                 if not unrecovered_services:
