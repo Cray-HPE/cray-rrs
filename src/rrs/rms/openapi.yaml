@@ -100,9 +100,7 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                enum: ["API timestamp updated successfully"]
-                example: "API timestamp updated successfully"
+                $ref: '#/components/schemas/ApiTimestampSuccessResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -212,6 +210,18 @@ components:
           description: Confirmation message
           example: "POST call received"
           enum: ["POST call received"]
+
+    ApiTimestampSuccessResponse:
+      type: object
+      required:
+        - message
+      description: Success response for API timestamp update
+      properties:
+        message:
+          type: string
+          description: Confirmation message
+          example: "API timestamp updated successfully"
+          enum: ["API timestamp updated successfully"]
 
     EmptyDict:
       type: object
