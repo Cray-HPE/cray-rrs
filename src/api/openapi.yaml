@@ -850,7 +850,7 @@ components:
                 $ref: '#/components/schemas/PodSchema'
     PodSchema:
       type: object
-      required: [name, node, status, zone, containers_running]
+      required: [name, node, status, zone]
       description: Information about an individual pod instance including its location and status
       properties:
         name:
@@ -870,9 +870,6 @@ components:
         zone:
           type: string
           description: Zone where the pod is located based on its assigned node
-        containers_running:
-          type: string
-          description: For each pod running_containers/total_containers
     CriticalServicesStatusListSchema:
       type: object
       description: Status overview of all critical services organized by namespace, showing their operational state and distribution

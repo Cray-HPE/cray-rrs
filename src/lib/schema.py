@@ -345,7 +345,6 @@ class PodSchema(TypedDict):
     status: Literal["Running", "Pending", "Failed", "Terminating"]
     node: str
     zone: str
-    containers_running: str
 
 
 @final
