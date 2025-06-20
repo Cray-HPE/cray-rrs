@@ -36,7 +36,7 @@ def problemify(status: HTTPStatus, detail: str) -> Response:
     Response object. Conforms to RFC7807 HTTP Problem Details for HTTP APIs.
 
     Args:
-        Same as httpproblem.problem_http_response. See https://tools.ietf.org/html/rfc7807
+        Subset of httpproblem.problem_http_response. See https://tools.ietf.org/html/rfc7807
         for details on these fields and
         https://github.com/cbornet/python-httpproblem/blob/master/httpproblem/problem.py#L34
         for an explanation.
