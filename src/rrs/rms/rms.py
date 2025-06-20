@@ -52,7 +52,7 @@ import urllib3
 from src.lib import lib_rms
 from src.lib import lib_configmap
 from src.rrs.rms import rms_monitor
-from src.rrs.rms.rms_statemanager import RMSStateManager, RMSState
+from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import (
@@ -75,6 +75,8 @@ from src.lib.schema import (
     SCNInternalServerErrorResponse,
     ApiTimestampSuccessResponse,
     ApiTimestampFailedResponse,
+    DynamicDataSchema,
+    RMSState,
     HMNFD_STATES,
 )
 from src.lib.healthz import Ready, Live
@@ -343,7 +345,7 @@ def check_and_create_hmnfd_subscription() -> None:
     if yaml_content is None:
         app.logger.error("%s not found in the configmap", DYNAMIC_DATA_KEY)
         return
-    dynamic_data = yaml.safe_load(yaml_content)
+    dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
     subscriber_node = dynamic_data.get("cray_rrs_pod").get("rack")
     agent_name = "rms"
 
@@ -440,7 +442,7 @@ def initial_check_and_update() -> bool:
     try:
         yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
         if yaml_content:
-            dynamic_data = yaml.safe_load(yaml_content)
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
         else:
             app.logger.error(
                 "No content found under %s in rrs-mon-dynamic configmap",

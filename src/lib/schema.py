@@ -25,6 +25,7 @@ This module defines various TypedDict schemas for cray-rrs-api
 related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
+from enum import StrEnum
 from typing import TypedDict, Literal, final, Required, NamedTuple, get_args
 
 # Zones Schemas
@@ -418,6 +419,34 @@ class CriticalServiceUpdateSchema(TypedDict):
     Already_Existing_Services: list[str]
 
 
+# RMS schemas
+
+
+RMS_STATES = Literal[
+    "Ready",
+    "Started",
+    "Waiting",
+    "Monitoring",
+    "Fail_notified",
+    "internal_failure",
+    "init",
+    "init_fail",
+]
+
+
+class RMSState(StrEnum):
+    """Enum representing the states of the Rack Resiliency Service (RRS)."""
+
+    READY = "Ready"
+    STARTED = "Started"
+    WAITING = "Waiting"
+    MONITORING = "Monitoring"
+    FAIL_NOTIFIED = "Fail_notified"
+    INTERNAL_FAILURE = "internal_failure"
+    INIT = "init"
+    INIT_FAIL = "init_fail"
+
+
 # Error Response Schemas
 @final
 class ErrorDict(TypedDict):
@@ -437,6 +466,9 @@ class InformationDict(TypedDict):
     """
 
     Information: str
+
+
+# External API schemas
 
 
 @final
@@ -780,7 +812,7 @@ class StateSchema(TypedDict):
     """
     ceph_monitoring: str
     k8s_monitoring: str
-    rms_state: str | None
+    rms_state: RMS_STATES | None
 
 
 # Zone Schema

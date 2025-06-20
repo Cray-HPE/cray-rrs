@@ -36,13 +36,14 @@ from collections import defaultdict
 import logging
 import json
 import yaml
-from src.rrs.rms.rms_statemanager import RMSState
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.schema import (
     cephNodesStatusResultType,
     CriticalServiceCmStaticType,
+    DynamicDataSchema,
     NodeSchema,
+    RMSState,
 )
 from src.lib.rrs_constants import (
     NAMESPACE,
@@ -213,7 +214,7 @@ def init() -> None:
             sys.exit(1)
         yaml_content = configmap_data.get(DYNAMIC_DATA_KEY, None)
         if yaml_content:
-            dynamic_data = yaml.safe_load(yaml_content)
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
         else:
             logger.error(
                 "No content found under %s in %s configmap",

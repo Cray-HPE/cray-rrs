@@ -43,7 +43,7 @@ from flask import Flask, current_app as app
 import yaml
 from src.lib import lib_rms
 from src.lib import lib_configmap
-from src.rrs.rms.rms_statemanager import RMSStateManager, RMSState
+from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import (
@@ -65,6 +65,8 @@ from src.lib.schema import (
     CriticalServiceCmDynamicType,
     CriticalServiceCmMixedType,
     CriticalServiceCmStaticType,
+    DynamicDataSchema,
+    RMSState,
 )
 
 logger = None
@@ -100,7 +102,7 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
         if yaml_content is None:
             app.logger.error(f"{DYNAMIC_DATA_KEY} not found in the configmap")
             sys.exit(1)
-        dynamic_data = yaml.safe_load(yaml_content)
+        dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
         zone_info = dynamic_data["zone"]
         k8s_info = zone_info["k8s_zones"]
         k8s_info_old = copy.deepcopy(k8s_info)
@@ -381,7 +383,7 @@ class RMSMonitor:
                     f"No content found under {DYNAMIC_DATA_KEY} in rrs-mon-dynamic configmap"
                 )
                 sys.exit(1)
-            dynamic_data = yaml.safe_load(yaml_content)
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
             monitor_k8s_start_time = dynamic_data.get("timestamps", {}).get(
                 "start_timestamp_k8s_monitoring", None
             )
