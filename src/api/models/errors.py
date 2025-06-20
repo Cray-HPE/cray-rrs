@@ -26,27 +26,11 @@ API Error formatting for the Artifact Repository Service which conforms to
 RFC 7807. Also, some frequently used errors encapsulated in functions.
 """
 from http import HTTPStatus
-from typing import TypedDict
 from flask import Response
 from httpproblem import problem_http_response
 
 
-# Used because this type needs to be the same in two places.
-# If the status type needs to change, this is the line where it would change.
-type statusType = HTTPStatus
-
-
-class ProblemHttpResponseReturnValue(TypedDict):
-    """
-    Based on the function definition in https://github.com/cbornet/python-httpproblem/blob/master/httpproblem/problem.py
-    And on how we constrain our inputs to it
-    """
-    statusCode: statusType
-    body: str
-    headers: dict[str, str]
-
-
-def problemify(status: statusType, detail: str) -> Response:
+def problemify(status: HTTPStatus, detail: str) -> Response:
     """
     Wrapper for httpproblem.problem_http_response that returns a Flask
     Response object. Conforms to RFC7807 HTTP Problem Details for HTTP APIs.
@@ -67,7 +51,7 @@ def problemify(status: statusType, detail: str) -> Response:
 
     Returns: flask.Response object of an error in RFC 7807 format
     """
-    problem: ProblemHttpResponseReturnValue = problem_http_response(status=status, detail=detail)
+    problem = problem_http_response(status=status, detail=detail)
     return Response(
         problem["body"], status=problem["statusCode"], headers=problem["headers"]
     )
