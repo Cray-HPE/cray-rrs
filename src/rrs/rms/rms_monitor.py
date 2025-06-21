@@ -394,9 +394,9 @@ class RMSMonitor:
                 sys.exit(1)
             dt = datetime.strptime(monitor_k8s_start_time, "%Y-%m-%dT%H:%M:%SZ")
             dt = dt.replace(tzinfo=timezone.utc)
-            monitor_k8s_start_time = dt.timestamp()
+            monitor_k8s_start_timestamp = dt.timestamp()
             current_time = time.time()
-            elapsed_time = current_time - monitor_k8s_start_time
+            elapsed_time = current_time - monitor_k8s_start_timestamp
 
             # Calculate percentage of interval completed
             percentage_completed = (elapsed_time / monitoring_total_time) * 100

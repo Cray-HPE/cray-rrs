@@ -89,15 +89,6 @@ class NodeSchema(TypedDict):
 StatusReady = Literal["Ready", "NotReady"]
 
 
-@final
-class OSDStatusSchema(TypedDict):
-    """
-    Schema for an OSD, including its name and status.
-    """
-
-    name: str
-    status: StatusReady
-
 
 @final
 class OSDSchema(TypedDict):
@@ -142,16 +133,6 @@ class CephNodeInfo(TypedDict):
     osds: list[OSDSchema]
 
 
-@final
-class CephNodeStatusInfo(TypedDict):
-    """
-    Schema representing a node containing OSDs.
-    """
-
-    name: str
-    status: StatusReady
-    osds: list[OSDStatusSchema]
-
 
 @final
 class ManagementKubernetesSchema(TypedDict):
@@ -182,7 +163,6 @@ k8sNodeTypeTuple: tuple[k8sNodeTypes, k8sNodeTypes] = ("masters", "workers")
 # Mappings from zone names to k8sNodes
 type k8sNodesResultType = dict[str, k8sNodes]
 # Mappings from zone names to list[CephNodeInfo]
-type cephNodesStatusResultType = dict[str, list[CephNodeStatusInfo]]
 type cephNodesResultType = dict[str, list[CephNodeInfo]]
 
 
@@ -662,7 +642,7 @@ class ceph_tree_node_datatype(TypedDict, total=False):
     type: str
     name: str
     children: list[int]
-    status: StatusReady
+    status: Literal["up", "down"]
 
 
 @final
@@ -784,8 +764,8 @@ class CrayRRSPod(TypedDict):
     Schema for capturing Cray RRS Pod location details.
     """
     node: str
-    rack: str
-    zone: str
+    rack: str | None
+    zone: str | None
 
 
 # Timestamps Schema

@@ -346,7 +346,11 @@ def check_and_create_hmnfd_subscription() -> None:
         app.logger.error("%s not found in the configmap", DYNAMIC_DATA_KEY)
         return
     dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
-    subscriber_node = dynamic_data.get("cray_rrs_pod").get("rack")
+    cray_rrs_pod = dynamic_data.get("cray_rrs_pod")
+    if cray_rrs_pod is None:
+        app.logger.error("cray_rrs_pod not found in dynamic data")
+        return
+    subscriber_node = cray_rrs_pod.get("rack")
     agent_name = "rms"
 
     get_url = "https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions"
@@ -452,7 +456,7 @@ def initial_check_and_update() -> bool:
 
         state = dynamic_data.get("state", {})
         rms_state_value = state.get("rms_state", None)
-        if RMSState(rms_state_value) != RMSState.READY:
+        if rms_state_value is None or RMSState(rms_state_value) != RMSState.READY:
             app.logger.info("RMS state is %s", rms_state_value)
             k8s_state = state.get("k8s_monitoring", None)
             ceph_state = state.get("ceph_monitoring", None)
@@ -462,9 +466,9 @@ def initial_check_and_update() -> bool:
                 was_monitoring = True
             else:
                 app.logger.info("Updating RMS state to Ready for this fresh run")
-                rms_state_value = RMSState.READY
-                state["rms_state"] = rms_state_value.value
-                state_manager.set_state(rms_state_value)
+                rms_state_enum = RMSState.READY
+                state["rms_state"] = rms_state_enum.value
+                state_manager.set_state(rms_state_enum)
         # Update RMS start timestamp in dynamic configmap
         timestamps = dynamic_data.get("timestamps", {})
         rms_start_timestamp = timestamps.get("start_timestamp_rms", None)

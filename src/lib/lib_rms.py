@@ -48,12 +48,12 @@ from kubernetes.client.models import V1Node
 from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.schema import (
-    cephNodesStatusResultType,
+    cephNodesResultType,
     cephOrchPsService,
     cephStatus,
     k8sNodesResultType,
-    CephNodeStatusInfo,
-    OSDStatusSchema,
+    CephNodeInfo,
+    OSDSchema,
     slsEntryDataType,
     podInfoType,
     hsmDataType,
@@ -562,7 +562,7 @@ class cephHelper:
         return cephTreeDataType(), cast(list[cephHostDataType], [])
 
     @staticmethod
-    def get_ceph_status() -> tuple[cephNodesStatusResultType, bool]:
+    def get_ceph_status() -> tuple[cephNodesResultType, bool]:
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
@@ -577,7 +577,7 @@ class cephHelper:
                 if "hostname" in host and "status" in host:
                     host_status_map[host["hostname"]] = host["status"]
 
-            final_output: cephNodesStatusResultType = {}
+            final_output: cephNodesResultType = {}
             failed_hosts: list[str] = []
 
             for item in ceph_tree.get("nodes", []):
@@ -586,7 +586,7 @@ class cephHelper:
 
                 # rack_name = item["name"]
 
-                storage_nodes: list[CephNodeStatusInfo] = []
+                storage_nodes: list[CephNodeInfo] = []
                 children = item.get("children")
                 nodes = ceph_tree.get("nodes")
                 if children is None or nodes is None:
@@ -617,7 +617,7 @@ class cephHelper:
                             if osd.get("id") in osd_ids and osd.get("type") == "osd"
                         ]
 
-                    osd_status_list: list[OSDStatusSchema] = []
+                    osd_status_list: list[OSDSchema] = []
                     for osd in osds:
                         osd_name = osd.get("name", "")
                         osd_status = osd["status"]
