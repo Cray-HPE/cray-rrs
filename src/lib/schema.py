@@ -103,6 +103,7 @@ class OSDSchema(TypedDict):
 class OSDStatesSchema(TypedDict, total=False):
     """
     Schema for OSD states with up and down fields.
+    RRS OAS: #/components/schemas/OSDStatesSchema
     """
 
     up: list[str]
@@ -442,7 +443,6 @@ class ErrorDict(TypedDict):
 class InformationDict(TypedDict):
     """
     Schema for informational responses.
-    RRS OAS: #/components/schemas/InformationDict
     """
 
     Information: str
