@@ -1049,18 +1049,28 @@ class criticalServicesHelper:
 
     @overload
     @staticmethod
-    def get_critical_services_status(services_data: CriticalServiceCmDynamicType) -> CriticalServiceCmDynamicType: ...
+    def get_critical_services_status(
+        services_data: CriticalServiceCmDynamicType,
+    ) -> CriticalServiceCmDynamicType: ...
 
     @overload
     @staticmethod
-    def get_critical_services_status(services_data: CriticalServiceCmStaticType) -> (
-        CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType
+    def get_critical_services_status(
+        services_data: CriticalServiceCmStaticType,
+    ) -> (
+        CriticalServiceCmDynamicType
+        | CriticalServiceCmMixedType
+        | CriticalServiceCmStaticType
     ): ...
 
     @staticmethod
     def get_critical_services_status(
         services_data: CriticalServiceCmDynamicType | CriticalServiceCmStaticType,
-    ) -> CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType:
+    ) -> (
+        CriticalServiceCmDynamicType
+        | CriticalServiceCmMixedType
+        | CriticalServiceCmStaticType
+    ):
         """
         Update critical service info with status and balanced values
         Args:
@@ -1115,21 +1125,25 @@ class criticalServicesHelper:
 
                 if desired_replicas is None or ready_replicas is None or labels is None:
                     unconfigured_services.append(service_name)
-                    updated_critical_services[service_name] = CriticalServiceCmDynamicSchema(
-                        namespace=service_namespace,
-                        type=service_type,
-                        status="Unconfigured",
-                        balanced="NA",
+                    updated_critical_services[service_name] = (
+                        CriticalServiceCmDynamicSchema(
+                            namespace=service_namespace,
+                            type=service_type,
+                            status="Unconfigured",
+                            balanced="NA",
+                        )
                     )
                     continue
 
                 if ready_replicas == 0:
                     unconfigured_services.append(service_name)
-                    updated_critical_services[service_name] = CriticalServiceCmDynamicSchema(
-                        namespace=service_namespace,
-                        type=service_type,
-                        status="Unconfigured",
-                        balanced="NA",
+                    updated_critical_services[service_name] = (
+                        CriticalServiceCmDynamicSchema(
+                            namespace=service_namespace,
+                            type=service_type,
+                            status="Unconfigured",
+                            balanced="NA",
+                        )
                     )
                     continue
                 status: ServiceStatus = "Configured"
@@ -1162,11 +1176,13 @@ class criticalServicesHelper:
                 if balance_details.balanced == "false":
                     imbalanced_services.append(service_name)
 
-                updated_critical_services[service_name] = CriticalServiceCmDynamicSchema(
-                    namespace=service_namespace,
-                    type=service_type,
-                    status=status,
-                    balanced=balance_details.balanced,
+                updated_critical_services[service_name] = (
+                    CriticalServiceCmDynamicSchema(
+                        namespace=service_namespace,
+                        type=service_type,
+                        status=status,
+                        balanced=balance_details.balanced,
+                    )
                 )
 
             if partially_configured_services:
@@ -1185,7 +1201,9 @@ class criticalServicesHelper:
 
             # This is the good path. In this case, regardless of the input type, we are
             # returning dynamic data
-            return CriticalServiceCmDynamicType(critical_services=updated_critical_services)
+            return CriticalServiceCmDynamicType(
+                critical_services=updated_critical_services
+            )
         except Exception as e:
             logger.exception(
                 "Unexpected error while updating critical service statuses: %s", e
@@ -1202,7 +1220,9 @@ class criticalServicesHelper:
         # had been updated, but before the function returned. In this case, we will still be returning
         # purely dynamic data.
         if len(updated_critical_services) == len(services_data):
-            return CriticalServiceCmDynamicType(critical_services=updated_critical_services)
+            return CriticalServiceCmDynamicType(
+                critical_services=updated_critical_services
+            )
 
         # If we've reached here, then this means that if the input type was static, the output
         # type will be mixed.
@@ -1210,7 +1230,9 @@ class criticalServicesHelper:
             str, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema
         ] = {
             service_name: (
-                updated_critical_services.get(service_name, critical_services[service_name])
+                updated_critical_services.get(
+                    service_name, critical_services[service_name]
+                )
             )
             for service_name in critical_services
         }
@@ -1220,7 +1242,9 @@ class criticalServicesHelper:
             # This means the data is actually not mixed -- our input type must have been dynamic
             # But mypy is not clever enough to realize this, so here we use cast
             return CriticalServiceCmDynamicType(
-                critical_services=cast(dict[str, CriticalServiceCmDynamicSchema], mixed_service_data)
+                critical_services=cast(
+                    dict[str, CriticalServiceCmDynamicSchema], mixed_service_data
+                )
             )
 
         # The data actually is a mix of static and dynamic in this case

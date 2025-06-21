@@ -236,7 +236,8 @@ class ConfigMapHelper:
                         dynamic_data, default_flow_style=False
                     )
                 configmap_body = client.V1ConfigMap(
-                    metadata=client.V1ObjectMeta(name=configmap_name), data=configmap_data
+                    metadata=client.V1ObjectMeta(name=configmap_name),
+                    data=configmap_data,
                 )
 
                 try:

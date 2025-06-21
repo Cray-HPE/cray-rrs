@@ -154,18 +154,30 @@ def update_critical_services(
 @overload
 def update_critical_services(
     state_manager: RMSStateManager, reloading: Literal[True]
-) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]: ...
+) -> Optional[
+    CriticalServiceCmDynamicType
+    | CriticalServiceCmMixedType
+    | CriticalServiceCmStaticType
+]: ...
 
 
 @overload
 def update_critical_services(
     state_manager: RMSStateManager, reloading: bool
-) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]: ...
+) -> Optional[
+    CriticalServiceCmDynamicType
+    | CriticalServiceCmMixedType
+    | CriticalServiceCmStaticType
+]: ...
 
 
 def update_critical_services(
     state_manager: RMSStateManager, reloading: bool
-) -> Optional[CriticalServiceCmDynamicType | CriticalServiceCmMixedType | CriticalServiceCmStaticType]:
+) -> Optional[
+    CriticalServiceCmDynamicType
+    | CriticalServiceCmMixedType
+    | CriticalServiceCmStaticType
+]:
     """
     Update critical service status and configuration in the dynamic ConfigMap.
     Args:
@@ -294,9 +306,7 @@ class RMSMonitor:
                             elif details["status"] == "Unconfigured":
                                 unconfigured_services.append(service)
                     else:
-                        app.logger.critical(
-                            "Services data is not available to process"
-                        )
+                        app.logger.critical("Services data is not available to process")
                         sys.exit(1)
                 except KeyError as e:
                     app.logger.error(f"Error processing services data: {e}")

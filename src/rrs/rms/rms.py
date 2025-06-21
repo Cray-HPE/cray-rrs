@@ -196,13 +196,16 @@ api.add_resource(Live, "/healthz/live")
 api.add_resource(Version, "/version")
 
 
-def jsonify_response[**P, T1, T2](func: Callable[P, tuple[T1, T2]]) -> Callable[P, tuple[Response, T2]]:
+def jsonify_response[**P, T1, T2](
+    func: Callable[P, tuple[T1, T2]],
+) -> Callable[P, tuple[Response, T2]]:
     """
     Decorator for functions that return a tuple of 2 values.
     Calls jsonify() on the first value, and leaves the second unchanged.
     This allows the endpoint functions to have meaningful type signatures but still use jsonify for
     their responses.
     """
+
     @wraps(func)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> tuple[Response, T2]:
         """
@@ -212,14 +215,15 @@ def jsonify_response[**P, T1, T2](func: Callable[P, tuple[T1, T2]]) -> Callable[
         """
         a, b = func(*args, **kwargs)
         return jsonify(a), b
+
     return wrapper
 
 
 @app.route("/api-ts", methods=["POST"])
 @jsonify_response
 def update_api_timestamp() -> (
-    tuple[ApiTimestampSuccessResponse, Literal[HTTPStatus.OK]] |
-    tuple[ApiTimestampFailedResponse, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]]
+    tuple[ApiTimestampSuccessResponse, Literal[HTTPStatus.OK]]
+    | tuple[ApiTimestampFailedResponse, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]]
 ):
     """
     RMS OAS: #/paths/api-ts (post)
@@ -248,9 +252,9 @@ def update_api_timestamp() -> (
 @app.route("/scn", methods=["POST"])
 @jsonify_response
 def handleSCN() -> (
-    tuple[SCNSuccessResponse, Literal[HTTPStatus.OK]] |
-    tuple[SCNBadRequestResponse, Literal[HTTPStatus.BAD_REQUEST]] |
-    tuple[SCNInternalServerErrorResponse, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]]
+    tuple[SCNSuccessResponse, Literal[HTTPStatus.OK]]
+    | tuple[SCNBadRequestResponse, Literal[HTTPStatus.BAD_REQUEST]]
+    | tuple[SCNInternalServerErrorResponse, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]]
 ):
     """
     RMS OAS: #/paths/scn (post)
@@ -275,7 +279,9 @@ def handleSCN() -> (
         if not components or not comp_state:
             app.logger.error("Missing 'Components' or 'State' in the request")
             return (
-                SCNBadRequestResponse(error="Missing 'Components' or 'State' in the request"),
+                SCNBadRequestResponse(
+                    error="Missing 'Components' or 'State' in the request"
+                ),
                 HTTPStatus.BAD_REQUEST,
             )
         if comp_state == "Off":

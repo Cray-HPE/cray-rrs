@@ -42,16 +42,18 @@ def problem_http_response(
     type: Optional[str] = None,
     instance: Optional[str] = None,
     headers: Optional[dict[str, str]] = None,
-    **kwargs: object
+    **kwargs: object,
 ) -> ProblemResponseDict[None]: ...
-
 @overload
-def problem_http_response[StatusType: (int, HTTPStatus)](
+def problem_http_response[StatusType: (
+    int,
+    HTTPStatus,
+)](
     status: StatusType,
     title: Optional[str] = None,
     detail: Optional[str] = None,
     type: Optional[str] = None,
     instance: Optional[str] = None,
     headers: Optional[dict[str, str]] = None,
-    **kwargs: object
+    **kwargs: object,
 ) -> ProblemResponseDict[StatusType]: ...

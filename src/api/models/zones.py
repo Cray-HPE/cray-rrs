@@ -35,7 +35,6 @@ from src.lib.rrs_logging import get_log_id
 from src.lib.rrs_constants import DYNAMIC_DATA_KEY
 from src.lib.schema import (
     cephNodesResultType,
-    cephNodesResultType,
     k8sNodesResultType,
     NodeSchema,
     DynamicDataSchema,

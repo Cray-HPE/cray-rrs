@@ -89,7 +89,6 @@ class NodeSchema(TypedDict):
 StatusReady = Literal["Ready", "NotReady"]
 
 
-
 @final
 class OSDSchema(TypedDict):
     """
@@ -131,7 +130,6 @@ class CephNodeInfo(TypedDict):
     name: str
     status: StatusReady
     osds: list[OSDSchema]
-
 
 
 @final
@@ -281,7 +279,9 @@ class CriticalServiceCmMixedType(TypedDict):
     Schema for critical services in a configmap, including the service name and its details.
     """
 
-    critical_services: dict[str, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema]
+    critical_services: dict[
+        str, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema
+    ]
 
 
 @final
@@ -763,6 +763,7 @@ class CrayRRSPod(TypedDict):
     """
     Schema for capturing Cray RRS Pod location details.
     """
+
     node: str
     rack: str | None
     zone: str | None
@@ -774,6 +775,7 @@ class TimestampsSchema(TypedDict, total=False):
     """
     Schema for tracking system-wide monitoring and service timestamps.
     """
+
     end_timestamp_ceph_monitoring: str
     end_timestamp_k8s_monitoring: str
     init_timestamp: str
@@ -790,6 +792,7 @@ class StateSchema(TypedDict):
     """
     Schema for tracking monitoring states across different system components.
     """
+
     ceph_monitoring: str
     k8s_monitoring: str
     rms_state: RMS_STATES | None
@@ -801,6 +804,7 @@ class ZoneDataSchema(TypedDict):
     """
     Schema for organizing zone-specific information about storage and compute nodes.
     """
+
     ceph_zones: cephNodesResultType
     k8s_zones: dict[str, list[NodeSchema]]
 
@@ -813,6 +817,7 @@ class DynamicDataSchema(TypedDict):
     This schema represents the complete structure stored in the dynamic ConfigMap
     and encompasses all monitoring aspects of the system.
     """
+
     cray_rrs_pod: CrayRRSPod
     state: StateSchema
     timestamps: TimestampsSchema
@@ -821,12 +826,14 @@ class DynamicDataSchema(TypedDict):
 
 # RMS API schemas
 
+
 @final
 class SCNSuccessResponse(TypedDict):
     """
     This represents the response body to a successful POST call to the /scn RMS endpoint.
     OAS: #/components/schemas/SCNSuccessResponse
     """
+
     message: Literal["POST call received"]
 
 
@@ -836,6 +843,7 @@ class SCNBadRequestResponse(TypedDict):
     This represents the response body to a POST call to the /scn RMS endpoint with bad data.
     OAS: #/components/schemas/SCNBadRequestResponse
     """
+
     error: Literal["Missing 'Components' or 'State' in the request"]
 
 
@@ -845,6 +853,7 @@ class SCNInternalServerErrorResponse(TypedDict):
     This represents the response body to an unsuccessful POST call to the /scn RMS endpoint.
     OAS: #/components/schemas/SCNInternalServerErrorResponse
     """
+
     error: Literal["Internal server error"]
 
 
@@ -854,6 +863,7 @@ class ApiTimestampSuccessResponse(TypedDict):
     This represents the response body to a successful POST call to the /api-ts RMS endpoint.
     OAS: #/components/schemas/ApiTimestampSuccessResponse
     """
+
     message: Literal["API timestamp updated successfully"]
 
 
@@ -863,4 +873,5 @@ class ApiTimestampFailedResponse(TypedDict):
     This represents the response body to an unsuccessful POST call to the /api-ts RMS endpoint.
     OAS: #/components/schemas/ApiTimestampFailedResponse
     """
+
     error: Literal["Failed to update API timestamp"]
