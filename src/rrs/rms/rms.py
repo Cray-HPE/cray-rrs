@@ -87,8 +87,11 @@ from src.rrs.rms.rms_monitor import (
     update_critical_services,
 )
 
+
 app = Flask(__name__)
-api = Api(app)
+# Flask has some Anys in its type stubs, so the lines relating to the api object
+# have to have comments to suppress mypy errors.
+api = Api(app)  # type: ignore[misc]
 
 # Production configuration
 app.config.update(
@@ -194,9 +197,9 @@ def check_failure_type(components: list[str]) -> None:
 
 
 # Register healthz and version endpoints
-api.add_resource(Ready, "/healthz/ready")
-api.add_resource(Live, "/healthz/live")
-api.add_resource(Version, "/version")
+api.add_resource(Ready, "/healthz/ready")  # type: ignore[misc]
+api.add_resource(Live, "/healthz/live")  # type: ignore[misc]
+api.add_resource(Version, "/version")  # type: ignore[misc]
 
 
 def jsonify_response[**P, T1, T2](
@@ -217,12 +220,15 @@ def jsonify_response[**P, T1, T2](
         Returns the resulting tuple.
         """
         a, b = func(*args, **kwargs)
-        return jsonify(a), b
+        return cast(Response, jsonify(a)), b
 
     return wrapper
 
 
-@app.route("/api-ts", methods=["POST"])
+POST_METHODS: list[Literal["POST"]] = ["POST"]
+
+
+@app.route("/api-ts", methods=POST_METHODS)
 @jsonify_response
 def update_api_timestamp() -> (
     tuple[ApiTimestampSuccessResponse, Literal[HTTPStatus.OK]]
@@ -252,7 +258,7 @@ def update_api_timestamp() -> (
         )
 
 
-@app.route("/scn", methods=["POST"])
+@app.route("/scn", methods=POST_METHODS)
 @jsonify_response
 def handleSCN() -> (
     tuple[SCNSuccessResponse, Literal[HTTPStatus.OK]]
