@@ -51,6 +51,7 @@ from src.lib.schema import (
     cephNodesResultType,
     cephOrchPsService,
     cephStatus,
+    k8sNodeTypeTuple,
     k8sNodesResultType,
     CephNodeInfo,
     OSDSchema,
@@ -867,7 +868,7 @@ class k8sHelper:
 
             node_zone_map = {}
             for zone, node_types in nodes_data.items():
-                for node_type in ["masters", "workers"]:
+                for node_type in k8sNodeTypeTuple:
                     node_list = node_types.get(node_type, [])
                     if not isinstance(node_list, list):
                         continue
