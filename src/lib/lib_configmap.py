@@ -215,67 +215,70 @@ class ConfigMapHelper:
         Returns:
             None
         """
+        ConfigMapHelper.load_k8s_config()
+        v1 = client.CoreV1Api()
         try:
-            ConfigMapHelper.load_k8s_config()
-            v1 = client.CoreV1Api()
-            if ConfigMapHelper.acquire_lock(namespace, configmap_name):
-                if configmap_data is None:
-                    configmap_data = ConfigMapHelper.read_configmap(
-                        namespace, configmap_name
-                    )
-                configmap_data[key] = new_data
-                # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
-                if configmap_name == DYNAMIC_CM:
-                    dynamic_data: DynamicDataSchema = yaml.safe_load(
-                        configmap_data[DYNAMIC_DATA_KEY]
-                    )
-                    dynamic_data["timestamps"][
-                        "last_update_timestamp"
-                    ] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-                    configmap_data[DYNAMIC_DATA_KEY] = yaml.dump(
-                        dynamic_data, default_flow_style=False
-                    )
-                configmap_body = client.V1ConfigMap(
-                    metadata=client.V1ObjectMeta(name=configmap_name),
-                    data=configmap_data,
-                )
-
-                try:
-                    logger.info(
-                        "Updating ConfigMap %s in namespace %s",
-                        configmap_name,
-                        namespace,
-                    )
-                    v1.replace_namespaced_config_map(
-                        name=configmap_name, namespace=namespace, body=configmap_body
-                    )
-                    logger.info(
-                        "ConfigMap %s in namespace %s updated successfully",
-                        configmap_name,
-                        namespace,
-                    )
-                except ApiException as e:
-                    logger.error("Failed to update ConfigMap: %s", e.reason)
-                    raise
-                except Exception as e:
-                    logger.error(
-                        "Unexpected error updating ConfigMap: %s: %s",
-                        type(e).__name__,
-                        e,
-                    )
-                    raise
-            else:
+            if not ConfigMapHelper.acquire_lock(namespace, configmap_name):
                 logger.error(
                     "Failed to update ConfigMap %s in namespace %s",
                     configmap_name,
                     namespace,
                 )
                 sys.exit(1)
+            if configmap_data is None:
+                configmap_data = ConfigMapHelper.read_configmap(
+                    namespace, configmap_name
+                )
+            configmap_data[key] = new_data
+            # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
+            if configmap_name == DYNAMIC_CM:
+                dynamic_data: DynamicDataSchema = yaml.safe_load(
+                    configmap_data[DYNAMIC_DATA_KEY]
+                )
+                dynamic_data["timestamps"][
+                    "last_update_timestamp"
+                ] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+                configmap_data[DYNAMIC_DATA_KEY] = yaml.dump(
+                    dynamic_data, default_flow_style=False
+                )
+            configmap_body = client.V1ConfigMap(
+                metadata=client.V1ObjectMeta(name=configmap_name),
+                data=configmap_data,
+            )
+            logger.info(
+                "Updating ConfigMap %s in namespace %s",
+                configmap_name,
+                namespace,
+            )
         except Exception:
             logger.exception("Unhandled exception in update_configmap_data")
             raise
         finally:
             ConfigMapHelper.release_lock(namespace, configmap_name)
+
+        try:
+            v1.replace_namespaced_config_map(
+                name=configmap_name, namespace=namespace, body=configmap_body
+            )
+        except ApiException as e:
+            logger.error("Failed to update ConfigMap: %s", e.reason)
+            raise
+        except Exception as e:
+            logger.error(
+                "Unexpected error updating ConfigMap: %s: %s",
+                type(e).__name__,
+                e,
+            )
+            raise
+        finally:
+            ConfigMapHelper.release_lock(namespace, configmap_name)
+
+        logger.info(
+            "ConfigMap %s in namespace %s updated successfully",
+            configmap_name,
+            namespace,
+        )
+
 
     @staticmethod
     def read_configmap(
