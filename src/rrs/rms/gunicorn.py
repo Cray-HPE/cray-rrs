@@ -54,3 +54,33 @@ loglevel = os.environ.get("GUNICORN_LOG_LEVEL", "info").lower()
 
 # Performance
 keepalive = int(os.environ.get("GUNICORN_KEEPALIVE", 5))
+
+# Logger configuration
+logconfig_dict = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'INFO',  # Set the appropriate log level
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://sys.stdout',  # Logs will go to stdout
+        },
+    },
+    'loggers': {
+        'gunicorn.access': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'gunicorn.error': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'flask.app': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}

@@ -557,7 +557,7 @@ def run_flask_with_gunicorn() -> None:
             gunicorn_cmd,
             cwd="/app",
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            stderr=subprocess.PIPE,
             universal_newlines=True,
             bufsize=1,
         )
