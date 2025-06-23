@@ -41,8 +41,8 @@ import json
 from typing import Optional
 from datetime import datetime
 from flask import current_app as app
-from kubernetes import client
 from typing_extensions import assert_never
+from kubernetes import client
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
