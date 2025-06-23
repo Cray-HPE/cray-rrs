@@ -290,7 +290,8 @@ def init() -> None:
             logger.info(
                 "Updating rms state to init_fail because of initialization failures"
             )
-            state["rms_state"] = RMSState.INIT_FAIL.value
+            # Normally we would set state["rms_state"] to RMSState.INIT_FAIL.value, but there
+            # is no reason to do it here, because our next call is to sys.exit
             sys.exit(1)
         logger.debug(
             "Updating zone information, pod placement, state in rrs-dynamic configmap"

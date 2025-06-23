@@ -264,8 +264,6 @@ class ConfigMapHelper:
                         e,
                     )
                     raise
-                finally:
-                    ConfigMapHelper.release_lock(namespace, configmap_name)
             else:
                 logger.error(
                     "Failed to update ConfigMap %s in namespace %s",
@@ -276,6 +274,8 @@ class ConfigMapHelper:
         except Exception:
             logger.exception("Unhandled exception in update_configmap_data")
             raise
+        finally:
+            ConfigMapHelper.release_lock(namespace, configmap_name)
 
     @staticmethod
     def read_configmap(
