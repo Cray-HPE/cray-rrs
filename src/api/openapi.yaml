@@ -811,7 +811,7 @@ components:
               type: integer
               minimum: 1
               nullable: true
-              description: Number of instances configured for this service (replicas for Deployments/StatefulSets, pod count for Pods)
+              description: Number of instances configured for this service (replicas for Deployments/StatefulSets)
     CriticalServiceStatusDescribeSchema:
       type: object
       required: [critical_service]
