@@ -96,6 +96,9 @@ app.config.update(
     TESTING=False,
 )
 
+# This version value is substituted dynamically at build time
+app.config["VERSION"] = "Unknown"
+
 # Logging setup
 if app.logger.hasHandlers():
     app.logger.handlers.clear()
