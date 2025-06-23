@@ -284,7 +284,10 @@ def handleSCN() -> (
                 ),
                 HTTPStatus.BAD_REQUEST,
             )
-        if comp_state == "Off":
+        if comp_state in ("Off", "Standby"):
+            app.logger.warning(
+                "Components '%s' are changed to %s state.", components, comp_state
+            )
             state_manager.set_state(RMSState.FAIL_NOTIFIED)
             Helper.update_state_timestamp(
                 state_manager, "rms_state", RMSState.FAIL_NOTIFIED.value
@@ -299,9 +302,7 @@ def handleSCN() -> (
             # Handle cleanup or other actions here if needed
 
         else:
-            app.logger.warning(
-                "Unexpected state '%s' received for %s.", comp_state, components
-            )
+            app.logger.warning("state '%s' received for %s.", comp_state, components)
 
         return SCNSuccessResponse(message="POST call received"), HTTPStatus.OK
 
@@ -406,6 +407,7 @@ def check_and_create_hmnfd_subscription() -> None:
             post_data: hmnfdSubscribePostV2 = {
                 "Components": subscribing_components,
                 "States": list(HMNFD_STATES),
+                "Enabled": True,
                 "Url": "http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551/scn",
             }
             try:
@@ -556,8 +558,6 @@ def run_flask_with_gunicorn() -> None:
         gunicorn_process = subprocess.Popen(  # pylint: disable=consider-using-with
             gunicorn_cmd,
             cwd="/app",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
             universal_newlines=True,
             bufsize=1,
         )
