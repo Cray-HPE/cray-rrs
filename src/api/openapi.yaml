@@ -331,12 +331,7 @@ paths:
           - configured_instances: number
       operationId: getCriticalServiceDetails
       parameters:
-        - name: critical_service_name
-          in: path
-          required: true
-          description: The name of the critical service
-          schema:
-            $ref: '#/components/schemas/ServiceName'
+        - $ref: '#/components/parameters/ServiceNamePathParam'
       responses:
         '200':
           description: Summarized critical service information
@@ -439,12 +434,7 @@ paths:
           - pods: array of pod objects with name, node, status, zone
       operationId: getCriticalServiceStatus
       parameters:
-        - name: critical_service_name
-          in: path
-          required: true
-          description: The name of the critical service
-          schema:
-            $ref: '#/components/schemas/ServiceName'
+        - $ref: '#/components/parameters/ServiceNamePathParam'
       responses:
         '200':
           description: Detailed critical service status retrieved successfully
@@ -970,6 +960,14 @@ components:
       type: object
       description: Empty response object typically returned by health check endpoints to indicate successful operation
       additionalProperties: false
+  parameters:
+    ServiceNamePathParam:
+      name: critical_service_name
+      in: path
+      required: true
+      description: The name of the critical service
+      schema:
+        $ref: '#/components/schemas/ServiceName'
   responses:
     BadRequest:
       description: Bad request
