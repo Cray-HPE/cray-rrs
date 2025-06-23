@@ -395,7 +395,7 @@ class CriticalServiceUpdateSchema(TypedDict):
     RRS OAS: #/components/schemas/CriticalServiceUpdateSchema
     """
 
-    Update: str
+    Update: Literal["Successful", "Services Already Exist"]
     Successfully_Added_Services: list[str]
     Already_Existing_Services: list[str]
 
