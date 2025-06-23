@@ -8,3 +8,4 @@ requests
 urllib3
 gunicorn
 httpproblem
+typing_extensions
