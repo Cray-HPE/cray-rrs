@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # Resiliency Monitoring Service API Specification
-openapi: 3.0.3
+openapi: 3.1.1
 info:
   title: Resiliency Monitoring Service
   license:
@@ -195,7 +195,8 @@ components:
           description: List of component xnames affected by the change
           items:
             type: string
-          example: ["x3000c0s1b0n0", "x3000c0s1b0n1"]
+          examples:
+            - ["x3000c0s1b0n0", "x3000c0s1b0n1"]
         State:
           type: string
           description: New state of the components
@@ -210,7 +211,9 @@ components:
             - Halt
             - Ready
             - Paused
-          example: Off
+          examples:
+            - Off
+            - Ready
     SCNSuccessResponse:
       type: object
       required:
@@ -220,7 +223,8 @@ components:
         message:
           type: string
           description: Confirmation message
-          example: "POST call received"
+          examples:
+            - "POST call received"
           enum: ["POST call received"]
 
     SCNBadRequestResponse:
@@ -232,7 +236,8 @@ components:
         error:
           type: string
           description: Failure message
-          example: "Missing 'Components' or 'State' in the request"
+          examples:
+            - "Missing 'Components' or 'State' in the request"
           enum: ["Missing 'Components' or 'State' in the request"]
 
     SCNInternalServerErrorResponse:
@@ -244,7 +249,8 @@ components:
         error:
           type: string
           description: Failure message
-          example: "Internal server error"
+          examples:
+            - "Internal server error"
           enum: ["Internal server error"]
 
     ApiTimestampSuccessResponse:
@@ -256,7 +262,8 @@ components:
         message:
           type: string
           description: Confirmation message
-          example: "API timestamp updated successfully"
+          examples:
+            - "API timestamp updated successfully"
           enum: ["API timestamp updated successfully"]
 
     ApiTimestampFailedResponse:
@@ -268,7 +275,8 @@ components:
         error:
           type: string
           description: Failure message
-          example: "Failed to update API timestamp"
+          examples:
+            - "Failed to update API timestamp"
           enum: ["Failed to update API timestamp"]
 
     EmptyDict:
@@ -284,7 +292,9 @@ components:
         version:
           type: string
           description: The current version of the RMS
-          example: "1.0.0"
+          examples:
+            - "1.0.0"
+            - "57.42.3141"
 
     ErrorDict:
       type: object
