@@ -42,6 +42,7 @@ from typing import Optional
 from datetime import datetime
 from flask import current_app as app
 from kubernetes import client
+from typing_extensions import assert_never
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
@@ -66,6 +67,11 @@ from src.lib.schema import (
     CriticalServiceCmStaticSchema,
     ErrorDict,
 )
+
+
+# To shorten some type annotations
+V1Deployment = client.models.v1_deployment.V1Deployment
+V1StatefulSet = client.models.v1_stateful_set.V1StatefulSet
 
 
 class CriticalServices:
@@ -406,26 +412,18 @@ class CriticalServicesStatus:
                 apps_v1 = client.AppsV1Api()
 
                 # Dictionary mapping resource types to their corresponding methods
-                resource_methods = {
-                    "Deployment": apps_v1.read_namespaced_deployment,
-                    "StatefulSet": apps_v1.read_namespaced_stateful_set,
-                }
+                resource: V1Deployment | V1StatefulSet
+                if resource_type == "Deployment":
+                    resource = apps_v1.read_namespaced_deployment(service_name, namespace)
+                elif resource_type == "StatefulSet":
+                    resource = apps_v1.read_namespaced_stateful_set(service_name, namespace)
+                else:
+                    # Verify that the above conditional covers all valid resource types
+                    assert_never(resource_type)
 
-                # Check the resource type and retrieve the configuration for the service
-                if resource_type in resource_methods:
-                    resource = resource_methods[resource_type](service_name, namespace)
-                    # Retrieve configured instances (number of replicas or desired instances)
-                    configured_instances = (
-                        getattr(resource, "spec", None)
-                        and hasattr(getattr(resource, "spec"), "replicas")
-                        and getattr(getattr(resource, "spec"), "replicas", None)
-                    ) or None
-
-                    running_pods = (
-                        getattr(resource, "spec", None)
-                        and hasattr(getattr(resource, "status"), "ready_replicas")
-                        and getattr(getattr(resource, "status"), "ready_replicas", None)
-                    ) or None
+                # Retrieve configured instances (number of replicas or desired instances)
+                configured_instances = resource.spec.replicas if resource.spec is not None else None
+                running_pods = resource.status.ready_replicas if resource.status is not None else None
 
             # Log the success of retrieving service details
             app.logger.info(
