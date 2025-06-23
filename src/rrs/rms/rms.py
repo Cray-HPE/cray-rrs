@@ -346,20 +346,28 @@ def get_management_xnames() -> Optional[list[str]]:
 def check_and_create_hmnfd_subscription() -> None:
     """Create a subscription entry in hmnfd to recieve SCNs(state change notification) for the management components"""
     app.logger.info("Checking HMNFD subscription for SCN notifications ...")
-    token = Helper.token_fetch()
-    dynamic_cm_data = state_manager.get_dynamic_cm_data()
-    yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
-    if yaml_content is None:
-        app.logger.error("%s not found in the configmap", DYNAMIC_DATA_KEY)
-        return
-    dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
-    cray_rrs_pod = dynamic_data.get("cray_rrs_pod")
-    if cray_rrs_pod is None:
-        app.logger.error("cray_rrs_pod not found in dynamic data")
-        return
-    subscriber_node = cray_rrs_pod.get("rack")
-    agent_name = "rms"
+    try:
+        token = Helper.token_fetch()
+        dynamic_cm_data = state_manager.get_dynamic_cm_data()
+        yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
+        if yaml_content is None:
+            app.logger.error("%s not found in the configmap", DYNAMIC_DATA_KEY)
+            return
+        dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
+        cray_rrs_pod = dynamic_data["cray_rrs_pod"]
+        if cray_rrs_pod is None:
+            app.logger.error("cray_rrs_pod not found in dynamic data")
+            return
+        subscriber_node = cray_rrs_pod["rack"]
 
+    except KeyError as e:
+        app.logger.error("Missing key in dynamic data: %s", e)
+    except yaml.YAMLError as e:
+        app.logger.error("Error parsing YAML content: %s", e)
+    except Exception as e:
+        app.logger.error("An unexpected error occurred: %s", e)
+
+    agent_name = "rms"
     get_url = "https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions"
     post_url = f"https://api-gw-service-nmn.local/apis/hmnfd/hmi/v2/subscriptions/{subscriber_node}/agents/{agent_name}"
 
