@@ -556,8 +556,8 @@ def run_flask_with_gunicorn() -> None:
         gunicorn_process = subprocess.Popen(  # pylint: disable=consider-using-with
             gunicorn_cmd,
             cwd="/app",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            # stdout=subprocess.PIPE,
+            # stderr=subprocess.PIPE,
             universal_newlines=True,
             bufsize=1,
         )
