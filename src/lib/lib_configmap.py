@@ -279,7 +279,6 @@ class ConfigMapHelper:
             namespace,
         )
 
-
     @staticmethod
     def read_configmap(
         namespace: str,
