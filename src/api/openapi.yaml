@@ -755,9 +755,9 @@ components:
           description: Mapping from service names to their configuration details for monitoring
           additionalProperties:
             $ref: '#/components/schemas/CriticalServiceCmStaticSchema'
+          maxProperties: 1000
       additionalProperties: false
       required: [critical_services]
-      
     CriticalServiceCmStaticSchema:
       type: object
       description: Static configuration details for a critical service that needs to be monitored
@@ -766,6 +766,8 @@ components:
           type: string
           description: The Kubernetes namespace where the service is deployed
           example: "rack-resiliency"
+          minLength: 1
+          maxLength: 63
         type:
           $ref: '#/components/schemas/ServiceType'
       additionalProperties: false
