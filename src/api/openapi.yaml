@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # Rack Resiliency Service API Specification
-openapi: 3.0.3
+openapi: 3.1.1
 info:
   title: Rack Resiliency Service
   license:
@@ -756,6 +756,10 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/CriticalServiceCmStaticSchema'
           maxProperties: 1000
+          propertyNames:
+            type: string
+            maxLength: 253
+            minLength: 1
       additionalProperties: false
       required: [critical_services]
     CriticalServiceCmStaticSchema:
@@ -765,7 +769,8 @@ components:
         namespace:
           type: string
           description: The Kubernetes namespace where the service is deployed
-          example: "rack-resiliency"
+          examples:
+            - "rack-resiliency"
           minLength: 1
           maxLength: 63
         type:
@@ -810,9 +815,10 @@ components:
             type:
               $ref: '#/components/schemas/ServiceType'
             configured_instances:
-              type: integer
+              types:
+                - "integer"
+                - "null"
               minimum: 1
-              nullable: true
               description: Number of instances configured for this service (replicas for Deployments/StatefulSets)
     CriticalServiceStatusDescribeSchema:
       type: object
@@ -837,14 +843,16 @@ components:
             balanced:
               $ref: '#/components/schemas/ServiceBalanced'
             configured_instances:
-              type: integer
+              types:
+                - "integer"
+                - "null"
               minimum: 1
-              nullable: true
               description: Number of instances configured for this service
             currently_running_instances:
-              type: integer
+              types:
+                - "integer"
+                - "null"
               minimum: 0
-              nullable: true
               description: Number of instances currently running and healthy
             pods:
               type: array
@@ -912,7 +920,8 @@ components:
         version:
           type: string
           description: The current version of the RRS Service
-          example: "1.0.0"    
+          examples:
+            - "1.0.0"    
     ProblemDetails:
       description: An error response for RFC 7807 problem details.
       type: object
@@ -933,7 +942,8 @@ components:
           type: string
         status:
           description: HTTP status code
-          example: 400
+          examples:
+            - 400
           type: integer
         title:
           description: Short, human-readable summary of the problem, should not change by occurrence.
@@ -942,7 +952,7 @@ components:
           default: 'about:blank'
           description: Relative URI reference to the type of problem which includes human-readable documentation.
           format: uri
-          type: string    
+          type: string
     EmptyDict:
       type: object
       description: Empty response object typically returned by health check endpoints to indicate successful operation
