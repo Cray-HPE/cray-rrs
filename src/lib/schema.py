@@ -26,7 +26,7 @@ related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
 from enum import StrEnum
-from typing import TypedDict, Literal, final, Required, NamedTuple, get_args
+from typing import TypedDict, Literal, final, Required, NamedTuple, cast, get_args
 
 # Zones Schemas
 ################################################
@@ -553,7 +553,9 @@ hmnfdState = Literal[
     "paused",
 ]
 # This allows us to have an object listing all of the supported states available at runtime
-HMNFD_STATES: frozenset[hmnfdState] = frozenset(get_args(hmnfdState))
+HMNFD_STATES: frozenset[hmnfdState] = frozenset(
+    cast(tuple[hmnfdState, ...], get_args(hmnfdState))
+)
 hmnfdNotificationState = Literal[
     "Unknown",
     "Empty",
