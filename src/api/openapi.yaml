@@ -181,6 +181,8 @@ paths:
           description: The name of the zone
           schema:
             type: string
+            minLength: 1
+            maxLength: 1000
       responses:
         '200':
           description: Detailed zone information
@@ -335,6 +337,8 @@ paths:
           description: The name of the critical service
           schema:
             type: string
+            minLength: 1
+            maxLength: 253
       responses:
         '200':
           description: Summarized critical service information
@@ -443,6 +447,8 @@ paths:
           description: The name of the critical service
           schema:
             type: string
+            minLength: 1
+            maxLength: 253
       responses:
         '200':
           description: Detailed critical service status retrieved successfully

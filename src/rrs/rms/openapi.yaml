@@ -195,6 +195,8 @@ components:
           description: List of component xnames affected by the change
           items:
             type: string
+          minItems: 1
+          maxItems: 10000
           examples:
             - ["x3000c0s1b0n0", "x3000c0s1b0n1"]
         State:
