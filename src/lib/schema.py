@@ -26,10 +26,38 @@ related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
 from enum import StrEnum
-from typing import TypedDict, Literal, final, Required, NamedTuple, cast, get_args
+from functools import partial
+from typing import (
+    Annotated,
+    Literal,
+    NamedTuple,
+    Required,
+    cast,
+    final,
+    get_args,
+)
+from typing_extensions import TypedDict
+from annotated_types import Len
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    StringConstraints,
+)
 
 # Zones Schemas
 ################################################
+
+# RRS OAS: #/components/schemas/ZoneName
+ZoneName = Annotated[str, StringConstraints(min_length=1, max_length=1000)]
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateZoneName(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+    zone_name: ZoneName
 
 
 @final
@@ -207,6 +235,20 @@ ServiceStatus = Literal[
 # RRS OAS: #/components/schemas/ServiceType
 ServiceType = Literal["Deployment", "StatefulSet"]
 
+# RRS OAS: #/components/schemas/ServiceName
+ServiceName = Annotated[str, StringConstraints(min_length=1, max_length=253)]
+
+# RRS OAS: #/components/schemas/NamespaceName
+NamespaceName = Annotated[str, StringConstraints(min_length=1, max_length=63)]
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateServiceName(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+    service_name: ServiceName
+
 
 @final
 class CriticalServiceStatusItemSchema(TypedDict):
@@ -215,7 +257,7 @@ class CriticalServiceStatusItemSchema(TypedDict):
     RRS OAS: #/components/schemas/CriticalServiceStatusItemSchema
     """
 
-    name: str
+    name: ServiceName
     type: ServiceType
     status: ServiceStatus
     balanced: ServiceBalanced
@@ -228,7 +270,7 @@ class CriticalServiceItemSchema(TypedDict):
     RRS OAS: #/components/schemas/CriticalServiceItemSchema
     """
 
-    name: str
+    name: ServiceName
     type: ServiceType
 
 
@@ -239,7 +281,7 @@ class CriticalServiceCmStaticSchema(TypedDict):
     RRS OAS: #/components/schemas/CriticalServiceCmStaticSchema
     """
 
-    namespace: str
+    namespace: NamespaceName
     type: ServiceType
 
 
@@ -250,7 +292,38 @@ class CriticalServiceCmStaticType(TypedDict):
     RRS OAS: #/components/schemas/CriticalServiceCmStaticType
     """
 
-    critical_services: dict[str, CriticalServiceCmStaticSchema]
+    critical_services: dict[ServiceName, CriticalServiceCmStaticSchema]
+
+
+def _dict_length_le[ItemType: object](
+    value: dict[str, ItemType], max_length: int
+) -> dict[str, ItemType]:
+    """
+    Helper function for our pydantic validators
+    If the specified dict has more than max_length items, raise a ValueError
+    Otherwise, return the dict unchanged
+    """
+    if len(value) > max_length:
+        raise ValueError(f'Dictionary exceeds maximum length of {max_length}')
+    return value
+
+
+# Max length for CmStatic dict is specified in
+# RRS OAS #/components/schemas/CriticalServiceCmStaticType
+is_under_max_cm_static_dict_length = partial(_dict_length_le, max_length=1000)
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateCriticalServiceCmStaticType(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+    model_config = ConfigDict(extra='forbid')
+
+    critical_service_cm_static_type: Annotated[
+        CriticalServiceCmStaticType,
+        AfterValidator(is_under_max_cm_static_dict_length)
+    ]
 
 
 @final
@@ -259,7 +332,7 @@ class CriticalServiceCmDynamicSchema(TypedDict):
     Schema for a critical service entry, including its namespace, type, balanced and status.
     """
 
-    namespace: str
+    namespace: NamespaceName
     type: ServiceType
     status: ServiceStatus
     balanced: ServiceBalanced
@@ -271,7 +344,7 @@ class CriticalServiceCmDynamicType(TypedDict):
     Schema for critical services in a configmap, including the service name and its details.
     """
 
-    critical_services: dict[str, CriticalServiceCmDynamicSchema]
+    critical_services: dict[ServiceName, CriticalServiceCmDynamicSchema]
 
 
 @final
@@ -281,7 +354,7 @@ class CriticalServiceCmMixedType(TypedDict):
     """
 
     critical_services: dict[
-        str, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema
+        ServiceName, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema
     ]
 
 
@@ -292,7 +365,7 @@ class CriticalServicesItem(TypedDict):
     OAS: Part of #/components/schemas/CriticalServicesListSchema
     """
 
-    namespace: dict[str, list[CriticalServiceItemSchema]]
+    namespace: dict[NamespaceName, list[CriticalServiceItemSchema]]
 
 
 @final
@@ -302,7 +375,7 @@ class CriticalServicesStatusItem(TypedDict):
     OAS: Part of #/components/schemas/CriticalServicesStatusListSchema
     """
 
-    namespace: dict[str, list[CriticalServiceStatusItemSchema]]
+    namespace: dict[NamespaceName, list[CriticalServiceStatusItemSchema]]
 
 
 @final
@@ -345,8 +418,8 @@ class CriticalServiceDescribe(TypedDict):
     OAS: Part of #/components/schemas/CriticalServiceDescribeSchema
     """
 
-    name: str
-    namespace: str
+    name: ServiceName
+    namespace: NamespaceName
     type: ServiceType
     configured_instances: int | None
 
@@ -358,8 +431,8 @@ class CriticalServiceStatusDescribe(TypedDict):
     OAS: Part of #/components/schemas/CriticalServiceStatusDescribeSchema
     """
 
-    name: str
-    namespace: str
+    name: ServiceName
+    namespace: NamespaceName
     type: ServiceType
     status: ServiceStatus
     balanced: ServiceBalanced
@@ -396,8 +469,8 @@ class CriticalServiceUpdateSchema(TypedDict):
     """
 
     Update: Literal["Successful", "Services Already Exist"]
-    Successfully_Added_Services: list[str]
-    Already_Existing_Services: list[str]
+    Successfully_Added_Services: list[ServiceName]
+    Already_Existing_Services: list[ServiceName]
 
 
 # RMS schemas
@@ -570,6 +643,10 @@ hmnfdNotificationState = Literal[
 ]
 
 
+# from RMS OAS: #/components/responses/SCNRequestSchema
+hmnfdComponentXname = Annotated[str, StringConstraints(min_length=2, max_length=100)]
+
+
 @final
 class hmnfdSubscribePostV2(TypedDict, total=False):
     """
@@ -580,17 +657,17 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
     We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
     """
 
-    Components: list[str]
+    Components: list[hmnfdComponentXname]
     States: list[hmnfdState]
     Url: str
 
 
 @final
-class hmnfdNotificationPost(TypedDict, total=False):
+class hmnfdNotificationPost(TypedDict):
     """
     This represents the request body for a POST request made from HMNFD to RMS, notifying
     of a state or role change.
-    OAS: #/components/responses/SCNRequestSchema
+    RMS OAS: #/components/responses/SCNRequestSchema
 
     https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
     #/components/schemas/StateChanges
@@ -604,8 +681,27 @@ class hmnfdNotificationPost(TypedDict, total=False):
     single TypeDict definition, so for simplicity we will mark both as not required.
     """
 
-    Components: Required[list[str]]
+    Components: Annotated[list[hmnfdComponentXname], Len(min_length=1, max_length=10000)]
     State: hmnfdNotificationState
+
+
+# Max length for hmnfdNotificationPost dict is specified in
+# RMS OAS: #/components/responses/SCNRequestSchema
+is_under_hmnfd_notify_dict_length = partial(_dict_length_le, max_length=100)
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateHmnfdNotificationPost(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+    # We know our TypedDict does not cover all of the fields -- we will ignore extra ones
+    model_config = ConfigDict(extra='ignore')
+
+    hmnfd_notification_post: Annotated[
+        hmnfdNotificationPost,
+        AfterValidator(is_under_hmnfd_notify_dict_length)
+    ]
 
 
 @final
@@ -846,7 +942,7 @@ class SCNBadRequestResponse(TypedDict):
     OAS: #/components/schemas/SCNBadRequestResponse
     """
 
-    error: Literal["Missing 'Components' or 'State' in the request"]
+    error: str
 
 
 @final

@@ -46,6 +46,7 @@ from typing import Literal, Union
 from http import HTTPStatus
 from flask import request, Response
 from flask_restful import Resource
+from pydantic import ValidationError
 from src.lib.rrs_logging import log_event
 from src.api.services.rrs_zones import ZoneService
 from src.lib.schema import (
@@ -57,12 +58,16 @@ from src.lib.schema import (
     CriticalServiceDescribeSchema,
     CriticalServiceCmStaticType,
     CriticalServiceUpdateSchema,
+    ValidateCriticalServiceCmStaticType,
+    ValidateServiceName,
+    ValidateZoneName,
 )
 from src.api.services.rrs_criticalservices import (
     CriticalServices,
     CriticalServicesStatus,
 )
 from src.api.models.errors import (
+    generate_bad_request_response,
     generate_internal_server_error_response,
     generate_missing_input_response,
     generate_resource_not_found_response,
@@ -131,6 +136,14 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc,no-any-unimported]
         Returns:
             JSON response with the zone description or an error message.
         """
+        try:
+            # Validate the zone_name against the API spec
+            ValidateZoneName(zone_name=zone_name)
+        except ValidationError as e:
+            msg = f"Invalid zone name specified: {e}"
+            log_event(msg, level="ERROR")
+            return generate_bad_request_response(msg)
+
         # Log the event of describing a specific zone
         log_event(f"Describing zone: {zone_name}")
         try:
@@ -212,6 +225,14 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc,no-any-uni
         Returns:
             JSON response with the service description or an error message.
         """
+        try:
+            # Validate the service_name against the API spec
+            ValidateServiceName(service_name=service_name)
+        except ValidationError as e:
+            msg = f"Invalid service name specified: {e}"
+            log_event(msg, level="ERROR")
+            return generate_bad_request_response(msg)
+
         # Log the event of describing a specific critical service
         log_event(f"Describing critical service status: {service_name}")
         try:
@@ -253,15 +274,30 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc,no-any-unimp
         log_event("Updating critical services list")
         try:
             # Get the new data from the request body (assumes JSON)
-            new_data: CriticalServiceCmStaticType = request.get_json()
-            # If no data is provided, return an error
-            if not new_data:
-                log_event("No POST data accompanied in POST Request", level="ERROR")
-                return generate_missing_input_response()
+            new_data: CriticalServiceCmStaticType | None = request.get_json()
+        except Exception as e:
+            log_event(traceback.format_exc(), level="ERROR")
+            return generate_bad_request_response(f"{type(e).__name__}: {e}")
+
+        # If no data is provided, return an error
+        if new_data is None:
+            log_event("No POST data accompanied in POST Request", level="ERROR")
+            return generate_missing_input_response()
+
+        try:
+            # Validate the request body against the API spec
+            ValidateCriticalServiceCmStaticType(critical_service_cm_static_type=new_data)
+        except ValidationError as e:
+            msg = f"Invalid request body: {e}"
+            log_event(msg, level="ERROR")
+            return generate_bad_request_response(msg)
+
+        try:
             updated_services = CriticalServices.update_critical_services(new_data)
         except Exception as e:
             log_event(traceback.format_exc(), level="ERROR")
             return generate_internal_server_error_response(f"{type(e).__name__}: {e}")
+
         if "error" in updated_services:
             log_event(f"{updated_services}", level="ERROR")
             return generate_resource_not_found_response(updated_services["error"])
@@ -332,6 +368,14 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc,no-a
         Returns:
             JSON response with the service description or an error message.
         """
+        try:
+            # Validate the service_name against the API spec
+            ValidateServiceName(service_name=service_name)
+        except ValidationError as e:
+            msg = f"Invalid service name specified: {e}"
+            log_event(msg, level="ERROR")
+            return generate_bad_request_response(msg)
+
         # Log the event of describing a specific critical service status
         log_event(f"Describing critical service status: {service_name}")
 
