@@ -583,7 +583,6 @@ class hmnfdSubscribePostV2(TypedDict, total=False):
     Components: list[str]
     States: list[hmnfdState]
     Url: str
-    Enabled: bool
 
 
 @final

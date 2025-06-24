@@ -424,7 +424,6 @@ def check_and_create_hmnfd_subscription() -> None:
             post_data: hmnfdSubscribePostV2 = {
                 "Components": subscribing_components,
                 "States": list(HMNFD_STATES),
-                "Enabled": True,
                 "Url": "http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551/scn",
             }
             try:
