@@ -57,15 +57,23 @@ def problemify(status: HTTPStatus, detail: str) -> Response:
     )
 
 
+def generate_bad_request_response(detail: str) -> Response:
+    """
+    No input was provided. Reports 400 - Bad Request.
+
+    Returns: results of problemify
+    """
+    return problemify(status=HTTPStatus.BAD_REQUEST, detail=detail)
+
+
 def generate_missing_input_response() -> Response:
     """
     No input was provided. Reports 400 - Bad Request.
 
     Returns: results of problemify
     """
-    return problemify(
-        status=HTTPStatus.BAD_REQUEST,
-        detail="No input provided. Determine the specific information that is missing or invalid and "
+    return generate_bad_request_response(
+        "No input provided. Determine the specific information that is missing or invalid and "
         "then re-run the request with valid information.",
     )
 
