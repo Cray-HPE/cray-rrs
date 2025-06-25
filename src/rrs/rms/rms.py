@@ -47,6 +47,7 @@ from http import HTTPStatus
 import yaml
 from flask import Flask, request, jsonify, Response
 from flask_restful import Api
+from pydantic import ValidationError
 import requests
 import urllib3
 from src.lib import lib_rms
@@ -77,6 +78,7 @@ from src.lib.schema import (
     ApiTimestampFailedResponse,
     DynamicDataSchema,
     RMSState,
+    ValidateHmnfdNotificationPost,
     HMNFD_STATES,
 )
 from src.lib.healthz import Ready, Live
@@ -279,8 +281,27 @@ def handleSCN() -> (
     app.logger.info("Notification received from HMNFD")
     try:
         notification_json: hmnfdNotificationPost = request.get_json()
-        app.logger.debug("JSON data received: %s", notification_json)
+    except Exception as e:
+        app.logger.error("Error processing the request: %s: %s", type(e).__name__, e)
+        state_manager.set_state(RMSState.INTERNAL_FAILURE)
+        Helper.update_state_timestamp(
+            state_manager, "rms_state", RMSState.INTERNAL_FAILURE.value
+        )
+        return (
+            SCNInternalServerErrorResponse(error="Internal server error"),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
 
+    app.logger.debug("JSON data received: %s", notification_json)
+    # Validate data against API spec
+    try:
+        ValidateHmnfdNotificationPost(hmnfd_notification_post=notification_json)
+    except ValidationError as e:
+        msg = f"Invalid request body: {e}"
+        app.logger.error(msg)
+        return SCNBadRequestResponse(error=msg), HTTPStatus.BAD_REQUEST
+
+    try:
         # Extract components and state
         components = notification_json["Components"]
         comp_state = notification_json.get("State", "")

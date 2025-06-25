@@ -112,7 +112,9 @@ def create_app() -> Flask:
                 try:
                     response = requests.post(ts_url, timeout=REQUESTS_TIMEOUT)
                     if response.status_code == HTTPStatus.OK:
-                        response_data = cast(ApiTimestampSuccessResponse, response.json())
+                        response_data = cast(
+                            ApiTimestampSuccessResponse, response.json()
+                        )
                         app.logger.info(response_data)
                         success = True
                         break

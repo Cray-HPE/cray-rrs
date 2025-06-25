@@ -189,12 +189,15 @@ components:
         There are other possible fields in theory, but RMS only subscribes to changes for State.
         https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
         #/components/schemas/StateChanges
+      maxProperties: 100
       properties:
         Components:
           type: array
           description: List of component xnames affected by the change
           items:
             type: string
+            minLength: 2
+            maxLength: 100
           minItems: 1
           maxItems: 10000
           examples:
@@ -240,7 +243,6 @@ components:
           description: Failure message
           examples:
             - "Missing 'Components' or 'State' in the request"
-          enum: ["Missing 'Components' or 'State' in the request"]
 
     SCNInternalServerErrorResponse:
       type: object
