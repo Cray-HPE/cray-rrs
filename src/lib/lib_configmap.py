@@ -229,6 +229,14 @@ class ConfigMapHelper:
                 configmap_data = ConfigMapHelper.read_configmap(
                     namespace, configmap_name
                 )
+                if "error" in configmap_data:
+                    logger.error(
+                        "Error reading ConfigMap %s in namespace %s: %s",
+                        configmap_name,
+                        namespace,
+                        configmap_data["error"],
+                    )
+                    sys.exit(1)
             configmap_data[key] = new_data
             # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
             if configmap_name == DYNAMIC_CM:
