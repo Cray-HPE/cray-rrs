@@ -66,7 +66,10 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         """
         resp = MOCK_CRITICAL_SERVICES_RESPONSE
         result = CriticalServices.update_configmap(
-            cast(CriticalServiceCmStaticType, json.loads(MOCK_CRITICAL_SERVICES_UPDATE_FILE)),
+            cast(
+                CriticalServiceCmStaticType,
+                json.loads(MOCK_CRITICAL_SERVICES_UPDATE_FILE),
+            ),
             resp,
             True,
         )

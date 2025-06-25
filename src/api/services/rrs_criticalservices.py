@@ -414,16 +414,26 @@ class CriticalServicesStatus:
                 # Dictionary mapping resource types to their corresponding methods
                 resource: V1Deployment | V1StatefulSet
                 if resource_type == "Deployment":
-                    resource = apps_v1.read_namespaced_deployment(service_name, namespace)
+                    resource = apps_v1.read_namespaced_deployment(
+                        service_name, namespace
+                    )
                 elif resource_type == "StatefulSet":
-                    resource = apps_v1.read_namespaced_stateful_set(service_name, namespace)
+                    resource = apps_v1.read_namespaced_stateful_set(
+                        service_name, namespace
+                    )
                 else:
                     # Verify that the above conditional covers all valid resource types
                     assert_never(resource_type)
 
                 # Retrieve configured instances (number of replicas or desired instances)
-                configured_instances = resource.spec.replicas if resource.spec is not None else None
-                running_pods = resource.status.ready_replicas if resource.status is not None else None
+                configured_instances = (
+                    resource.spec.replicas if resource.spec is not None else None
+                )
+                running_pods = (
+                    resource.status.ready_replicas
+                    if resource.status is not None
+                    else None
+                )
 
             # Log the success of retrieving service details
             app.logger.info(

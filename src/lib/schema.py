@@ -57,6 +57,7 @@ class ValidateZoneName(BaseModel):  # type: ignore[explicit-any]
     """
     Pydantic validator used for validating data received from API requests
     """
+
     zone_name: ZoneName
 
 
@@ -247,6 +248,7 @@ class ValidateServiceName(BaseModel):  # type: ignore[explicit-any]
     """
     Pydantic validator used for validating data received from API requests
     """
+
     service_name: ServiceName
 
 
@@ -304,7 +306,7 @@ def _dict_length_le[ItemType: object](
     Otherwise, return the dict unchanged
     """
     if len(value) > max_length:
-        raise ValueError(f'Dictionary exceeds maximum length of {max_length}')
+        raise ValueError(f"Dictionary exceeds maximum length of {max_length}")
     return value
 
 
@@ -318,11 +320,11 @@ class ValidateCriticalServiceCmStaticType(BaseModel):  # type: ignore[explicit-a
     """
     Pydantic validator used for validating data received from API requests
     """
-    model_config = ConfigDict(extra='forbid')
+
+    model_config = ConfigDict(extra="forbid")
 
     critical_service_cm_static_type: Annotated[
-        CriticalServiceCmStaticType,
-        AfterValidator(is_under_max_cm_static_dict_length)
+        CriticalServiceCmStaticType, AfterValidator(is_under_max_cm_static_dict_length)
     ]
 
 
@@ -681,7 +683,9 @@ class hmnfdNotificationPost(TypedDict):
     single TypeDict definition, so for simplicity we will mark both as not required.
     """
 
-    Components: Annotated[list[hmnfdComponentXname], Len(min_length=1, max_length=10000)]
+    Components: Annotated[
+        list[hmnfdComponentXname], Len(min_length=1, max_length=10000)
+    ]
     State: hmnfdNotificationState
 
 
@@ -695,12 +699,12 @@ class ValidateHmnfdNotificationPost(BaseModel):  # type: ignore[explicit-any]
     """
     Pydantic validator used for validating data received from API requests
     """
+
     # We know our TypedDict does not cover all of the fields -- we will ignore extra ones
-    model_config = ConfigDict(extra='ignore')
+    model_config = ConfigDict(extra="ignore")
 
     hmnfd_notification_post: Annotated[
-        hmnfdNotificationPost,
-        AfterValidator(is_under_hmnfd_notify_dict_length)
+        hmnfdNotificationPost, AfterValidator(is_under_hmnfd_notify_dict_length)
     ]
 
 

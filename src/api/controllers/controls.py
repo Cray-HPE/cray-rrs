@@ -286,7 +286,9 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc,no-any-unimp
 
         try:
             # Validate the request body against the API spec
-            ValidateCriticalServiceCmStaticType(critical_service_cm_static_type=new_data)
+            ValidateCriticalServiceCmStaticType(
+                critical_service_cm_static_type=new_data
+            )
         except ValidationError as e:
             msg = f"Invalid request body: {e}"
             log_event(msg, level="ERROR")
