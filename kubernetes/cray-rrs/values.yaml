@@ -49,6 +49,8 @@ cray-service:
       name: cray-rrs-init
       image:
         repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-init
+      securityContext:
+        runAsUser: 0
       env:
         - name: static_cm_name
           value: "rrs-mon-static"
@@ -68,6 +70,8 @@ cray-service:
       name: cray-rrs-rms
       image:
         repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-rms
+      securityContext:
+        runAsUser: 0
       env:
         - name: static_cm_name
           value: "rrs-mon-static"
@@ -108,6 +112,8 @@ cray-service:
       name: cray-rrs-api
       image:
         repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-api
+      securityContext:
+        runAsUser: 0
       env:
         - name: static_cm_name
           value: "rrs-mon-static"
