@@ -86,6 +86,7 @@ unittests: dev-image
 chart: chart-metadata chart-package chart-test
 
 chart-metadata:
+	find kubernetes/cray-rrs -type f -print | xargs grep "cray-rrs:" || true
 	docker run --rm \
 		--user $(shell id -u):$(shell id -g) \
 		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
@@ -93,12 +94,14 @@ chart-metadata:
 		--version "${CHART_VERSION}" --app-version "${DOCKER_VERSION}" \
 		-i ${NAME} ${IMAGE}:${CHART_VERSION} \
 		--cray-service-globals
+	find kubernetes/cray-rrs -type f -print | xargs grep "cray-rrs:" || true
 	docker run --rm \
 		--user $(shell id -u):$(shell id -g) \
 		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
 		-w /chart \
 		${YQ_IMAGE} \
 		eval -Pi '.cray-service.containers.${NAME}.image.repository = "${IMAGE}"' values.yaml
+	find kubernetes/cray-rrs -type f -print | xargs grep "cray-rrs:" || true
 
 helm:
 	docker run --rm \
