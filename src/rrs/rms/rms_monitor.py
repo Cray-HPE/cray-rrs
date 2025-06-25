@@ -98,6 +98,11 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
     app.logger.info("Getting latest status for zones and nodes")
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
+        if "error" in dynamic_cm_data:
+            app.logger.error(
+                f"Error fetching dynamic ConfigMap data: {dynamic_cm_data["error"]}"
+            )
+            sys.exit(1)
         yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
         if yaml_content is None:
             app.logger.error(f"{DYNAMIC_DATA_KEY} not found in the configmap")
@@ -189,11 +194,21 @@ def update_critical_services(
     """
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
+        if "error" in dynamic_cm_data:
+            app.logger.error(
+                f"Error fetching dynamic ConfigMap data: {dynamic_cm_data["error"]}"
+            )
+            sys.exit(1)
         services_data: (
             CriticalServiceCmDynamicType | CriticalServiceCmStaticType | None
         ) = None
         if reloading:
             static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
+            if "error" in static_cm_data:
+                app.logger.error(
+                    f"Could not read static configmap {STATIC_CM}: {static_cm_data["error"]}"
+                )
+                sys.exit(1)
             app.logger.info(
                 "Retrieving critical services information from rrs-static configmap"
             )
@@ -387,6 +402,11 @@ class RMSMonitor:
         """
         try:
             dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+            if "error" in dynamic_cm_data:
+                app.logger.error(
+                    f"Could not read dynamic configmap {DYNAMIC_CM}: {dynamic_cm_data["error"]}"
+                )
+                sys.exit(1)
             yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
             if not yaml_content:
                 app.logger.error(
@@ -428,7 +448,11 @@ class RMSMonitor:
             try:
                 # Read the 'rrs-mon-static' configmap and parse the data
                 static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
-
+                if "error" in static_cm_data:
+                    app.logger.error(
+                        f"Could not read static configmap {STATIC_CM}: {static_cm_data['error']}"
+                    )
+                    app.logger.info("Going ahead with default values")
                 k8s_args = (
                     int(
                         static_cm_data.get(
