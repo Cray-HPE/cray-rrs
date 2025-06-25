@@ -98,7 +98,9 @@ pipeline {
                         DOCKER_VERSION = sh(returnStdout: true, script: "head -1 .docker_version").trim()
                     }
                     steps {
+                        sh "cp -r kubernetes/cray-rrs kubernetes/cray-rrs2"
                         updateCsmHelmChartAppVersion(chartPath: "${WORKSPACE}/kubernetes/${NAME}", appVersion: env.DOCKER_VERSION)
+                        sh "diff kubernetes/cray-rrs kubernetes/cray-rrs2"
                         sh "make chart"
                     }
                 }
