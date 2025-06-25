@@ -100,7 +100,7 @@ pipeline {
                     steps {
                         sh "cp -r kubernetes/cray-rrs kubernetes/cray-rrs2"
                         updateCsmHelmChartAppVersion(chartPath: "${WORKSPACE}/kubernetes/${NAME}", appVersion: env.DOCKER_VERSION)
-                        sh "diff kubernetes/cray-rrs kubernetes/cray-rrs2"
+                        sh "diff kubernetes/cray-rrs kubernetes/cray-rrs2 || true"
                         sh "make chart"
                     }
                 }
