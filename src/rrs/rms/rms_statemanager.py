@@ -67,9 +67,15 @@ class RMSStateManager:
         if not self.dynamic_cm_data:
             with self.lock:
                 if not self.dynamic_cm_data:
-                    self.dynamic_cm_data = ConfigMapHelper.read_configmap(
+                    dynamic_cm_data = ConfigMapHelper.read_configmap(
                         NAMESPACE, DYNAMIC_CM
                     )
+                    if "error" in dynamic_cm_data:
+                        # If the read fails, don't update our internal CM record, so we can
+                        # try again for the next caller. Instead, just return the error to our
+                        # current caller.
+                        return dynamic_cm_data
+                    self.dynamic_cm_data = dynamic_cm_data
         return self.dynamic_cm_data
 
     def is_monitoring(self) -> bool:
