@@ -39,7 +39,6 @@ DOCKERFILE_INIT ?= Dockerfile.rrs.init
 DOCKERFILE_RMS ?= Dockerfile.rrs.rms
 
 CHART_METADATA_IMAGE ?= artifactory.algol60.net/csm-docker/stable/chart-metadata
-YQ_IMAGE ?= artifactory.algol60.net/docker.io/mikefarah/yq:4
 HELM_IMAGE ?= artifactory.algol60.net/docker.io/alpine/helm:3.11.2
 HELM_UNITTEST_IMAGE ?= artifactory.algol60.net/docker.io/quintush/helm-unittest:3.11.2-0.3.0
 HELM_DOCS_IMAGE ?= artifactory.algol60.net/docker.io/jnorwood/helm-docs:v1.5.0
@@ -93,13 +92,7 @@ chart-metadata:
 		--version "${CHART_VERSION}" --app-version "${DOCKER_VERSION}" \
 		-i ${NAME} ${IMAGE}:${CHART_VERSION} \
 		--cray-service-globals
-	docker run --rm \
-		--user $(shell id -u):$(shell id -g) \
-		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
-		-w /chart \
-		${YQ_IMAGE} \
-		eval -Pi '.cray-service.containers.${NAME}.image.repository = "${IMAGE}"' values.yaml
-
+	
 helm:
 	docker run --rm \
 	    --user $(shell id -u):$(shell id -g) \
