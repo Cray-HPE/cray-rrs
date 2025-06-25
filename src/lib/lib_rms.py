@@ -170,9 +170,10 @@ class Helper:
         """
         try:
             dynamic_cm_data = state_manager.get_dynamic_cm_data()
-            if "error" in dynamic_cm_data:
+            if isinstance(dynamic_cm_data, str):
+                # This means it is an error message
                 logger.error(
-                    "Error fetching dynamic ConfigMap data: %s", dynamic_cm_data["error"],
+                    "Error fetching dynamic ConfigMap data: %s", dynamic_cm_data,
                 )
                 return
             yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)

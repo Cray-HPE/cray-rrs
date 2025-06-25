@@ -71,8 +71,9 @@ class ZoneTopologyService:
 
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
-            if "error" in configmap_yaml:
-                raise ValueError(configmap_yaml["error"])
+            if isinstance(configmap_yaml, str):
+                # This means configmap_yaml contains an error message
+                raise ValueError(configmap_yaml)
             parsed_data: DynamicDataSchema = yaml.safe_load(
                 configmap_yaml[DYNAMIC_DATA_KEY]
             )
@@ -123,8 +124,9 @@ class ZoneTopologyService:
 
         try:
             configmap_yaml = ConfigMapHelper.read_configmap(CM_NAMESPACE, CM_NAME)
-            if "error" in configmap_yaml:
-                raise ValueError(configmap_yaml["error"])
+            if isinstance(configmap_yaml, str):
+                # This means configmap_yaml contains an error message
+                raise ValueError(configmap_yaml)
             parsed_data: DynamicDataSchema = yaml.safe_load(
                 configmap_yaml[DYNAMIC_DATA_KEY]
             )

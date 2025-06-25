@@ -150,11 +150,12 @@ def check_critical_services_and_timers() -> bool:
     """
     try:
         static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
-        if "error" in static_cm_data:
+        if isinstance(static_cm_data, str):
+            # This means it contains an error message
             logger.error(
                 "Could not read static configmap %s: %s",
                 STATIC_CM,
-                static_cm_data["error"],
+                static_cm_data,
             )
             return False
         critical_svc = static_cm_data.get(CRITICAL_SERVICE_KEY, None)
@@ -214,10 +215,17 @@ def init() -> None:
         ConfigMapHelper.release_lock(NAMESPACE, STATIC_CM)
 
         configmap_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+        if isinstance(configmap_data, str):
+            # This means it contains an error message
+            logger.error(
+                "Unable to access configmap %s: %s",
+                DYNAMIC_CM,
+                configmap_data,
+            )
+            sys.exit(1)
         if (
             not configmap_data
             or not isinstance(configmap_data, dict)
-            or "error" in configmap_data
         ):
             logger.error(
                 "Data is missing in configmap %s or not in expected format", DYNAMIC_CM

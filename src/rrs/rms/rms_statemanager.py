@@ -62,18 +62,20 @@ class RMSStateManager:
         with self.lock:
             self.dynamic_cm_data = data
 
-    def get_dynamic_cm_data(self) -> dict[str, str]:
-        """Method to retrieve the dynamic ConfigMap data."""
+    def get_dynamic_cm_data(self) -> dict[str, str] | str:
+        """
+        Method to retrieve the dynamic ConfigMap data.
+        Returns the data dict on success, or a string error message.
+        """
         if not self.dynamic_cm_data:
             with self.lock:
                 if not self.dynamic_cm_data:
                     dynamic_cm_data = ConfigMapHelper.read_configmap(
                         NAMESPACE, DYNAMIC_CM
                     )
-                    if "error" in dynamic_cm_data:
-                        # If the read fails, don't update our internal CM record, so we can
-                        # try again for the next caller. Instead, just return the error to our
-                        # current caller.
+                    if isinstance(dynamic_cm_data, str):
+                        # This means it contains an error message
+                        # Return the error to the caller
                         return dynamic_cm_data
                     self.dynamic_cm_data = dynamic_cm_data
         return self.dynamic_cm_data

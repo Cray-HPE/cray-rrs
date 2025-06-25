@@ -226,17 +226,19 @@ class ConfigMapHelper:
                 )
                 sys.exit(1)
             if configmap_data is None:
-                configmap_data = ConfigMapHelper.read_configmap(
+                configmap_data_or_error = ConfigMapHelper.read_configmap(
                     namespace, configmap_name
                 )
-                if "error" in configmap_data:
+                if isinstance(configmap_data_or_error, str):
+                    # This means it contains an error message
                     logger.error(
                         "Error reading ConfigMap %s in namespace %s: %s",
                         configmap_name,
                         namespace,
-                        configmap_data["error"],
+                        configmap_data_or_error,
                     )
                     sys.exit(1)
+                configmap_data = configmap_data_or_error
             configmap_data[key] = new_data
             # Ensure 'last_update_timestamp' is refreshed with every update to the dynamic ConfigMap
             if configmap_name == DYNAMIC_CM:
@@ -291,7 +293,7 @@ class ConfigMapHelper:
     def read_configmap(
         namespace: str,
         configmap_name: str,
-    ) -> dict[str, str]:
+    ) -> dict[str, str] | str:
         """
         Fetch data from a Kubernetes ConfigMap
         Args:
@@ -300,7 +302,8 @@ class ConfigMapHelper:
         Returns:
             dict[str, str]:
                 - If successful, returns the `.data` field of the ConfigMap as a dictionary.
-                - If an error occurs, returns a dictionary with an "error" key and error message.
+            str:
+                - If an error occurs, returns a string containing the error message.
         """
         log_id = get_log_id()
         logger.info(
@@ -327,7 +330,7 @@ class ConfigMapHelper:
 
         except client.exceptions.ApiException as e:
             logger.exception("[%s] API error fetching ConfigMap", log_id)
-            return {"error": f"API error: {e}"}
+            return f"API error: {e}"
         except Exception as e:
             logger.exception("[%s] Unexpected error fetching ConfigMap", log_id)
-            return {"error": f"Unexpected error: {e}"}
+            return f"Unexpected error: {e}"

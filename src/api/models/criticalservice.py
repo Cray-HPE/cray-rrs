@@ -199,8 +199,9 @@ class CriticalServiceHelper:
 
             # Fetch the ConfigMap data containing critical service information
             cm_data = ConfigMapHelper.read_configmap(cm_namespace, cm_name)
-            if "error" in cm_data:
-                raise ValueError(cm_data["error"])
+            if isinstance(cm_data, str):
+                # This means it contains an error message
+                raise ValueError(cm_data)
 
             if cm_key in cm_data:
                 config_data: (

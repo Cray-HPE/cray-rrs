@@ -379,9 +379,10 @@ def check_and_create_hmnfd_subscription() -> None:
     try:
         token = Helper.token_fetch()
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
-        if "error" in dynamic_cm_data:
+        if isinstance(dynamic_cm_data, str):
+            # This means it is an error message
             app.logger.error(
-                "Error fetching dynamic ConfigMap data: %s", dynamic_cm_data["error"],
+                "Error fetching dynamic ConfigMap data: %s", dynamic_cm_data,
             )
             return
         yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
@@ -493,9 +494,10 @@ def initial_check_and_update() -> bool:
     """
     was_monitoring = False
     dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
-    if "error" in dynamic_cm_data:
+    if isinstance(dynamic_cm_data, str):
+        # This means it contains an error message
         app.logger.error(
-            "Could not read dynamic configmap %s: %s", DYNAMIC_CM, dynamic_cm_data["error"],
+            "Could not read dynamic configmap %s: %s", DYNAMIC_CM, dynamic_cm_data,
         )
         sys.exit(1)
     try:
