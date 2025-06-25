@@ -28,10 +28,12 @@ Unit tests for the 'CriticalServiceUpdater' function in 'criticalservice_update'
 These tests validate the update behavior of critical services in a ConfigMap.
 """
 
+from typing import cast
 import unittest
 import json
 from flask import Flask
 from src.api.services.rrs_criticalservices import CriticalServices
+from src.lib.schema import CriticalServiceCmStaticType
 from tests.tests_api.mock_data import (
     MOCK_CRITICAL_SERVICES_UPDATE_FILE,
     MOCK_CRITICAL_SERVICES_RESPONSE,
@@ -64,12 +66,23 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         """
         resp = MOCK_CRITICAL_SERVICES_RESPONSE
         result = CriticalServices.update_configmap(
-            json.loads(MOCK_CRITICAL_SERVICES_UPDATE_FILE), resp, True
+            cast(
+                CriticalServiceCmStaticType,
+                json.loads(MOCK_CRITICAL_SERVICES_UPDATE_FILE),
+            ),
+            resp,
+            True,
         )
 
         self.assertEqual(result["Update"], "Successful")
-        self.assertEqual(result["Successfully_Added_Services"], ["xyz"])
-        self.assertEqual(result["Already_Existing_Services"], ["lab-proxy"])
+        self.assertEqual(
+            result["Successfully_Added_Services"],
+            cast(list[str], ["xyz"]),
+        )
+        self.assertEqual(
+            result["Already_Existing_Services"],
+            cast(list[str], ["lab-proxy"]),
+        )
 
     def test_update_critical_service_success_already_exist(self) -> None:
         """
@@ -78,13 +91,16 @@ class TestCriticalServicesUpdate(unittest.TestCase):
         Ensures that the response correctly indicates no new additions.
         """
         result = CriticalServices.update_configmap(
-            json.loads(MOCK_ALREADY_EXISTING_FILE),
+            cast(CriticalServiceCmStaticType, json.loads(MOCK_ALREADY_EXISTING_FILE)),
             MOCK_CRITICAL_SERVICES_RESPONSE,
             True,
         )
         self.app.logger.info(result)
         self.assertEqual(result["Update"], "Services Already Exist")
-        self.assertEqual(result["Already_Existing_Services"], ["lab-proxy"])
+        self.assertEqual(
+            result["Already_Existing_Services"],
+            cast(list[str], ["lab-proxy"]),
+        )
 
 
 if __name__ == "__main__":

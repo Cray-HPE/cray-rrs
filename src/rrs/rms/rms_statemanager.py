@@ -30,22 +30,9 @@ management of state transitions for the Rack Resiliency Service (RRS) monitoring
 """
 
 import threading
-from enum import Enum
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import NAMESPACE, DYNAMIC_CM
-
-
-class RMSState(Enum):
-    """Enum representing the various states of the Rack Resiliency Service (RRS)."""
-
-    READY = "Ready"
-    STARTED = "Started"
-    WAITING = "Waiting"
-    MONITORING = "Monitoring"
-    FAIL_NOTIFIED = "Fail_notified"
-    INTERNAL_FAILURE = "internal_failure"
-    INIT = "init"
-    INIT_FAIL = "init_fail"
+from src.lib.schema import RMSState
 
 
 class RMSStateManager:
@@ -67,31 +54,40 @@ class RMSStateManager:
             self.rms_state = new_state
 
     def get_state(self) -> RMSState:
-        """Thread-safe method to retrieve the current RMS state."""
-        with self.lock:
-            return self.rms_state
+        """Method to retrieve the current RMS state."""
+        return self.rms_state
 
     def set_dynamic_cm_data(self, data: dict[str, str]) -> None:
         """Thread-safe method to update the dynamic ConfigMap data."""
         with self.lock:
             self.dynamic_cm_data = data
 
-    def get_dynamic_cm_data(self) -> dict[str, str]:
-        """Thread-safe method to retrieve the dynamic ConfigMap data."""
-        with self.lock:
-            if not self.dynamic_cm_data:
-                self.dynamic_cm_data = ConfigMapHelper.read_configmap(
-                    NAMESPACE, DYNAMIC_CM
-                )
-            return self.dynamic_cm_data
+    def get_dynamic_cm_data(self) -> dict[str, str] | str:
+        """
+        Method to retrieve the dynamic ConfigMap data.
+        Returns the data dict on success, or a string error message.
+        """
+        if not self.dynamic_cm_data:
+            with self.lock:
+                if not self.dynamic_cm_data:
+                    dynamic_cm_data = ConfigMapHelper.read_configmap(
+                        NAMESPACE, DYNAMIC_CM
+                    )
+                    if isinstance(dynamic_cm_data, str):
+                        # This means it contains an error message
+                        # Return the error to the caller
+                        return dynamic_cm_data
+                    self.dynamic_cm_data = dynamic_cm_data
+        return self.dynamic_cm_data
 
     def is_monitoring(self) -> bool:
-        """Thread-safe check to determine if monitoring is currently active."""
-        with self.lock:
-            return self.monitor_running
+        """Check to determine if monitoring is currently active."""
+        return self.monitor_running
 
     def start_monitoring(self) -> bool:
         """Thread-safe method to initiate monitoring."""
+        if self.monitor_running:
+            return False
         with self.lock:
             if self.monitor_running:
                 return False
@@ -100,5 +96,7 @@ class RMSStateManager:
 
     def stop_monitoring(self) -> None:
         """Thread-safe method to stop the monitoring process."""
+        if not self.monitor_running:
+            return
         with self.lock:
             self.monitor_running = False

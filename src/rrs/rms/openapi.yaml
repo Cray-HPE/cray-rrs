@@ -22,7 +22,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 # Resiliency Monitoring Service API Specification
-openapi: 3.0.3
+openapi: 3.1.1
 info:
   title: Resiliency Monitoring Service
   license:
@@ -83,9 +83,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/SCNSuccessResponse'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Bad SCN request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SCNBadRequestResponse'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SCNInternalServerErrorResponse'
 
   /api-ts:
     post:
@@ -100,10 +108,13 @@ paths:
           content:
             application/json:
               schema:
-                type: string
-                example: "API timestamp updated successfully"
+                $ref: '#/components/schemas/ApiTimestampSuccessResponse'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: API timestamp update failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiTimestampFailedResponse'
 
   /healthz/ready:
     get:
@@ -163,7 +174,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VersionResponse'
+                $ref: '#/components/schemas/VersionSchema'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -173,21 +184,41 @@ components:
       type: object
       required:
         - Components
-        - State
-      description: State Change Notification request payload from HMNFD
+      description: >
+        State Change Notification request payload from HMNFD.
+        There are other possible fields in theory, but RMS only subscribes to changes for State.
+        https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+        #/components/schemas/StateChanges
+      maxProperties: 100
       properties:
         Components:
           type: array
-          description: List of component xnames affected by the state change
+          description: List of component xnames affected by the change
           items:
             type: string
-          example: ["x3000c0s1b0n0", "x3000c0s1b0n1"]
+            minLength: 2
+            maxLength: 100
+          minItems: 1
+          maxItems: 10000
+          examples:
+            - ["x3000c0s1b0n0", "x3000c0s1b0n1"]
         State:
           type: string
           description: New state of the components
-          enum: ["On", "Off"]
-          example: "Off"
-
+          enum:
+            - Unknown
+            - Empty
+            - Populated
+            - 'Off'
+            - 'On'
+            - Active
+            - Standby
+            - Halt
+            - Ready
+            - Paused
+          examples:
+            - Off
+            - Ready
     SCNSuccessResponse:
       type: object
       required:
@@ -197,25 +228,67 @@ components:
         message:
           type: string
           description: Confirmation message
-          example: "POST call received"
+          examples:
+            - "POST call received"
+          enum: ["POST call received"]
 
-    RMSState:
-      type: string
-      description: Current state of the Resiliency Monitoring Service
-      enum:
-        - READY
-        - FAIL_NOTIFIED
-        - MONITORING
-        - INTERNAL_FAILURE
-        - WAITING
-        - STARTED
+    SCNBadRequestResponse:
+      type: object
+      required:
+        - error
+      description: Response to bad requests data for SCN
+      properties:
+        error:
+          type: string
+          description: Failure message
+          examples:
+            - "Missing 'Components' or 'State' in the request"
+
+    SCNInternalServerErrorResponse:
+      type: object
+      required:
+        - error
+      description: Failure response for SCN
+      properties:
+        error:
+          type: string
+          description: Failure message
+          examples:
+            - "Internal server error"
+          enum: ["Internal server error"]
+
+    ApiTimestampSuccessResponse:
+      type: object
+      required:
+        - message
+      description: Success response for API timestamp update
+      properties:
+        message:
+          type: string
+          description: Confirmation message
+          examples:
+            - "API timestamp updated successfully"
+          enum: ["API timestamp updated successfully"]
+
+    ApiTimestampFailedResponse:
+      type: object
+      required:
+        - error
+      description: Failure response for API timestamp update
+      properties:
+        error:
+          type: string
+          description: Failure message
+          examples:
+            - "Failed to update API timestamp"
+          enum: ["Failed to update API timestamp"]
 
     EmptyDict:
       type: object
       description: Empty response object for health check endpoints
       additionalProperties: false
 
-    VersionResponse:
+    VersionSchema:
       type: object
       required: [version]
       description: Version information for the RMS
@@ -223,7 +296,9 @@ components:
         version:
           type: string
           description: The current version of the RMS
-          example: "1.0.0"
+          examples:
+            - "1.0.0"
+            - "57.42.3141"
 
     ErrorDict:
       type: object
@@ -235,12 +310,6 @@ components:
           description: Human-readable error message describing the failure
 
   responses:
-    BadRequest:
-      description: Bad request - missing or invalid parameters
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorDict'
 
     InternalServerError:
       description: Internal server error occurred

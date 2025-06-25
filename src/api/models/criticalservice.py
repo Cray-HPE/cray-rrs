@@ -38,15 +38,13 @@ from src.lib.rrs_constants import CmType, DYNAMIC_CM, STATIC_CM
 from src.lib.rrs_logging import get_log_id
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.schema import (
+    k8sNodeTypeTuple,
     PodSchema,
     CriticalServiceCmStaticType,
     CriticalServiceCmDynamicType,
     CriticalServiceCmDynamicSchema,
     CriticalServiceCmStaticSchema,
 )
-
-# This is for the format present in the configmap
-# CriticalServiceType = dict[str, CriticalServiceCmSchema]
 
 
 class CriticalServiceHelper:
@@ -55,7 +53,7 @@ class CriticalServiceHelper:
     @staticmethod
     def get_namespaced_pods(
         service_info: CriticalServiceCmDynamicSchema, service_name: str
-    ) -> tuple[list[PodSchema], int]:
+    ) -> list[PodSchema]:
         """
         Fetch the pods in a namespace and the number of instances using Kube-config.
 
@@ -88,8 +86,10 @@ class CriticalServiceHelper:
         node_zone_map = {}
 
         for zone, node_types in nodes_data.items():
-            for node_type in ["masters", "workers"]:
-                node_list = node_types.get(node_type, [])
+            for node_type in k8sNodeTypeTuple:
+                if node_type not in node_types:
+                    continue
+                node_list = node_types[node_type]
                 if not isinstance(node_list, list):
                     continue
 
@@ -102,7 +102,6 @@ class CriticalServiceHelper:
             app.logger.error(f"[{log_id}] API error fetching pods: {str(e)}")
             raise
 
-        running_pods = 0
         result: list[PodSchema] = []
         expected_owner_kind = CriticalServiceHelper.resolve_owner_kind(resource_type)
 
@@ -134,9 +133,6 @@ class CriticalServiceHelper:
             else:
                 pod_status = "Pending"
 
-            if pod_status == "Running" and not is_terminating:
-                running_pods += 1
-
             if not pod.spec:
                 continue
             node_name = pod.spec.node_name
@@ -155,9 +151,7 @@ class CriticalServiceHelper:
                     "zone": zone,
                 }
             )
-
-        app.logger.info(f"[{log_id}] Total running pods: {running_pods}")
-        return result, running_pods
+        return result
 
     @staticmethod
     def resolve_owner_kind(resource_type: str) -> str:
@@ -205,8 +199,9 @@ class CriticalServiceHelper:
 
             # Fetch the ConfigMap data containing critical service information
             cm_data = ConfigMapHelper.read_configmap(cm_namespace, cm_name)
-            if "error" in cm_data:
-                raise ValueError(cm_data["error"])
+            if isinstance(cm_data, str):
+                # This means it contains an error message
+                raise ValueError(cm_data)
 
             if cm_key in cm_data:
                 config_data: (

@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -21,21 +21,39 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
+
 """
-This is the entry point for the Rack Resiliency Service (RRS) application.
-It initializes and runs the API Server by creating an instance of the app.
-
-Usage:
-    Run this file to start the Rack Resiliency Service:
+Type stub file for the function in httpproblem that we use
 """
-from src.api.controllers.routes import create_app
 
-# Create the Flask application instance
-app = create_app()
+from http import HTTPStatus
+from typing import Optional, TypedDict, overload
 
-# Production configuration
-app.config.update(
-    DEBUG=False,
-    TESTING=False,
-    # Add any other production-specific configurations here
-)
+class ProblemResponseDict[StatusType: (int, HTTPStatus, None)](TypedDict):
+    statusCode: StatusType
+    body: str
+    headers: dict[str, str]
+
+@overload
+def problem_http_response(
+    status: None = None,
+    title: Optional[str] = None,
+    detail: Optional[str] = None,
+    type: Optional[str] = None,
+    instance: Optional[str] = None,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs: object,
+) -> ProblemResponseDict[None]: ...
+@overload
+def problem_http_response[StatusType: (
+    int,
+    HTTPStatus,
+)](
+    status: StatusType,
+    title: Optional[str] = None,
+    detail: Optional[str] = None,
+    type: Optional[str] = None,
+    instance: Optional[str] = None,
+    headers: Optional[dict[str, str]] = None,
+    **kwargs: object,
+) -> ProblemResponseDict[StatusType]: ...

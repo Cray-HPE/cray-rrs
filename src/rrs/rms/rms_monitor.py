@@ -38,12 +38,12 @@ import json
 import copy
 import threading
 from logging import Logger
-from typing import Optional
+from typing import Literal, Optional, cast, overload
 from flask import Flask, current_app as app
 import yaml
 from src.lib import lib_rms
 from src.lib import lib_configmap
-from src.rrs.rms.rms_statemanager import RMSStateManager, RMSState
+from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import (
@@ -61,7 +61,13 @@ from src.lib.rrs_constants import (
     STARTED_STATE,
     COMPLETED_STATE,
 )
-
+from src.lib.schema import (
+    CriticalServiceCmDynamicType,
+    CriticalServiceCmMixedType,
+    CriticalServiceCmStaticType,
+    DynamicDataSchema,
+    RMSState,
+)
 
 logger = None
 
@@ -92,13 +98,19 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
     app.logger.info("Getting latest status for zones and nodes")
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
+        if isinstance(dynamic_cm_data, str):
+            # This means it is an error message
+            app.logger.error(
+                f"Error fetching dynamic ConfigMap data: {dynamic_cm_data}"
+            )
+            sys.exit(1)
         yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
         if yaml_content is None:
             app.logger.error(f"{DYNAMIC_DATA_KEY} not found in the configmap")
             sys.exit(1)
-        dynamic_data = yaml.safe_load(yaml_content)
-        zone_info = dynamic_data.get("zone")
-        k8s_info = zone_info.get("k8s_zones")
+        dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
+        zone_info = dynamic_data["zone"]
+        k8s_info = zone_info["k8s_zones"]
         k8s_info_old = copy.deepcopy(k8s_info)
 
         for _, nodes in k8s_info.items():
@@ -139,9 +151,39 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
         return False
 
 
+@overload
 def update_critical_services(
-    state_manager: RMSStateManager, reloading: bool = False
-) -> Optional[str]:
+    state_manager: RMSStateManager, reloading: Literal[False]
+) -> Optional[CriticalServiceCmDynamicType]: ...
+
+
+@overload
+def update_critical_services(
+    state_manager: RMSStateManager, reloading: Literal[True]
+) -> Optional[
+    CriticalServiceCmDynamicType
+    | CriticalServiceCmMixedType
+    | CriticalServiceCmStaticType
+]: ...
+
+
+@overload
+def update_critical_services(
+    state_manager: RMSStateManager, reloading: bool
+) -> Optional[
+    CriticalServiceCmDynamicType
+    | CriticalServiceCmMixedType
+    | CriticalServiceCmStaticType
+]: ...
+
+
+def update_critical_services(
+    state_manager: RMSStateManager, reloading: bool
+) -> Optional[
+    CriticalServiceCmDynamicType
+    | CriticalServiceCmMixedType
+    | CriticalServiceCmStaticType
+]:
     """
     Update critical service status and configuration in the dynamic ConfigMap.
     Args:
@@ -153,8 +195,23 @@ def update_critical_services(
     """
     try:
         dynamic_cm_data = state_manager.get_dynamic_cm_data()
+        if isinstance(dynamic_cm_data, str):
+            # This means it is an error message
+            app.logger.error(
+                f"Error fetching dynamic ConfigMap data: {dynamic_cm_data}"
+            )
+            sys.exit(1)
+        services_data: (
+            CriticalServiceCmDynamicType | CriticalServiceCmStaticType | None
+        ) = None
         if reloading:
             static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
+            if isinstance(static_cm_data, str):
+                # This means it contains an error message
+                app.logger.error(
+                    f"Could not read static configmap {STATIC_CM}: {static_cm_data}"
+                )
+                sys.exit(1)
             app.logger.info(
                 "Retrieving critical services information from rrs-static configmap"
             )
@@ -167,8 +224,12 @@ def update_critical_services(
         if json_content is None:
             app.logger.error(f"{CRITICAL_SERVICE_KEY} not found in the configmap")
             sys.exit(1)
-
-        services_data = json.loads(json_content)
+        if reloading:
+            # static CM data
+            services_data = cast(CriticalServiceCmStaticType, json.loads(json_content))
+        else:
+            # dynamic CM data
+            services_data = cast(CriticalServiceCmDynamicType, json.loads(json_content))
         updated_services = criticalServicesHelper.get_critical_services_status(
             services_data
         )
@@ -185,7 +246,7 @@ def update_critical_services(
                 CRITICAL_SERVICE_KEY,
                 services_json,
             )
-        return services_json
+        return updated_services
     except json.JSONDecodeError:
         app.logger.error(f"Failed to decode {CRITICAL_SERVICE_KEY} from configmap")
         return None
@@ -240,17 +301,15 @@ class RMSMonitor:
                 "start_timestamp_k8s_monitoring",
             )
             start = time.time()
-            latest_services_json = None
             unrecovered_services: list[str] = []
             unconfigured_services: list[str] = []
             while time.time() - start < total_time:
                 app.logger.info("Checking k8s services")
                 # Retrieve and update critical services status
-                latest_services_json = update_critical_services(self.state_manager)
+                services_data = update_critical_services(self.state_manager, False)
 
                 try:
-                    if latest_services_json:
-                        services_data = json.loads(latest_services_json)
+                    if services_data:
                         unrecovered_services = []
                         unconfigured_services = []
 
@@ -265,11 +324,9 @@ class RMSMonitor:
                             elif details["status"] == "Unconfigured":
                                 unconfigured_services.append(service)
                     else:
-                        app.logger.critical(
-                            "Services JSON data is not available to process"
-                        )
+                        app.logger.critical("Services data is not available to process")
                         sys.exit(1)
-                except (json.JSONDecodeError, KeyError) as e:
+                except KeyError as e:
                     app.logger.error(f"Error processing services data: {e}")
 
                 if not unrecovered_services:
@@ -348,13 +405,19 @@ class RMSMonitor:
         """
         try:
             dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+            if isinstance(dynamic_cm_data, str):
+                # This means it contains an error message
+                app.logger.error(
+                    f"Could not read dynamic configmap {DYNAMIC_CM}: {dynamic_cm_data}"
+                )
+                sys.exit(1)
             yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
             if not yaml_content:
                 app.logger.error(
                     f"No content found under {DYNAMIC_DATA_KEY} in rrs-mon-dynamic configmap"
                 )
                 sys.exit(1)
-            dynamic_data = yaml.safe_load(yaml_content)
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
             monitor_k8s_start_time = dynamic_data.get("timestamps", {}).get(
                 "start_timestamp_k8s_monitoring", None
             )
@@ -365,9 +428,9 @@ class RMSMonitor:
                 sys.exit(1)
             dt = datetime.strptime(monitor_k8s_start_time, "%Y-%m-%dT%H:%M:%SZ")
             dt = dt.replace(tzinfo=timezone.utc)
-            monitor_k8s_start_time = dt.timestamp()
+            monitor_k8s_start_timestamp = dt.timestamp()
             current_time = time.time()
-            elapsed_time = current_time - monitor_k8s_start_time
+            elapsed_time = current_time - monitor_k8s_start_timestamp
 
             # Calculate percentage of interval completed
             percentage_completed = (elapsed_time / monitoring_total_time) * 100
@@ -389,7 +452,13 @@ class RMSMonitor:
             try:
                 # Read the 'rrs-mon-static' configmap and parse the data
                 static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
-
+                if isinstance(static_cm_data, str):
+                    # This means it contains an error message
+                    app.logger.error(
+                        f"Could not read static configmap {STATIC_CM}: {static_cm_data}"
+                    )
+                    app.logger.info("Going ahead with default values")
+                    static_cm_data = {}
                 k8s_args = (
                     int(
                         static_cm_data.get(

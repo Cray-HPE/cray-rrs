@@ -25,17 +25,47 @@ This module defines various TypedDict schemas for cray-rrs-api
 related to zones, nodes, critical services, and pods in CSM Clusters.
 These schemas provide a structured way to handle and validate data throughout the cray-rrs-api.
 """
-from typing import TypedDict, Literal, final, Required, NotRequired, NamedTuple
+from enum import StrEnum
+from functools import partial
+from typing import (
+    Annotated,
+    Literal,
+    NamedTuple,
+    Required,
+    cast,
+    final,
+    get_args,
+)
+from typing_extensions import TypedDict
+from annotated_types import Len
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    StringConstraints,
+)
 
 # Zones Schemas
 ################################################
+
+# RRS OAS: #/components/schemas/ZoneName
+ZoneName = Annotated[str, StringConstraints(min_length=1, max_length=1000)]
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateZoneName(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+
+    zone_name: ZoneName
 
 
 @final
 class KubernetesTopologyZoneSchema(TypedDict, total=False):
     """
     Schema for Kubernetes topology zone, including master and worker nodes.
-    OAS: #/components/schemas/KubernetesTopologyZoneSchema
+    RRS OAS: #/components/schemas/KubernetesTopologyZoneSchema
     """
 
     Management_Master_Nodes: list[str]
@@ -46,7 +76,7 @@ class KubernetesTopologyZoneSchema(TypedDict, total=False):
 class CephZoneSchema(TypedDict):
     """
     Schema for Ceph zone, including storage nodes.
-    OAS: #/components/schemas/CephZoneSchema
+    RRS OAS: #/components/schemas/CephZoneSchema
     """
 
     Management_Storage_Nodes: list[str]
@@ -56,7 +86,7 @@ class CephZoneSchema(TypedDict):
 class ZoneItemSchema(TypedDict, total=False):
     """
     Schema for a single zone item, including its name and associated zones.
-    OAS: #/components/schemas/ZoneItemSchema
+    RRS OAS: #/components/schemas/ZoneItemSchema
     """
 
     Zone_Name: Required[str]
@@ -68,7 +98,7 @@ class ZoneItemSchema(TypedDict, total=False):
 class ZoneListSchema(TypedDict):
     """
     Schema for a list of zones.
-    OAS: #/components/schemas/ZonesResponse
+    RRS OAS: #/components/schemas/ZonesResponse
     """
 
     Zones: list[ZoneItemSchema]
@@ -78,23 +108,47 @@ class ZoneListSchema(TypedDict):
 class NodeSchema(TypedDict):
     """
     Schema for a node, including its name and status.
-    OAS: #/components/schemas/NodeSchema
+    RRS OAS: #/components/schemas/NodeSchema
     """
 
     name: str
-    status: Literal["Ready", "NotReady", "Unknown", "up", "down", ""]
+    status: Literal["Ready", "NotReady", "Unknown"]
+
+
+StatusReady = Literal["Ready", "NotReady"]
+
+
+@final
+class OSDSchema(TypedDict):
+    """
+    Schema for an OSD, including its name and status.
+    """
+
+    name: str
+    status: Literal["up", "down"]
+
+
+@final
+class OSDStatesSchema(TypedDict, total=False):
+    """
+    Schema for OSD states with up and down fields.
+    RRS OAS: #/components/schemas/OSDStatesSchema
+    """
+
+    up: list[str]
+    down: list[str]
 
 
 @final
 class StorageNodeSchema(TypedDict):
     """
     Schema for a storage node, including its name, status, and OSDs.
-    OAS: #/components/schemas/StorageNodeSchema
+    RRS OAS: #/components/schemas/StorageNodeSchema
     """
 
     name: str
-    status: Literal["Ready", "NotReady"]
-    osds: dict[str, list[str]]
+    status: StatusReady
+    osds: OSDStatesSchema
 
 
 @final
@@ -104,15 +158,15 @@ class CephNodeInfo(TypedDict):
     """
 
     name: str
-    status: Literal["Ready", "NotReady"]
-    osds: list[NodeSchema]
+    status: StatusReady
+    osds: list[OSDSchema]
 
 
 @final
 class ManagementKubernetesSchema(TypedDict):
     """
     Schema for management master or worker nodes in a Kubernetes topology zone.
-    OAS: #/components/schemas/ManagementKubernetesSchema
+    RRS OAS: #/components/schemas/ManagementKubernetesSchema
     """
 
     Count: int
@@ -130,6 +184,10 @@ class k8sNodes(TypedDict, total=False):
     workers: list[NodeSchema]
 
 
+k8sNodeTypes = Literal["masters", "workers"]
+k8sNodeTypeTuple: tuple[k8sNodeTypes, k8sNodeTypes] = ("masters", "workers")
+
+
 # Mappings from zone names to k8sNodes
 type k8sNodesResultType = dict[str, k8sNodes]
 # Mappings from zone names to list[CephNodeInfo]
@@ -140,7 +198,7 @@ type cephNodesResultType = dict[str, list[CephNodeInfo]]
 class ManagementStorageSchema(TypedDict):
     """
     Schema for management storage nodes in a Ceph zone.
-    OAS: #/components/schemas/ManagementStorageSchema
+    RRS OAS: #/components/schemas/ManagementStorageSchema
     """
 
     Count: int
@@ -152,7 +210,7 @@ class ManagementStorageSchema(TypedDict):
 class ZoneDescribeSchema(TypedDict, total=False):
     """
     Schema for describing a zone, including its name and management details.
-    OAS: #/components/schemas/ZoneDetailResponse
+    RRS OAS: #/components/schemas/ZoneDetailResponse
     """
 
     Zone_Name: Required[str]
@@ -164,28 +222,46 @@ class ZoneDescribeSchema(TypedDict, total=False):
 # Critical Service Schemas
 ################################################
 
-# OAS: #/components/schemas/ServiceBalanced
+# RRS OAS: #/components/schemas/ServiceBalanced
 ServiceBalanced = Literal["true", "false", "NA"]
+# RRS OAS: #/components/schemas/ServiceStatus
+ServiceStatus = Literal[
+    "error",
+    "Configured",
+    "PartiallyConfigured",
+    "NotConfigured",
+    "Running",
+    "Unconfigured",
+]
+# RRS OAS: #/components/schemas/ServiceType
 ServiceType = Literal["Deployment", "StatefulSet"]
+
+# RRS OAS: #/components/schemas/ServiceName
+ServiceName = Annotated[str, StringConstraints(min_length=1, max_length=253)]
+
+# RRS OAS: #/components/schemas/NamespaceName
+NamespaceName = Annotated[str, StringConstraints(min_length=1, max_length=63)]
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateServiceName(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+
+    service_name: ServiceName
 
 
 @final
 class CriticalServiceStatusItemSchema(TypedDict):
     """
     Schema for a critical service entry, including its name, type, and status, balanced.
-    OAS: #/components/schemas/CriticalServiceStatusItemSchema
+    RRS OAS: #/components/schemas/CriticalServiceStatusItemSchema
     """
 
-    name: str
-    type: Literal["Deployment", "StatefulSet", "Pod"]
-    status: Literal[
-        "error",
-        "Configured",
-        "PartiallyConfigured",
-        "NotConfigured",
-        "Running",
-        "Unconfigured",
-    ]
+    name: ServiceName
+    type: ServiceType
+    status: ServiceStatus
     balanced: ServiceBalanced
 
 
@@ -193,10 +269,10 @@ class CriticalServiceStatusItemSchema(TypedDict):
 class CriticalServiceItemSchema(TypedDict):
     """
     Schema for a critical service entry, including its name and type.
-    OAS: #/components/schemas/CriticalServiceItemSchema
+    RRS OAS: #/components/schemas/CriticalServiceItemSchema
     """
 
-    name: str
+    name: ServiceName
     type: ServiceType
 
 
@@ -204,10 +280,10 @@ class CriticalServiceItemSchema(TypedDict):
 class CriticalServiceCmStaticSchema(TypedDict):
     """
     Schema for a critical service configuration in static ConfigMap.
-    OAS: #/components/schemas/CriticalServiceCmStaticSchema
+    RRS OAS: #/components/schemas/CriticalServiceCmStaticSchema
     """
 
-    namespace: str
+    namespace: NamespaceName
     type: ServiceType
 
 
@@ -215,10 +291,41 @@ class CriticalServiceCmStaticSchema(TypedDict):
 class CriticalServiceCmStaticType(TypedDict):
     """
     Schema for critical services in static ConfigMap.
-    OAS: #/components/schemas/CriticalServiceCmStaticType
+    RRS OAS: #/components/schemas/CriticalServiceCmStaticType
     """
 
-    critical_services: dict[str, CriticalServiceCmStaticSchema]
+    critical_services: dict[ServiceName, CriticalServiceCmStaticSchema]
+
+
+def _dict_length_le[ItemType: object](
+    value: dict[str, ItemType], max_length: int
+) -> dict[str, ItemType]:
+    """
+    Helper function for our pydantic validators
+    If the specified dict has more than max_length items, raise a ValueError
+    Otherwise, return the dict unchanged
+    """
+    if len(value) > max_length:
+        raise ValueError(f"Dictionary exceeds maximum length of {max_length}")
+    return value
+
+
+# Max length for CmStatic dict is specified in
+# RRS OAS #/components/schemas/CriticalServiceCmStaticType
+is_under_max_cm_static_dict_length = partial(_dict_length_le, max_length=1000)
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateCriticalServiceCmStaticType(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    critical_service_cm_static_type: Annotated[
+        CriticalServiceCmStaticType, AfterValidator(is_under_max_cm_static_dict_length)
+    ]
 
 
 @final
@@ -227,16 +334,9 @@ class CriticalServiceCmDynamicSchema(TypedDict):
     Schema for a critical service entry, including its namespace, type, balanced and status.
     """
 
-    namespace: str
+    namespace: NamespaceName
     type: ServiceType
-    status: Literal[
-        "error",
-        "Configured",
-        "PartiallyConfigured",
-        "NotConfigured",
-        "Running",
-        "Unconfigured",
-    ]
+    status: ServiceStatus
     balanced: ServiceBalanced
 
 
@@ -246,7 +346,18 @@ class CriticalServiceCmDynamicType(TypedDict):
     Schema for critical services in a configmap, including the service name and its details.
     """
 
-    critical_services: dict[str, CriticalServiceCmDynamicSchema]
+    critical_services: dict[ServiceName, CriticalServiceCmDynamicSchema]
+
+
+@final
+class CriticalServiceCmMixedType(TypedDict):
+    """
+    Schema for critical services in a configmap, including the service name and its details.
+    """
+
+    critical_services: dict[
+        ServiceName, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema
+    ]
 
 
 @final
@@ -256,7 +367,7 @@ class CriticalServicesItem(TypedDict):
     OAS: Part of #/components/schemas/CriticalServicesListSchema
     """
 
-    namespace: dict[str, list[CriticalServiceItemSchema]]
+    namespace: dict[NamespaceName, list[CriticalServiceItemSchema]]
 
 
 @final
@@ -266,14 +377,14 @@ class CriticalServicesStatusItem(TypedDict):
     OAS: Part of #/components/schemas/CriticalServicesStatusListSchema
     """
 
-    namespace: dict[str, list[CriticalServiceStatusItemSchema]]
+    namespace: dict[NamespaceName, list[CriticalServiceStatusItemSchema]]
 
 
 @final
 class CriticalServicesListSchema(TypedDict):
     """
     Schema for a list of critical services.
-    OAS: #/components/schemas/CriticalServicesListSchema
+    RRS OAS: #/components/schemas/CriticalServicesListSchema
     """
 
     critical_services: CriticalServicesItem
@@ -283,7 +394,7 @@ class CriticalServicesListSchema(TypedDict):
 class CriticalServicesStatusListSchema(TypedDict):
     """
     Schema for a list of critical services.
-    OAS: #/components/schemas/CriticalServicesStatusListSchema
+    RRS OAS: #/components/schemas/CriticalServicesStatusListSchema
     """
 
     critical_services: CriticalServicesStatusItem
@@ -293,7 +404,7 @@ class CriticalServicesStatusListSchema(TypedDict):
 class PodSchema(TypedDict):
     """
     Schema for a pod, including its name, status, node, and zone.
-    OAS: #/components/schemas/PodSchema
+    RRS OAS: #/components/schemas/PodSchema
     """
 
     name: str
@@ -309,8 +420,8 @@ class CriticalServiceDescribe(TypedDict):
     OAS: Part of #/components/schemas/CriticalServiceDescribeSchema
     """
 
-    name: str
-    namespace: str
+    name: ServiceName
+    namespace: NamespaceName
     type: ServiceType
     configured_instances: int | None
 
@@ -322,20 +433,13 @@ class CriticalServiceStatusDescribe(TypedDict):
     OAS: Part of #/components/schemas/CriticalServiceStatusDescribeSchema
     """
 
-    name: str
-    namespace: str
-    type: Literal["Deployment", "StatefulSet"]
-    status: Literal[
-        "error",
-        "Configured",
-        "PartiallyConfigured",
-        "NotConfigured",
-        "Running",
-        "Unconfigured",
-    ]
+    name: ServiceName
+    namespace: NamespaceName
+    type: ServiceType
+    status: ServiceStatus
     balanced: ServiceBalanced
     configured_instances: int | None
-    currently_running_instances: int
+    currently_running_instances: int | None
     pods: list[PodSchema]
 
 
@@ -343,7 +447,7 @@ class CriticalServiceStatusDescribe(TypedDict):
 class CriticalServiceDescribeSchema(TypedDict):
     """
     Schema for describing a critical service.
-    OAS: #/components/schemas/CriticalServiceDescribeSchema
+    RRS OAS: #/components/schemas/CriticalServiceDescribeSchema
     """
 
     critical_service: CriticalServiceDescribe
@@ -353,7 +457,7 @@ class CriticalServiceDescribeSchema(TypedDict):
 class CriticalServiceStatusDescribeSchema(TypedDict):
     """
     Schema for describing a critical service.
-    OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
+    RRS OAS: #/components/schemas/CriticalServiceStatusDescribeSchema
     """
 
     critical_service: CriticalServiceStatusDescribe
@@ -363,12 +467,40 @@ class CriticalServiceStatusDescribeSchema(TypedDict):
 class CriticalServiceUpdateSchema(TypedDict):
     """
     Schema for response to updating critical services, including added and existing services.
-    OAS: #/components/schemas/CriticalServiceUpdateSchema
+    RRS OAS: #/components/schemas/CriticalServiceUpdateSchema
     """
 
-    Update: str
-    Successfully_Added_Services: list[str]
-    Already_Existing_Services: list[str]
+    Update: Literal["Successful", "Services Already Exist"]
+    Successfully_Added_Services: list[ServiceName]
+    Already_Existing_Services: list[ServiceName]
+
+
+# RMS schemas
+
+
+RMS_STATES = Literal[
+    "Ready",
+    "Started",
+    "Waiting",
+    "Monitoring",
+    "Fail_notified",
+    "internal_failure",
+    "init",
+    "init_fail",
+]
+
+
+class RMSState(StrEnum):
+    """Enum representing the states of the Rack Resiliency Service (RRS)."""
+
+    READY = "Ready"
+    STARTED = "Started"
+    WAITING = "Waiting"
+    MONITORING = "Monitoring"
+    FAIL_NOTIFIED = "Fail_notified"
+    INTERNAL_FAILURE = "internal_failure"
+    INIT = "init"
+    INIT_FAIL = "init_fail"
 
 
 # Error Response Schemas
@@ -376,7 +508,7 @@ class CriticalServiceUpdateSchema(TypedDict):
 class ErrorDict(TypedDict):
     """
     Schema for error responses.
-    OAS: #/components/schemas/ErrorDict
+    RRS OAS: #/components/schemas/ErrorDict
     """
 
     error: str
@@ -386,10 +518,12 @@ class ErrorDict(TypedDict):
 class InformationDict(TypedDict):
     """
     Schema for informational responses.
-    OAS: #/components/schemas/InformationDict
     """
 
     Information: str
+
+
+# External API schemas
 
 
 @final
@@ -406,7 +540,7 @@ class extra_properties(TypedDict, total=False):
 
 
 @final
-class slsEntryDataType(TypedDict):
+class slsEntryDataType(TypedDict, total=False):
     """
     This represents one of the entries in the response to a GET request to the
     SLS 'v1/search/hardware' URI.
@@ -416,10 +550,10 @@ class slsEntryDataType(TypedDict):
     This will not cause problems, because we don't ever try to access any fields not defined here.
     """
 
-    Parent: NotRequired[str]
-    Xname: str
-    Type: NotRequired[str]
-    ExtraProperties: NotRequired[extra_properties]
+    Parent: str
+    Xname: Required[str]
+    Type: str
+    ExtraProperties: extra_properties
 
 
 @final
@@ -449,6 +583,132 @@ class hsmDataType(TypedDict, total=False):
 
 
 @final
+class hmnfdSubscribePost(TypedDict, total=False):
+    """
+    This represents one item in a successful response to a GET request to the HMNFD '/subscriptions' URI.
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/SubscribePost
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    This will not cause problems, because we don't ever try to access any fields not defined here.
+    """
+
+    Subscriber: str
+    SubscriberAgent: str
+
+
+@final
+class hmnfdSubscriptionListArray(TypedDict, total=False):
+    """
+    This represents a successful response to a GET request to the HMNFD '/subscriptions' URI.
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/SubscriptionListArray
+    """
+
+    SubscriptionList: list[hmnfdSubscribePost]
+
+
+# Despite what the HMNFD schema claims, these enumerated types are actually not case sensitive.
+# When listing subscriptions from HMNFD with a GET, all of these values are all lowercase.
+# When receiving a change POST notification from HMNFD, these values have their first letter capitalized.
+# And when accepting values as input, it accepts either way (and possibly may be completely case insensitive).
+# This is not reflected in the official schema.
+# https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+
+# #/components/schemas/HMSState.1.0.0
+hmnfdState = Literal[
+    "unknown",
+    "empty",
+    "populated",
+    "off",
+    "on",
+    "active",
+    "standby",
+    "halt",
+    "ready",
+    "paused",
+]
+# This allows us to have an object listing all of the supported states available at runtime
+HMNFD_STATES: frozenset[hmnfdState] = frozenset(
+    cast(tuple[hmnfdState, ...], get_args(hmnfdState))
+)
+hmnfdNotificationState = Literal[
+    "Unknown",
+    "Empty",
+    "Populated",
+    "Off",
+    "On",
+    "Active",
+    "Standby",
+    "Halt",
+    "Ready",
+    "Paused",
+]
+
+
+# from RMS OAS: #/components/responses/SCNRequestSchema
+hmnfdComponentXname = Annotated[str, StringConstraints(min_length=2, max_length=100)]
+
+
+@final
+class hmnfdSubscribePostV2(TypedDict, total=False):
+    """
+    This represents the request body for a POST request to the HMNFD
+    '/subscriptions/{subscriber_node}/agents/{agent_name}' URI.
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/SubscribePostV2
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    """
+
+    Components: list[hmnfdComponentXname]
+    States: list[hmnfdState]
+    Url: str
+
+
+@final
+class hmnfdNotificationPost(TypedDict):
+    """
+    This represents the request body for a POST request made from HMNFD to RMS, notifying
+    of a state or role change.
+    RMS OAS: #/components/responses/SCNRequestSchema
+
+    https://github.com/Cray-HPE/hms-hmnfd/blob/master/api/swagger_v2.yaml
+    #/components/schemas/StateChanges
+
+    We only use a subset of the fields these entries may have, so we do not define all of the possible fields here.
+    I also note that the actual object appears to always contain a Timestamp field, which is not documented
+    in the HMNFD spec. We do not use it, so I also omit it here.
+
+    RMS subscribes to notifications for changes in State or Role. So one of these objects is guaranteed to have
+    one of those fields, but is not required to have either one specifically. There is no way to capture that in a
+    single TypeDict definition, so for simplicity we will mark both as not required.
+    """
+
+    Components: Annotated[
+        list[hmnfdComponentXname], Len(min_length=1, max_length=10000)
+    ]
+    State: hmnfdNotificationState
+
+
+# Max length for hmnfdNotificationPost dict is specified in
+# RMS OAS: #/components/responses/SCNRequestSchema
+is_under_hmnfd_notify_dict_length = partial(_dict_length_le, max_length=100)
+
+
+# pydantic BaseModel contains an explicit Any, which mypy dislikes
+class ValidateHmnfdNotificationPost(BaseModel):  # type: ignore[explicit-any]
+    """
+    Pydantic validator used for validating data received from API requests
+    """
+
+    # We know our TypedDict does not cover all of the fields -- we will ignore extra ones
+    model_config = ConfigDict(extra="ignore")
+
+    hmnfd_notification_post: Annotated[
+        hmnfdNotificationPost, AfterValidator(is_under_hmnfd_notify_dict_length)
+    ]
+
+
+@final
 class openidTokenResponse(TypedDict, total=False):
     """
     This represents a successful response to a POST request to:
@@ -458,6 +718,18 @@ class openidTokenResponse(TypedDict, total=False):
     """
 
     access_token: str
+
+
+@final
+class cephOrchPsService(TypedDict):
+    """
+    This represents one entry in the list output of `ceph orch ps -f json`
+    Not all fields are specified -- only the ones we care about
+    """
+
+    hostname: str
+    service_name: str
+    status_desc: str
 
 
 @final
@@ -472,7 +744,7 @@ class ceph_tree_node_datatype(TypedDict, total=False):
     type: str
     name: str
     children: list[int]
-    status: Literal["Ready", "NotReady"]
+    status: Literal["up", "down"]
 
 
 @final
@@ -497,6 +769,53 @@ class cephHostDataType(TypedDict, total=False):
 
     hostname: str
     status: Literal["", "online", "offline"]
+
+
+@final
+class cephStatusHealthChecksPgDegradedSummary(TypedDict, total=False):
+    """
+    This represents the "health"."checks"."PG_DEGRADED"."summary" field in the output of `ceph -s -f json`
+    """
+
+    message: str
+
+
+@final
+class cephStatusHealthChecksPgDegraded(TypedDict, total=False):
+    """
+    This represents the "health"."checks"."PG_DEGRADED" field in the output of `ceph -s -f json`
+    """
+
+    summary: cephStatusHealthChecksPgDegradedSummary
+
+
+@final
+class cephStatusHealthChecks(TypedDict, total=False):
+    """
+    This represents the "health"."checks" field in the output of `ceph -s -f json`
+    """
+
+    PG_DEGRADED: cephStatusHealthChecksPgDegraded
+
+
+@final
+class cephStatusHealth(TypedDict, total=False):
+    """
+    This represents the "health" field in the output of `ceph -s -f json`
+    """
+
+    checks: cephStatusHealthChecks
+    status: str
+
+
+@final
+class cephStatus(TypedDict, total=False):
+    """
+    This represents partial output of the `ceph -s -f json` command
+    """
+
+    health: cephStatusHealth
+    pgmap: dict[str, object]
 
 
 @final
@@ -526,5 +845,135 @@ class EmptyDict(TypedDict):
     """
     The API spec dictates an empty dict response for calls to the Healthz endpoints
     A final TypedDict with no keys covers this
-    OAS: #/components/schemas/EmptyDict
+    RMS/RRS OAS: #/components/schemas/EmptyDict
     """
+
+
+@final
+class VersionInfo(TypedDict):
+    """
+    RMS/RRS OAS: #/components/schemas/VersionSchema
+    """
+
+    version: str
+
+
+################################################
+# The schemas for dynamic-data from dynamic configmap
+@final
+class CrayRRSPod(TypedDict):
+    """
+    Schema for capturing Cray RRS Pod location details.
+    """
+
+    node: str
+    rack: str | None
+    zone: str | None
+
+
+# Timestamps Schema
+@final
+class TimestampsSchema(TypedDict, total=False):
+    """
+    Schema for tracking system-wide monitoring and service timestamps.
+    """
+
+    end_timestamp_ceph_monitoring: str
+    end_timestamp_k8s_monitoring: str
+    init_timestamp: str
+    last_update_timestamp: str
+    start_timestamp_api: str
+    start_timestamp_ceph_monitoring: str
+    start_timestamp_k8s_monitoring: str
+    start_timestamp_rms: str
+
+
+# State Schema
+@final
+class StateSchema(TypedDict):
+    """
+    Schema for tracking monitoring states across different system components.
+    """
+
+    ceph_monitoring: str
+    k8s_monitoring: str
+    rms_state: RMS_STATES | None
+
+
+# Zone Schema
+@final
+class ZoneDataSchema(TypedDict):
+    """
+    Schema for organizing zone-specific information about storage and compute nodes.
+    """
+
+    ceph_zones: cephNodesResultType
+    k8s_zones: dict[str, list[NodeSchema]]
+
+
+# Dynamic Data Schema
+@final
+class DynamicDataSchema(TypedDict):
+    """
+    Root schema for the dynamic configuration data used in RRS/RMS services.
+    This schema represents the complete structure stored in the dynamic ConfigMap
+    and encompasses all monitoring aspects of the system.
+    """
+
+    cray_rrs_pod: CrayRRSPod
+    state: StateSchema
+    timestamps: TimestampsSchema
+    zone: ZoneDataSchema
+
+
+# RMS API schemas
+
+
+@final
+class SCNSuccessResponse(TypedDict):
+    """
+    This represents the response body to a successful POST call to the /scn RMS endpoint.
+    OAS: #/components/schemas/SCNSuccessResponse
+    """
+
+    message: Literal["POST call received"]
+
+
+@final
+class SCNBadRequestResponse(TypedDict):
+    """
+    This represents the response body to a POST call to the /scn RMS endpoint with bad data.
+    OAS: #/components/schemas/SCNBadRequestResponse
+    """
+
+    error: str
+
+
+@final
+class SCNInternalServerErrorResponse(TypedDict):
+    """
+    This represents the response body to an unsuccessful POST call to the /scn RMS endpoint.
+    OAS: #/components/schemas/SCNInternalServerErrorResponse
+    """
+
+    error: Literal["Internal server error"]
+
+
+@final
+class ApiTimestampSuccessResponse(TypedDict):
+    """
+    This represents the response body to a successful POST call to the /api-ts RMS endpoint.
+    OAS: #/components/schemas/ApiTimestampSuccessResponse
+    """
+
+    message: Literal["API timestamp updated successfully"]
+
+
+@final
+class ApiTimestampFailedResponse(TypedDict):
+    """
+    This represents the response body to an unsuccessful POST call to the /api-ts RMS endpoint.
+    OAS: #/components/schemas/ApiTimestampFailedResponse
+    """
+
+    error: Literal["Failed to update API timestamp"]

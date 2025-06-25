@@ -64,8 +64,10 @@ def log_event(message: str, level: str = "INFO") -> None:
         message (str): The message to log.
         level (str): The log level as a string (default is "INFO").
     """
-    log_id: str = g.get("log_id", get_log_id())  # Explicit typing
-    g.log_id = log_id
+    # The Flask global context is not feasible to type annotate,
+    # so we ignore the 'Expression has type "Any"' error on the following lines
+    log_id: str = g.get("log_id", get_log_id())  # type: ignore[misc]
+    g.log_id = log_id  # type: ignore[misc]
 
     log_message = f"Log ID: {log_id} - {message}"
     log_level = str_to_log_level(level)

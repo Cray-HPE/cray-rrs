@@ -6,3 +6,8 @@ flask-restful
 PyYAML
 requests
 urllib3
+gunicorn
+httpproblem
+typing_extensions
+pydantic
+annotated-types

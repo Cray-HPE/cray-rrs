@@ -36,10 +36,15 @@ from collections import defaultdict
 import logging
 import json
 import yaml
-from src.rrs.rms.rms_statemanager import RMSState
 from src.lib.lib_rms import cephHelper, k8sHelper, Helper
 from src.lib.lib_configmap import ConfigMapHelper
-from src.lib.schema import cephNodesResultType, NodeSchema
+from src.lib.schema import (
+    cephNodesResultType,
+    CriticalServiceCmStaticType,
+    DynamicDataSchema,
+    NodeSchema,
+    RMSState,
+)
 from src.lib.rrs_constants import (
     NAMESPACE,
     DYNAMIC_CM,
@@ -83,7 +88,7 @@ def zone_discovery() -> tuple[
     k8s_return_type,
     cephNodesResultType,
 ]:
-    """Retrieving zone information and status of k8s and CEPH nodes
+    """Retrieving zone information and status of k8s and Ceph nodes
     Returns:
         tuple containing:
             - A boolean indicating if discovery was successful.
@@ -145,9 +150,17 @@ def check_critical_services_and_timers() -> bool:
     """
     try:
         static_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, STATIC_CM)
+        if isinstance(static_cm_data, str):
+            # This means it contains an error message
+            logger.error(
+                "Could not read static configmap %s: %s",
+                STATIC_CM,
+                static_cm_data,
+            )
+            return False
         critical_svc = static_cm_data.get(CRITICAL_SERVICE_KEY, None)
         if critical_svc:
-            services_data = json.loads(critical_svc)
+            services_data: CriticalServiceCmStaticType = json.loads(critical_svc)
             if not services_data["critical_services"]:
                 logger.error(
                     "Critical services are not defined for Rack Resiliency Service"
@@ -202,14 +215,25 @@ def init() -> None:
         ConfigMapHelper.release_lock(NAMESPACE, STATIC_CM)
 
         configmap_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
-        if not configmap_data or not isinstance(configmap_data, dict):
+        if isinstance(configmap_data, str):
+            # This means it contains an error message
+            logger.error(
+                "Unable to access configmap %s: %s",
+                DYNAMIC_CM,
+                configmap_data,
+            )
+            sys.exit(1)
+        if (
+            not configmap_data
+            or not isinstance(configmap_data, dict)
+        ):
             logger.error(
                 "Data is missing in configmap %s or not in expected format", DYNAMIC_CM
             )
             sys.exit(1)
         yaml_content = configmap_data.get(DYNAMIC_DATA_KEY, None)
         if yaml_content:
-            dynamic_data = yaml.safe_load(yaml_content)
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
         else:
             logger.error(
                 "No content found under %s in %s configmap",
@@ -221,7 +245,7 @@ def init() -> None:
         # update init timestamp in rrs-dynamic configmap
         timestamps = dynamic_data.get("timestamps", {})
         init_timestamp = timestamps.get("init_timestamp", None)
-        state = dynamic_data.get("state", {})
+        state = dynamic_data["state"]
         rms_state = state.get("rms_state", None)
         if init_timestamp:
             logger.debug("Init time already present in configmap")
@@ -232,8 +256,8 @@ def init() -> None:
         if rms_state:
             logger.info("RMS is in %s state. Resetting to init state", rms_state)
             # Get the node and zone location of the previously running pod
-            pod_zone = dynamic_data.get("cray_rrs_pod").get("zone")
-            pod_node = dynamic_data.get("cray_rrs_pod").get("node")
+            pod_zone = dynamic_data["cray_rrs_pod"]["zone"]
+            pod_node = dynamic_data["cray_rrs_pod"]["node"]
             if pod_zone and pod_node:
                 check_previous_rrs_pod_node_status(pod_node, pod_zone)
             if RMSState(rms_state) == RMSState.MONITORING:
@@ -250,9 +274,9 @@ def init() -> None:
         logger.debug("Updated init_timestamp and rms_state in %s configmap", DYNAMIC_CM)
 
         # Retrieve k8s and CEPH node/zone information and update in rrs-dynamic configmap
-        zone_info = dynamic_data.get("zone", None)
         discovery_status, updated_k8s_data, updated_ceph_data = zone_discovery()
         if discovery_status:
+            zone_info = dynamic_data["zone"]
             zone_info["k8s_zones"] = updated_k8s_data
             zone_info["ceph_zones"] = updated_ceph_data
 
@@ -261,14 +285,14 @@ def init() -> None:
         zone_name = None
         for rack, nodes_list in updated_k8s_data.items():
             for node in nodes_list:
-                if node.get("name") == node_name:
+                if node["name"] == node_name:
                     zone_name = rack
                     break
             if zone_name:
                 break
         rack_name = Helper.get_rack_name_for_node(node_name)
 
-        rrs_pod_placement = dynamic_data.get("cray_rrs_pod", None)
+        rrs_pod_placement = dynamic_data["cray_rrs_pod"]
         rrs_pod_placement["zone"] = zone_name
         rrs_pod_placement["node"] = node_name
         rrs_pod_placement["rack"] = rack_name
@@ -285,7 +309,8 @@ def init() -> None:
             logger.info(
                 "Updating rms state to init_fail because of initialization failures"
             )
-            state["rms_state"] = RMSState.INIT_FAIL.value
+            # Normally we would set state["rms_state"] to RMSState.INIT_FAIL.value, but there
+            # is no reason to do it here, because our next call is to sys.exit
             sys.exit(1)
         logger.debug(
             "Updating zone information, pod placement, state in rrs-dynamic configmap"
@@ -307,7 +332,7 @@ def init() -> None:
 if __name__ == "__main__":
     if not NAMESPACE or not DYNAMIC_CM or not STATIC_CM:
         logger.error(
-            "One or more missing environment variables - namespace, static configmap, dynamic configmap"
+            "One or more missing environment variables - NAMESPACE, DYNAMIC_CM, STATIC_CM"
         )
         sys.exit(1)
     init()

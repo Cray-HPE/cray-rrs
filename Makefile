@@ -72,6 +72,7 @@ replace_version_strings:
 	./replace_strings.sh "0[.]0[.]0"        "$(API_VERSION)"    setup.py
 	./replace_strings.sh "0[.]0[.]0-api"    "$(API_VERSION)"    src/api/openapi.yaml
 	./replace_strings.sh "Unknown"          "$(API_VERSION)"    src/api/controllers/routes.py
+	./replace_strings.sh "Unknown"          "$(API_VERSION)"    src/rrs/rms/rms.py
 	./replace_strings.sh "0[.]0[.]0-chart"  "$(CHART_VERSION)"  kubernetes/cray-rrs/Chart.yaml
 	./replace_strings.sh "0[.]0[.]0-docker" "$(DOCKER_VERSION)" kubernetes/cray-rrs/Chart.yaml
 	./replace_strings.sh "S-T-A-B-L-E"      "$(STABLE)"         kubernetes/cray-rrs/values.yaml

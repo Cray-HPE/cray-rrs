@@ -38,7 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
-from typing import Literal, Optional, cast
+from typing import Literal, Optional, cast, overload
 import requests
 import urllib3
 import yaml
@@ -49,10 +49,12 @@ from src.lib.lib_configmap import ConfigMapHelper
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.schema import (
     cephNodesResultType,
+    cephOrchPsService,
+    cephStatus,
+    k8sNodeTypeTuple,
     k8sNodesResultType,
     CephNodeInfo,
-    NodeSchema,
-    CriticalServiceCmDynamicType,
+    OSDSchema,
     slsEntryDataType,
     podInfoType,
     hsmDataType,
@@ -60,6 +62,13 @@ from src.lib.schema import (
     cephTreeDataType,
     cephHostDataType,
     skewReturn,
+    DynamicDataSchema,
+    CriticalServiceCmDynamicType,
+    CriticalServiceCmStaticType,
+    CriticalServiceCmDynamicSchema,
+    CriticalServiceCmStaticSchema,
+    CriticalServiceCmMixedType,
+    ServiceStatus,
 )
 from src.lib.rrs_constants import (
     NAMESPACE,
@@ -132,36 +141,60 @@ class Helper:
     @staticmethod
     def update_state_timestamp(
         state_manager: RMSStateManager,
-        state_field: Optional[str] = None,
+        state_field: Optional[
+            Literal["ceph_monitoring", "k8s_monitoring", "rms_state"]
+        ] = None,
         new_state: Optional[str] = None,
-        timestamp_field: Optional[str] = None,
+        timestamp_field: Optional[
+            Literal[
+                "end_timestamp_ceph_monitoring",
+                "end_timestamp_k8s_monitoring",
+                "init_timestamp",
+                "last_update_timestamp",
+                "start_timestamp_api",
+                "start_timestamp_ceph_monitoring",
+                "start_timestamp_k8s_monitoring",
+                "start_timestamp_rms",
+            ]
+        ] = None,
     ) -> None:
         """
         Update the RMS state and/or a timestamp field in the dynamic ConfigMap.
         Args:
             state_manager (RMSStateManager): The state manager instance handling ConfigMap interactions.
-            state_field (Optional[str]): The key in the 'state' section of the ConfigMap to update.
+            state_field (Optional[Literal]): The key in the 'state' section to update.
             new_state (Optional[str]): The value to assign to the specified state field.
-            timestamp_field (Optional[str]): The key in the 'timestamps' section to update with the current UTC time.
+            timestamp_field (Optional[Literal]): The key in the 'timestamps' section to update.
         Returns:
             None
         """
         try:
             dynamic_cm_data = state_manager.get_dynamic_cm_data()
+            if isinstance(dynamic_cm_data, str):
+                # This means it is an error message
+                logger.error(
+                    "Error fetching dynamic ConfigMap data: %s", dynamic_cm_data,
+                )
+                return
             yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
             if yaml_content is None:
                 return
-            dynamic_data = yaml.safe_load(yaml_content)
-            if new_state:
+
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
+
+            if state_field is not None and new_state is not None:
                 logger.info("Updating state %s to %s", state_field, new_state)
-                state = dynamic_data.get("state", {})
+                state = dynamic_data["state"]
                 state[state_field] = new_state
-            if timestamp_field:
+                dynamic_data["state"] = state
+
+            if timestamp_field is not None:
                 logger.info("Updating timestamp %s", timestamp_field)
-                timestamp = dynamic_data.get("timestamps", {})
+                timestamp = dynamic_data["timestamps"]
                 timestamp[timestamp_field] = datetime.now().strftime(
                     "%Y-%m-%dT%H:%M:%SZ"
                 )
+                dynamic_data["timestamps"] = timestamp
 
             dynamic_cm_data[DYNAMIC_DATA_KEY] = yaml.dump(
                 dynamic_data, default_flow_style=False
@@ -390,7 +423,7 @@ class cephHelper:
             if not services_output:
                 logger.warning("Could not fetch CEPH services status")
                 return ceph_healthy
-            ceph_services = json.loads(services_output)
+            ceph_services: list[cephOrchPsService] = json.loads(services_output)
             failed_services = []
             for service in ceph_services:
                 if service["status_desc"] != "running":
@@ -443,7 +476,7 @@ class cephHelper:
             if not status_output:
                 logger.warning("Could not fetch CEPH health")
                 return ceph_healthy
-            ceph_status = json.loads(status_output)
+            ceph_status: cephStatus = json.loads(status_output)
             health_status = ceph_status.get("health", {}).get("status", "UNKNOWN")
 
             if "HEALTH_OK" not in health_status:
@@ -517,8 +550,8 @@ class cephHelper:
             if not tree_output or not host_output:
                 logger.warning("Could not fetch CEPH output")
                 return {}, []
-            ceph_tree = json.loads(tree_output)
-            ceph_hosts = json.loads(host_output)
+            ceph_tree: cephTreeDataType = json.loads(tree_output)
+            ceph_hosts: list[cephHostDataType] = json.loads(host_output)
 
             logger.debug("CEPH OSD Tree Output: %s", ceph_tree)
             logger.debug("CEPH Host list Output: %s", ceph_hosts)
@@ -591,10 +624,10 @@ class cephHelper:
                             if osd.get("id") in osd_ids and osd.get("type") == "osd"
                         ]
 
-                    osd_status_list: list[NodeSchema] = []
+                    osd_status_list: list[OSDSchema] = []
                     for osd in osds:
                         osd_name = osd.get("name", "")
-                        osd_status = osd.get("status", "")
+                        osd_status = osd["status"]
                         osd_status_list.append({"name": osd_name, "status": osd_status})
 
                     node_status = host_status_map.get(host_node_name, "No Status")
@@ -747,10 +780,10 @@ class k8sHelper:
         try:
             if not nodes:
                 nodes = k8sHelper.get_k8s_nodes()
+                if not nodes:
+                    logger.error("Failed to retrieve k8s nodes")
+                    return "Unknown"
 
-            if not nodes:
-                logger.error("Failed to retrieve k8s nodes")
-                return "Unknown"
             for node in nodes:
                 if node.metadata is not None and node.metadata.name == node_name:
                     # If the node has conditions, we check the last one
@@ -841,7 +874,7 @@ class k8sHelper:
 
             node_zone_map = {}
             for zone, node_types in nodes_data.items():
-                for node_type in ["masters", "workers"]:
+                for node_type in k8sNodeTypeTuple:
                     node_list = node_types.get(node_type, [])
                     if not isinstance(node_list, list):
                         continue
@@ -1021,10 +1054,30 @@ class criticalServicesHelper:
 
         return filtered_pods
 
+    @overload
     @staticmethod
     def get_critical_services_status(
         services_data: CriticalServiceCmDynamicType,
-    ) -> CriticalServiceCmDynamicType:
+    ) -> CriticalServiceCmDynamicType: ...
+
+    @overload
+    @staticmethod
+    def get_critical_services_status(
+        services_data: CriticalServiceCmStaticType,
+    ) -> (
+        CriticalServiceCmDynamicType
+        | CriticalServiceCmMixedType
+        | CriticalServiceCmStaticType
+    ): ...
+
+    @staticmethod
+    def get_critical_services_status(
+        services_data: CriticalServiceCmDynamicType | CriticalServiceCmStaticType,
+    ) -> (
+        CriticalServiceCmDynamicType
+        | CriticalServiceCmMixedType
+        | CriticalServiceCmStaticType
+    ):
         """
         Update critical service info with status and balanced values
         Args:
@@ -1033,18 +1086,41 @@ class criticalServicesHelper:
             CriticalServiceCmType:
             Updated services_data with 'status' and 'balanced' flags added per service.
         """
+        # Since function will set "status" and "balanced" fields.
+        # If the input type is CriticalServiceCmDynamicType, that will also be the output type.
+        # But if initial type for service_data is CriticalServiceCmStaticType, then it is possible the result
+        # will be CriticalServiceCmMixedType or CriticalServiceCmDynamicType or CriticalServiceCmStaticType
+        # To begin, we will optimistically assume that we will not hit errors
         try:
+            critical_services = services_data["critical_services"]
+            # In the unlikely case that we are sent no services, we can just return immediately, as
+            # there is nothing to update
+            if not critical_services:
+                # This is one scenario in which we could return CriticalServiceCmStaticType,
+                # if the input type was CriticalServiceCmStaticType
+                return services_data
+
             all_pods = k8sHelper.fetch_all_pods()
             if all_pods is None:
                 logger.warning("Failed to fetch pods, returning original services data")
+                # This is another scenario in which we could return CriticalServiceCmStaticType,
+                # if the input type was CriticalServiceCmStaticType
                 return services_data
+        except Exception as e:
+            logger.exception(
+                "Unexpected error while updating critical service statuses: %s", e
+            )
+            # This is another scenario in which we could return CriticalServiceCmStaticType,
+            # if the input type was CriticalServiceCmStaticType
+            return services_data  # Return original data
 
-            critical_services = services_data.get("critical_services", {})
-            logger.info("Number of critical services are - %d", len(critical_services))
-            imbalanced_services: list[str] = []
-            unconfigured_services: list[str] = []
-            partially_configured_services: list[str] = []
+        updated_critical_services: dict[str, CriticalServiceCmDynamicSchema] = {}
+        logger.info("Number of critical services are - %d", len(critical_services))
+        imbalanced_services: list[str] = []
+        unconfigured_services: list[str] = []
+        partially_configured_services: list[str] = []
 
+        try:
             for service_name, service_info in critical_services.items():
                 service_namespace = service_info["namespace"]
                 service_type = service_info["type"]
@@ -1056,22 +1132,28 @@ class criticalServicesHelper:
 
                 if desired_replicas is None or ready_replicas is None or labels is None:
                     unconfigured_services.append(service_name)
-                    service_info.update({"status": "Unconfigured", "balanced": "NA"})
+                    updated_critical_services[service_name] = (
+                        CriticalServiceCmDynamicSchema(
+                            namespace=service_namespace,
+                            type=service_type,
+                            status="Unconfigured",
+                            balanced="NA",
+                        )
+                    )
                     continue
 
                 if ready_replicas == 0:
                     unconfigured_services.append(service_name)
-                    service_info.update({"status": "Unconfigured", "balanced": "NA"})
+                    updated_critical_services[service_name] = (
+                        CriticalServiceCmDynamicSchema(
+                            namespace=service_namespace,
+                            type=service_type,
+                            status="Unconfigured",
+                            balanced="NA",
+                        )
+                    )
                     continue
-                status: Literal[
-                    "error",
-                    "Configured",
-                    "PartiallyConfigured",
-                    "NotConfigured",
-                    "Running",
-                    "Unconfigured",
-                ]
-                status = "Configured"
+                status: ServiceStatus = "Configured"
                 if ready_replicas < desired_replicas:
                     partially_configured_services.append(service_name)
                     status = "PartiallyConfigured"
@@ -1101,11 +1183,13 @@ class criticalServicesHelper:
                 if balance_details.balanced == "false":
                     imbalanced_services.append(service_name)
 
-                service_info.update(
-                    {
-                        "status": status,
-                        "balanced": balance_details.balanced,
-                    }
+                updated_critical_services[service_name] = (
+                    CriticalServiceCmDynamicSchema(
+                        namespace=service_namespace,
+                        type=service_type,
+                        status=status,
+                        balanced=balance_details.balanced,
+                    )
                 )
 
             if partially_configured_services:
@@ -1122,9 +1206,53 @@ class criticalServicesHelper:
                     "list of unconfigured services are - %s", unconfigured_services
                 )
 
-            return services_data
+            # This is the good path. In this case, regardless of the input type, we are
+            # returning dynamic data
+            return CriticalServiceCmDynamicType(
+                critical_services=updated_critical_services
+            )
         except Exception as e:
             logger.exception(
                 "Unexpected error while updating critical service statuses: %s", e
             )
-            return services_data  # Return original or partially updated data
+
+        # It is possible the exception was raised before a single service was added to
+        # updated_critical_services. In this case, just return the original data.
+        # This is the final scenario in which we could return purely static data (in the case
+        # where the input data was static)
+        if not updated_critical_services:
+            return services_data
+
+        # It is possible, but highly unlikely, that the exception was raised after all of the services
+        # had been updated, but before the function returned. In this case, we will still be returning
+        # purely dynamic data.
+        if len(updated_critical_services) == len(services_data):
+            return CriticalServiceCmDynamicType(
+                critical_services=updated_critical_services
+            )
+
+        # If we've reached here, then this means that if the input type was static, the output
+        # type will be mixed.
+        mixed_service_data: dict[
+            str, CriticalServiceCmDynamicSchema | CriticalServiceCmStaticSchema
+        ] = {
+            service_name: (
+                updated_critical_services.get(
+                    service_name, critical_services[service_name]
+                )
+            )
+            for service_name in critical_services
+        }
+
+        # We previously verified that the critical_services list is not empty
+        if "status" in next(iter(critical_services.values())):
+            # This means the data is actually not mixed -- our input type must have been dynamic
+            # But mypy is not clever enough to realize this, so here we use cast
+            return CriticalServiceCmDynamicType(
+                critical_services=cast(
+                    dict[str, CriticalServiceCmDynamicSchema], mixed_service_data
+                )
+            )
+
+        # The data actually is a mix of static and dynamic in this case
+        return CriticalServiceCmMixedType(critical_services=mixed_service_data)

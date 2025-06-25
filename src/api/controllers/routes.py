@@ -42,13 +42,16 @@ Usage:
     Import and call `create_app` to initialize the Flask application with the defined routes
 """
 
+import os
 import sys
 import logging
 import time
+from typing import cast
 from http import HTTPStatus
 import requests
 from flask import Flask
 from flask_restful import Api
+from src.lib.schema import ApiTimestampSuccessResponse
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
 from src.api.controllers.controls import (
@@ -78,7 +81,9 @@ def create_app() -> Flask:
         Flask: A fully configured Flask application instance ready to be run.
     """
     app = Flask(__name__)
-    api = Api(app)
+    # Flask has some Anys in its type stubs, so the lines relating to the api object
+    # have to have comments to suppress mypy errors.
+    api = Api(app)  # type: ignore[misc]
 
     # Logging setup
     if app.logger.hasHandlers():
@@ -91,6 +96,10 @@ def create_app() -> Flask:
     )
     stream_handler.setFormatter(formatter)
     app.logger.addHandler(stream_handler)
+    # Update the logging line in routes.py
+    app.logger.info(
+        "Gunicorn worker timeout: %s", os.getenv("GUNICORN_WORKER_TIMEOUT", "-1")
+    )
 
     # Timestamp logging via API call
     with app.app_context():
@@ -103,7 +112,10 @@ def create_app() -> Flask:
                 try:
                     response = requests.post(ts_url, timeout=REQUESTS_TIMEOUT)
                     if response.status_code == HTTPStatus.OK:
-                        app.logger.info("Response: %s", response.text.strip())
+                        response_data = cast(
+                            ApiTimestampSuccessResponse, response.json()
+                        )
+                        app.logger.info(response_data)
                         success = True
                         break
                 except (requests.exceptions.RequestException, ValueError) as e:
@@ -128,23 +140,26 @@ def create_app() -> Flask:
     # This version value is substituted dynamically at build time
     app.config["VERSION"] = "Unknown"
 
+    # Flask has some Anys in its type stubs, so the lines relating to the api object
+    # have to have comments to suppress mypy errors.
+
     # Register healthz and version endpoints
-    api.add_resource(Ready, "/healthz/ready")
-    api.add_resource(Live, "/healthz/live")
-    api.add_resource(Version, "/version")
+    api.add_resource(Ready, "/healthz/ready")  # type: ignore[misc]
+    api.add_resource(Live, "/healthz/live")  # type: ignore[misc]
+    api.add_resource(Version, "/version")  # type: ignore[misc]
 
     # Register Zones endpoints
-    api.add_resource(ZoneListResource, "/zones")
-    api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")
+    api.add_resource(ZoneListResource, "/zones")  # type: ignore[misc]
+    api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")  # type: ignore[misc]
 
     # Register Criticalservices endpoints
-    api.add_resource(CriticalServiceListResource, "/criticalservices")
-    api.add_resource(
+    api.add_resource(CriticalServiceListResource, "/criticalservices")  # type: ignore[misc]
+    api.add_resource(  # type: ignore[misc]
         CriticalServiceDescribeResource, "/criticalservices/<service_name>"
     )
-    api.add_resource(CriticalServiceUpdateResource, "/criticalservices")
-    api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")
-    api.add_resource(
+    api.add_resource(CriticalServiceUpdateResource, "/criticalservices")  # type: ignore[misc]
+    api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")  # type: ignore[misc]
+    api.add_resource(  # type: ignore[misc]
         CriticalServiceStatusDescribeResource, "/criticalservices/status/<service_name>"
     )
 

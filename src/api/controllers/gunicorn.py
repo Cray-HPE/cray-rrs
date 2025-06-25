@@ -21,38 +21,36 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-"""
-Rack Resiliency Service Version API
-"""
 
-from typing import Literal
-from http import HTTPStatus
-from flask import current_app as app
-from flask_restful import Resource
-from src.lib.rrs_logging import get_log_id
-from src.lib.schema import VersionInfo
+"""Gunicorn settings for cray-rrs-api"""
+import os
 
+# Server socket
+bind = "0.0.0.0:80"
 
-# Ignoring misc subclassing error caused by the lack of type annotations for the flask-restful module
-class Version(Resource):  # type: ignore[misc,no-any-unimported]
-    """Return RRS version information"""
+# Worker processes
+workers = int(os.environ.get("GUNICORN_WORKERS", 4))
 
-    def get(self) -> tuple[VersionInfo, Literal[HTTPStatus.OK]]:
-        """
-        Return RRS version information
+# Worker class - use gthread for I/O bound API operations
+worker_class = os.environ.get("GUNICORN_WORKER_CLASS", "gthread")
 
-        RMS/RRS OAS: #/paths/version (get)
-        """
+# Threads per worker (only applies to gthread worker class)
+threads = int(os.environ.get("GUNICORN_THREADS", 2))
 
-        # Generate or fetch a unique log ID for traceability
-        log_id = get_log_id()
-        app.logger.info("%s ++ version.GET", log_id)
+# Worker timeout - reasonable for API operations
+timeout = int(os.environ.get("GUNICORN_WORKER_TIMEOUT", 120))  # 2 minutes
 
-        # Construct the version response from Flask config
-        return_value = VersionInfo(version=app.config["VERSION"])
+# Preload application for better performance
+preload_app = True
 
-        # Log the constructed response for debugging
-        app.logger.debug("%s Returning json response: %s", log_id, return_value)
+# Worker recycling - prevents memory leaks in long-running services
+max_requests = int(os.environ.get("GUNICORN_MAX_REQUESTS", 1000))
+max_requests_jitter = int(os.environ.get("GUNICORN_MAX_REQUESTS_JITTER", 100))
 
-        # Return version info with HTTP 200 OK
-        return return_value, HTTPStatus.OK
+# Logging
+accesslog = "-"  # stdout
+errorlog = "-"  # stderr
+loglevel = os.environ.get("GUNICORN_LOG_LEVEL", "info").lower()
+
+# Performance
+keepalive = int(os.environ.get("GUNICORN_KEEPALIVE", 5))
