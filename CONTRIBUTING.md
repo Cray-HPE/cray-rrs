@@ -10,7 +10,7 @@
 
 _Describe the release and branching strategy of this repository. Github flow? Gitflow? Trunk-based development, etc.._
 
-### How to Create a Release 
+### How to Create a Release
 
 _Describe how and when to create a release. This will depend on the build pipeline and branching strategy for the project._
 

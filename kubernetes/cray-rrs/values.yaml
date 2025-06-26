@@ -1,0 +1,176 @@
+#
+# MIT License
+#
+# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# Please refer to https://stash.us.cray.com/projects/CLOUD/repos/cray-charts/browse/stable/cray-service/values.yaml?at=refs%2Fheads%2Fmaster
+# for more info on values you can set/override
+# Note that cray-service.containers[*].image and cray-service.initContainers[*].image map values are one of the only structures that
+# differ from the standard kubernetes container spec:
+# image:
+#   repository: ""
+#   tag: "" (default = "latest")
+#   pullPolicy: "" (default = "IfNotPresent")
+
+# The S-T-A-B-L-E values are replaced dynamically at build time
+
+cray-service:
+  type: Deployment
+  nameOverride: cray-rrs
+  replicaCount: 1
+  namespace: rack-resiliency
+  podLabels:
+    app: cray-rrs
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 50%
+    type: RollingUpdate
+  serviceAccountName: cray-rrs-service
+  initContainers:
+    cray-rrs-init:
+      name: cray-rrs-init
+      image:
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-init
+      securityContext:
+        runAsUser: 0
+      env:
+        - name: static_cm_name
+          value: "rrs-mon-static"
+        - name: dynamic_cm_name
+          value: "rrs-mon-dynamic"
+        - name: namespace
+          value: "rack-resiliency"
+      volumeMounts:
+        - name: ssh-config
+          mountPath: /etc/ssh
+          readOnly: true
+        - name: ssh-hostpath
+          mountPath: /root/.ssh
+          readOnly: true
+  containers:
+    cray-rrs-rms:
+      name: cray-rrs-rms
+      image:
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-rms
+      securityContext:
+        runAsUser: 0
+      env:
+        - name: static_cm_name
+          value: "rrs-mon-static"
+        - name: dynamic_cm_name
+          value: "rrs-mon-dynamic"
+        - name: namespace
+          value: "rack-resiliency"
+      volumeMounts:
+        - name: ssh-config
+          mountPath: /etc/ssh
+          readOnly: true
+        - name: ssh-hostpath
+          mountPath: /root/.ssh
+          readOnly: true
+      ports:
+      - containerPort: 8551
+        name: http-rms
+        protocol: TCP
+      livenessProbe:
+        httpGet:
+          path: /healthz/live
+          port: http-rms
+        initialDelaySeconds: 5
+        periodSeconds: 180
+        timeoutSeconds: 90
+        failureThreshold: 5
+        successThreshold: 1
+      readinessProbe:
+        httpGet:
+          path: /healthz/ready
+          port: http-rms
+        initialDelaySeconds: 5
+        periodSeconds: 90
+        timeoutSeconds: 90
+        failureThreshold: 10
+        successThreshold: 1
+    cray-rrs-api:
+      name: cray-rrs-api
+      image:
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-api
+      securityContext:
+        runAsUser: 0
+      env:
+        - name: static_cm_name
+          value: "rrs-mon-static"
+        - name: dynamic_cm_name
+          value: "rrs-mon-dynamic"
+        - name: namespace
+          value: "rack-resiliency"
+      volumeMounts:
+        - name: ssh-config
+          mountPath: /etc/ssh
+          readOnly: true
+        - name: ssh-hostpath
+          mountPath: /root/.ssh
+          readOnly: true
+      ports:
+      - containerPort: 80
+        name: http-api
+        protocol: TCP
+      livenessProbe:
+        httpGet:
+          path: /healthz/live
+          port: http-api
+        initialDelaySeconds: 5
+        periodSeconds: 180
+        timeoutSeconds: 90
+        failureThreshold: 5
+        successThreshold: 1
+      readinessProbe:
+        httpGet:
+          path: /healthz/ready
+          port: http-api
+        initialDelaySeconds: 5
+        periodSeconds: 90
+        timeoutSeconds: 90
+        failureThreshold: 10
+        successThreshold: 1
+  volumes:
+  - name: ssh-config
+    hostPath:
+      path: /etc/ssh
+      type: Directory
+  - name: ssh-hostpath
+    hostPath:
+      path: /root/.ssh
+      type: Directory
+  ingress:
+    enabled: true
+    ui: false
+    gateways:
+      - services/services-gateway
+      - services/customer-admin-gateway
+    prefix: "/apis/rrs"
+    uri: /
+  service:
+    enabled: false
+    ports:
+      - port: 80
+        name: http-api
+        protocol: TCP
+        targetPort: http-api

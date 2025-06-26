@@ -1,0 +1,15 @@
+.coverage
+__pycache__
+.pytest_cache
+/venv
+/.venv
+build/
+dist/
+*,cover
+*.pyc
+.env
+.vscode
+*.tar
+.nox
+*.log
+*.egg-info
