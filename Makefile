@@ -90,9 +90,11 @@ chart-metadata:
 		-v ${PWD}/${CHARTDIR}/${NAME}:/chart \
 		${CHART_METADATA_IMAGE} \
 		--version "${CHART_VERSION}" --app-version "${DOCKER_VERSION}" \
-		-i ${NAME} ${IMAGE}:${CHART_VERSION} \
+		-i cray-rrs-api ${IMAGE}/cray-rrs-api:${DOCKER_VERSION} \
+		-i cray-rrs-init ${IMAGE}/cray-rrs-init:${DOCKER_VERSION} \
+		-i cray-rrs-rms ${IMAGE}/cray-rrs-rms:${DOCKER_VERSION} \
 		--cray-service-globals
-	
+
 helm:
 	docker run --rm \
 	    --user $(shell id -u):$(shell id -g) \
