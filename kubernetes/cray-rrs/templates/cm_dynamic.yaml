@@ -28,6 +28,9 @@ metadata:
   name: rrs-mon-dynamic
   namespace: rack-resiliency
   labels:
+    app.kubernetes.io/name: rrs-mon-dynamic
+    app.kubernetes.io/instance: rack-resiliency
+    app.kubernetes.io/part-of: cray-rrs
     app.kubernetes.io/managed-by: Helm
     type: rr-services
 data:
