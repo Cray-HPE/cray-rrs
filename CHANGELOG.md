@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-06-26
 ### Fixed
 - Update the annotations in `Chart.yaml` so they point to the correct Docker images
 
