@@ -110,7 +110,7 @@ data:
         },
         "cray-dns-powerdns-postgres": {
           "namespace": "services",
-          "type": "Deployment"
+          "type": "StatefulSet"
         },
         "cray-dns-unbound": {
           "namespace": "services",
@@ -239,18 +239,6 @@ data:
         "keycloak-postgres": {
           "namespace": "services",
           "type": "StatefulSet"
-        },
-        "kube-apiserver": {
-          "namespace": "kube-system",
-          "type": "Pod"
-        },
-        "kube-controller-manager": {
-          "namespace": "kube-system",
-          "type": "Pod"
-        },
-        "kube-scheduler": {
-          "namespace": "kube-system",
-          "type": "Pod"
         },
         "kyverno-admission-controller": {
           "namespace": "kyverno",
