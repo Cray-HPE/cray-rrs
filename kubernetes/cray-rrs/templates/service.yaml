@@ -26,9 +26,9 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app.kubernetes.io/name: cray-rrs-api
+    app.kubernetes.io/name: cray-rrs
   namespace: {{ index .Values "cray-service" "namespace" }}
-  name: cray-rrs-api
+  name: cray-rrs
 spec:
   selector:
     app: cray-rrs
@@ -37,22 +37,8 @@ spec:
       protocol: TCP
       port: 80
       targetPort: http-api
-  type: ClusterIP
----
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app.kubernetes.io/name: cray-rrs-rms
-  namespace: {{ index .Values "cray-service" "namespace" }}
-  name: cray-rrs-rms
-spec:
-  selector:
-    app: cray-rrs
-  ports:
     - name: http-rms
       protocol: TCP
       port: 8551
       targetPort: http-rms
   type: ClusterIP
----

@@ -167,3 +167,10 @@ cray-service:
       - services/customer-admin-gateway
     prefix: "/apis/rrs"
     uri: /
+  service:
+    enabled: false
+    ports:
+      - port: 80
+        name: http-api
+        protocol: TCP
+        targetPort: http-api

@@ -48,7 +48,7 @@ info:
       - Maintains service state coordination
 
 servers:
-  - url: 'http://cray-rrs-rms.rack-resiliency.svc.cluster.local:8551'
+  - url: 'http://cray-rrs.rack-resiliency.svc.cluster.local:8551'
     description: The RMS server endpoint within the Kubernetes cluster
 
 tags:
