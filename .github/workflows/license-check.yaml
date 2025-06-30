@@ -28,7 +28,7 @@ on:
 
 jobs:
   license-check:
-    runs-on: [self-hosted, self-hosted-small]
+    runs-on: ubuntu-latest
     permissions:
       contents: read
 

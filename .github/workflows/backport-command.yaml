@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2024 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2024-2025 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -31,7 +31,7 @@ on:
 jobs:
   backport-command:
     # On public repo, change this to "runs-on: ubuntu-latest"
-    runs-on: [self-hosted, self-hosted-small]
+    runs-on: ubuntu-latest
     if: github.event.issue.pull_request
     steps:
       - uses: Cray-HPE/backport-command-action@main
