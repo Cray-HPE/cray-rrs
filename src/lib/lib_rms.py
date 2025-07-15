@@ -38,6 +38,7 @@ import time
 import logging
 from logging import Logger
 from datetime import datetime
+from collections import defaultdict
 from typing import Literal, Optional, cast, overload
 import requests
 import urllib3
@@ -51,6 +52,7 @@ from src.lib.schema import (
     cephNodesResultType,
     cephOrchPsService,
     cephStatus,
+    NodeSchema,
     k8sNodeTypeTuple,
     k8sNodesResultType,
     CephNodeInfo,
@@ -81,6 +83,8 @@ from src.lib.rrs_constants import (
     RETRY_DELAY,
     HOSTS,
 )
+
+k8s_return_type = dict[str, list[NodeSchema]]
 
 # disables only the InsecureRequestWarning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -912,6 +916,72 @@ class k8sHelper:
         except Exception as e:
             logger.exception("Unexpected error while fetching pods: %s", e)
         return None
+
+
+class zoneHelper:
+    """
+    Helper class to provide zone related utility function(s) for the application.
+    """
+
+    @staticmethod
+    def zone_discovery() -> tuple[
+        bool,
+        k8s_return_type,
+        cephNodesResultType,
+    ]:
+        """Retrieving zone information and status of k8s and Ceph nodes
+        Returns:
+            tuple containing:
+                - A boolean indicating if discovery was successful.
+                - A dict of updated k8s zone-node data.
+                - A dict of updated Ceph zone-node data.
+        """
+        try:
+            status = True
+            updated_k8s_data: k8s_return_type = defaultdict(list)
+            updated_ceph_data: cephNodesResultType = {}
+            nodes = k8sHelper.get_k8s_nodes()
+            logger.info("Retrieving zone information and status of k8s and CEPH nodes")
+
+            if not nodes or not isinstance(nodes, list):
+                logger.error("Failed to retrieve k8s nodes")
+                return False, updated_k8s_data, updated_ceph_data
+
+            for node in nodes:
+                if not hasattr(node, "metadata") or node.metadata is None:
+                    logger.error("Invalid node object found without metadata")
+                    continue
+
+                node_name = node.metadata.name
+                if node_name is None:
+                    logger.error("Node has no name, skipping")
+                    continue
+
+                if node.metadata.labels is None:
+                    logger.error("Node %s has no labels, skipping", node_name)
+                    continue
+
+                zone = node.metadata.labels.get("topology.kubernetes.io/zone")
+                if not zone:
+                    logger.error("Node %s does not have a zone marked for it", node_name)
+                    status = False
+                    updated_k8s_data = defaultdict(list)  # Reset the data
+                    break
+                updated_k8s_data[zone].append(
+                    {
+                        "status": k8sHelper.get_node_status(node_name, nodes),
+                        "name": node_name,
+                    }
+                )
+
+            updated_k8s_data_dict = dict(updated_k8s_data)
+
+            if status:
+                updated_ceph_data, _ = cephHelper.get_ceph_status()
+            return status, updated_k8s_data_dict, updated_ceph_data
+        except Exception as e:
+            logger.exception("Unexpected error occurred during zone discovery: %s", e)
+            return False, {}, {}
 
 
 class criticalServicesHelper:

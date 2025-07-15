@@ -32,17 +32,14 @@ RRS metadata.
 
 import sys
 from datetime import datetime
-from collections import defaultdict
 import logging
 import json
 import yaml
-from src.lib.lib_rms import cephHelper, k8sHelper, Helper
+from src.lib.lib_rms import k8sHelper, Helper, zoneHelper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.schema import (
-    cephNodesResultType,
     CriticalServiceCmStaticType,
     DynamicDataSchema,
-    NodeSchema,
     RMSState,
 )
 from src.lib.rrs_constants import (
@@ -57,8 +54,6 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s in %(module)s: %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-k8s_return_type = dict[str, list[NodeSchema]]
 
 
 def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
@@ -81,66 +76,6 @@ def check_previous_rrs_pod_node_status(pod_node: str, pod_zone: str) -> None:
 
     except Exception as e:
         logger.exception("Unexpected error occurred during pod location check: %s", e)
-
-
-def zone_discovery() -> tuple[
-    bool,
-    k8s_return_type,
-    cephNodesResultType,
-]:
-    """Retrieving zone information and status of k8s and Ceph nodes
-    Returns:
-        tuple containing:
-            - A boolean indicating if discovery was successful.
-            - A dict of updated k8s zone-node data.
-            - A dict of updated Ceph zone-node data.
-    """
-    try:
-        status = True
-        updated_k8s_data: k8s_return_type = defaultdict(list)
-        updated_ceph_data: cephNodesResultType = {}
-        nodes = k8sHelper.get_k8s_nodes()
-        logger.info("Retrieving zone information and status of k8s and CEPH nodes")
-
-        if not nodes or not isinstance(nodes, list):
-            logger.error("Failed to retrieve k8s nodes")
-            return False, updated_k8s_data, updated_ceph_data
-
-        for node in nodes:
-            if not hasattr(node, "metadata") or node.metadata is None:
-                logger.error("Invalid node object found without metadata")
-                continue
-
-            node_name = node.metadata.name
-            if node_name is None:
-                logger.error("Node has no name, skipping")
-                continue
-
-            if node.metadata.labels is None:
-                logger.error("Node %s has no labels, skipping", node_name)
-                continue
-
-            zone = node.metadata.labels.get("topology.kubernetes.io/zone")
-            if not zone:
-                logger.error("Node %s does not have a zone marked for it", node_name)
-                status = False
-                updated_k8s_data = defaultdict(list)  # Reset the data
-                break
-            updated_k8s_data[zone].append(
-                {
-                    "status": k8sHelper.get_node_status(node_name, nodes),
-                    "name": node_name,
-                }
-            )
-
-        updated_k8s_data_dict = dict(updated_k8s_data)
-
-        if status:
-            updated_ceph_data, _ = cephHelper.get_ceph_status()
-        return status, updated_k8s_data_dict, updated_ceph_data
-    except Exception as e:
-        logger.exception("Unexpected error occurred during zone discovery: %s", e)
-        return False, {}, {}
 
 
 def check_critical_services_and_timers() -> bool:
@@ -274,7 +209,7 @@ def init() -> None:
         logger.debug("Updated init_timestamp and rms_state in %s configmap", DYNAMIC_CM)
 
         # Retrieve k8s and CEPH node/zone information and update in rrs-dynamic configmap
-        discovery_status, updated_k8s_data, updated_ceph_data = zone_discovery()
+        discovery_status, updated_k8s_data, updated_ceph_data = zoneHelper.zone_discovery()
         if discovery_status:
             zone_info = dynamic_data["zone"]
             zone_info["k8s_zones"] = updated_k8s_data

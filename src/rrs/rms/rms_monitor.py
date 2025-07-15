@@ -44,7 +44,7 @@ import yaml
 from src.lib import lib_rms
 from src.lib import lib_configmap
 from src.rrs.rms.rms_statemanager import RMSStateManager
-from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper
+from src.lib.lib_rms import Helper, cephHelper, k8sHelper, criticalServicesHelper, zoneHelper
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_constants import (
     NAMESPACE,
@@ -112,17 +112,16 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
         zone_info = dynamic_data["zone"]
         k8s_info = zone_info["k8s_zones"]
         k8s_info_old = copy.deepcopy(k8s_info)
-
-        for _, nodes in k8s_info.items():
-            for node in nodes:
-                node["status"] = k8sHelper.get_node_status(node["name"], None)
-
-        zone_info["k8s_zones"] = k8s_info
         ceph_info_old = zone_info.get("ceph_zones")
-        ceph_info, ceph_healthy_status = cephHelper.get_ceph_status()
-        zone_info["ceph_zones"] = ceph_info
 
-        if k8s_info_old != k8s_info or ceph_info_old != ceph_info:
+        # Get the latest data for k8s and ceph
+        _, updated_k8s_data, updated_ceph_data = zoneHelper.zone_discovery()
+        zone_info["k8s_zones"] = updated_k8s_data
+        zone_info["ceph_zones"] = updated_ceph_data
+        ceph_healthy = cephHelper.check_ceph_health()
+        ceph_services_health = cephHelper.check_ceph_services()
+
+        if k8s_info_old != updated_k8s_data or ceph_info_old != updated_ceph_data:
             app.logger.info(f"Updating zone information in {DYNAMIC_CM} configmap")
 
             dynamic_cm_data[DYNAMIC_DATA_KEY] = yaml.dump(
@@ -138,7 +137,7 @@ def update_zone_status(state_manager: RMSStateManager) -> bool:
             app.logger.info(
                 "No change in k8s or CEPH status and distribution. Nothing to do"
             )
-        return ceph_healthy_status
+        return ceph_healthy and ceph_services_health
 
     except KeyError as e:
         app.logger.error(f"Key error occurred: {e}")
