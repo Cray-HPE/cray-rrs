@@ -690,11 +690,11 @@ if __name__ == "__main__":
                 "RMS was in 'Monitoring' state - starting monitoring loop to resume previous incomplete process"
             )
             threading.Thread(target=monitor.monitoring_loop, daemon=True).start()
-
-        update_critical_services(state_manager, True)
+                
+                
         update_zone_status(state_manager)
+        update_critical_services(state_manager, True)
         app.logger.info("Starting the main loop")
-
         while True:
             if state_manager.get_state() != RMSState.MONITORING:
                 rms_state = RMSState.WAITING
@@ -711,8 +711,8 @@ if __name__ == "__main__":
                     state_manager, "rms_state", rms_state.value
                 )
                 check_and_create_hmnfd_subscription()
-                update_critical_services(state_manager, True)
                 update_zone_status(state_manager)
+                update_critical_services(state_manager, True)
             else:
                 app.logger.info("Not running main loop as monitoring is running")
                 time.sleep(MAIN_LOOP_WAIT_TIME_INTERVAL)
