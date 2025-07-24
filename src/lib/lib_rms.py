@@ -30,6 +30,7 @@ including Kubernetes and Ceph zone discovery, status checking, and configuration
 """
 
 import os
+import sys
 import json
 import re
 import subprocess
@@ -72,6 +73,7 @@ from src.lib.schema import (
 )
 from src.lib.rrs_constants import (
     NAMESPACE,
+    DYNAMIC_CM,
     DYNAMIC_DATA_KEY,
     SECRET_NAME,
     SECRET_DEFAULT_NAMESPACE,
@@ -173,7 +175,8 @@ class Helper:
             if isinstance(dynamic_cm_data, str):
                 # This means it is an error message
                 logger.error(
-                    "Error fetching dynamic ConfigMap data: %s", dynamic_cm_data,
+                    "Error fetching dynamic ConfigMap data: %s",
+                    dynamic_cm_data,
                 )
                 return
             yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
@@ -943,6 +946,39 @@ class criticalServicesHelper:
                 if not zone or not node or not pod_name:
                     continue  # skip invalid pod entries
                 zone_pod_map.setdefault(zone, {}).setdefault(node, []).append(pod_name)
+
+            # There might be a case where pods are not spread across all zones which will
+            # result in zone_pod_map not having the entry of those zones.
+            # To address this, we will fetch the zones from the dynamic configmap.
+            dynamic_cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+            if isinstance(dynamic_cm_data, str):
+                logger.error(
+                    "Could not read dynamic configmap %s: %s",
+                    DYNAMIC_CM,
+                    dynamic_cm_data,
+                )
+                sys.exit(1)
+            yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
+            if not yaml_content:
+                logger.error(
+                    "No content found under %s in rrs-mon-dynamic configmap",
+                    DYNAMIC_DATA_KEY,
+                )
+                sys.exit(1)
+
+            dynamic_data: DynamicDataSchema = yaml.safe_load(yaml_content)
+            k8s_zones = list(dynamic_data["zone"]["k8s_zones"].keys())
+
+            for zone in k8s_zones:
+                nodes = dynamic_data["zone"]["k8s_zones"][zone]
+                # In the event of rack failure, the corresponding zone will not have any pods, which is expected.
+                # In this case, the balanced status should be set to 'true'.
+                # Therefore, we check if at least one node in the zone has a 'Ready' status
+                # to ensure that empty entries are added to the zone_pod_map.
+                if zone not in zone_pod_map and any(
+                    node["status"] == "Ready" for node in nodes
+                ):
+                    zone_pod_map[zone] = {}
 
             counts = [
                 sum(len(pods) for pods in zone.values())
