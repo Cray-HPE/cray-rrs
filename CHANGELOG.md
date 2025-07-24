@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2025-07-24
+### Fixed
+- CASMTRIAGE-8508 - Critical Services balanced staus is not shown correctly by RMS
+    - Fixed to show the balanced status of Critical Services by RMS as appropriate when the pods are
+      not distributed across racks properly due to kubernetes scheduler failure. 
+        
 ## [1.0.1] - 2025-06-26
 ### Fixed
 - Update the annotations in `Chart.yaml` so they point to the correct Docker images
