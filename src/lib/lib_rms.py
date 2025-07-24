@@ -971,7 +971,7 @@ class criticalServicesHelper:
 
             for zone in k8s_zones:
                 nodes = dynamic_data["zone"]["k8s_zones"][zone]
-                # In the event of a rack failure, the corresponding zone will not have any running pods, which is expected.
+                # In the event of rack failure, the corresponding zone will not have any pods, which is expected.
                 # In this case, the balanced status should be set to 'true'.
                 # Therefore, we check if at least one node in the zone has a 'Ready' status
                 # to ensure that empty entries are added to the zone_pod_map.

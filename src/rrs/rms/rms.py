@@ -690,8 +690,6 @@ if __name__ == "__main__":
                 "RMS was in 'Monitoring' state - starting monitoring loop to resume previous incomplete process"
             )
             threading.Thread(target=monitor.monitoring_loop, daemon=True).start()
-                
-                
         update_zone_status(state_manager)
         update_critical_services(state_manager, True)
         app.logger.info("Starting the main loop")
