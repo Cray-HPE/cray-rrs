@@ -223,10 +223,7 @@ def init() -> None:
                 configmap_data,
             )
             sys.exit(1)
-        if (
-            not configmap_data
-            or not isinstance(configmap_data, dict)
-        ):
+        if not configmap_data or not isinstance(configmap_data, dict):
             logger.error(
                 "Data is missing in configmap %s or not in expected format", DYNAMIC_CM
             )
