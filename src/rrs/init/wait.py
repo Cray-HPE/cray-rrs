@@ -211,6 +211,7 @@ def check_rr_enablement():
     print(f"Rack Resiliency Enabled: {rr_check}")
     return rr_check
 
+
 def check_rr_setup():
     """Check if RR is setup with Kubernetes and CEPH zones or not."""
     print("Checking Rack Resiliency enablement and Kubernetes/ CEPH creation...")
