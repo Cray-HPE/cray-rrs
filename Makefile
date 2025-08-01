@@ -32,10 +32,12 @@ IMAGE ?= artifactory.algol60.net/csm-docker/$(STABLE)/$(NAME)
 
 RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
 RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
+RRS_WAIR_CONTAINER_NAME ?= cray-rrs/cray-rrs-wait
 RRS_RMS_CONTAINER_NAME ?= cray-rrs/cray-rrs-rms
 
 DOCKERFILE_API ?= Dockerfile.rrs.api
 DOCKERFILE_INIT ?= Dockerfile.rrs.init
+DOCKERFILE_WAIT ?= Dockerfile.rrs.wait
 DOCKERFILE_RMS ?= Dockerfile.rrs.rms
 
 CHART_METADATA_IMAGE ?= artifactory.algol60.net/csm-docker/stable/chart-metadata
@@ -51,13 +53,16 @@ COMMA := ,
 
 all: images chart
 
-images : rrs_api_image rrs_init_image rrs_rms_image
+images : rrs_api_image rrs_init_image rrs_wait_image rrs_rms_image
 
 rrs_api_image:
 	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_API} --tag '${RRS_API_CONTAINER_NAME}:${DOCKER_VERSION}' .
 
 rrs_init_image:
 	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_INIT} --tag '${RRS_INIT_CONTAINER_NAME}:${DOCKER_VERSION}' .
+
+rrs_wait_image:
+	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_INIT} --tag '${RRS_WAIT_CONTAINER_NAME}:${DOCKER_VERSION}' .
 
 rrs_rms_image:
 	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_RMS} --tag '${RRS_RMS_CONTAINER_NAME}:${DOCKER_VERSION}' .
@@ -92,6 +97,7 @@ chart-metadata:
 		--version "${CHART_VERSION}" --app-version "${DOCKER_VERSION}" \
 		-i cray-rrs-api ${IMAGE}/cray-rrs-api:${DOCKER_VERSION} \
 		-i cray-rrs-init ${IMAGE}/cray-rrs-init:${DOCKER_VERSION} \
+		-i cray-rrs-wait ${IMAGE}/cray-rrs-wair:${DOCKER_VERSION} \
 		-i cray-rrs-rms ${IMAGE}/cray-rrs-rms:${DOCKER_VERSION} \
 		--cray-service-globals
 
