@@ -188,12 +188,11 @@ def check_rr_setup():
         return False
     return True
 
-
 def main():
-     """ 
-     Check for RR enablement and Kubernetes and CEPH zoning.
-     Wait till the RR is enabled and zones are created/ present.
-     """
+    """ 
+    Check for RR enablement and Kubernetes and CEPH zoning.
+    Wait till the RR is enabled and zones are created/ present.
+    """
     while True:
         if check_rr_setup():
             break
