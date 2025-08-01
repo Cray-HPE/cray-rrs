@@ -36,7 +36,9 @@ dependencies:
   repository: https://artifactory.algol60.net/artifactory/csm-helm-charts/
 maintainers:
   - name: ravikanth-nalla-hpe
-  - name: keshav-06-hpe
+  - name: rajesh-ranganathan-hpe
   - name: arka-pramanik-hpe
+  - name: keshav-06-hpe
+
 # This version is substituted dynamically at build time
 appVersion: 0.0.0-docker

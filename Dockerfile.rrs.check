@@ -21,23 +21,36 @@
 # ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 #
-from setuptools import setup, find_packages
 
-with open("LICENSE") as license_file:
-    LICENSE = license_file.read()
-with open("requirements.txt") as reqs_file:
-    REQUIRMENTS = reqs_file.readlines()[1:]
-setup(
-    name="rrs",
-    author="HPE",
-    author_email="rajesh.ranganathan@hpe.com,sravani.sanigepalli@hpe.com,ravikanth.nalla@hpe.com,arka.pramanik@hpe.com,keshav.varshney@hpe.com,mitchell.harding@hpe.com",
-    url="http://hpe.com",
-    description="RRS (Rack Resiliency Service)",
-    long_description="RRS (Rack Resiliency Service)",
-    version="0.0.0",
-    package_data={"": ["../api/openapi.yaml"]},
-    packages=find_packages(),
-    license=LICENSE,
-    include_package_data=True,
-    install_requires=REQUIRMENTS,
-)
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 AS base
+
+WORKDIR /app
+
+RUN apk add --upgrade --no-cache apk-tools && \
+    apk update && \
+    apk add --no-cache curl ca-certificates python3 py3-pip openssh python3-dev build-base yq && \
+    update-ca-certificates
+
+ADD requirements.txt constraints.txt /app/
+ENV VIRTUAL_ENV=/app/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+RUN python3 -m venv $VIRTUAL_ENV && \
+    pip3 install --no-cache-dir -U pip -c constraints.txt && \
+    pip3 install --no-cache-dir -U wheel -c constraints.txt && \
+    pip3 install --no-cache-dir -r requirements.txt
+
+FROM base AS build
+
+# Copy rrs init sources
+COPY src/ /app/src/
+
+ENV PYTHONPATH=/app
+ENV FLASK_APP=""
+
+# Enable and start SSH service (consider security implications)
+RUN mkdir -p /var/run/sshd && \
+    echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/g' /etc/ssh/sshd_config && \
+    ssh-keygen -A
+
+CMD /usr/sbin/sshd && python3 -m src.rrs.init.wait

@@ -1,5 +1,5 @@
 aniso8601==10.0.1
-annotated-types==0.6.0
+annotated-types>=0.6.0
 astroid>=3.3.10
 blinker==1.9.0
 cachetools==5.5.2
@@ -54,7 +54,7 @@ types-requests>=2.32.4.20250611
 types-urllib3>=1.26.25.14
 types-Werkzeug>=1.0.9
 typing_extensions>=4.14.0
-typing-inspection==0.4.1
+typing-inspection>=0.4.1
 urllib3==2.4.0
 websocket-client==1.8.0
 Werkzeug==3.1.3
