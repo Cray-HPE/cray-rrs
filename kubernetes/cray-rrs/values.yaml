@@ -45,15 +45,6 @@ cray-service:
     type: RollingUpdate
   serviceAccountName: cray-rrs-service
   initContainers:
-    cray-rrs-wait:
-      name: cray-rrs-wait
-      image:
-        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-wait
-      securityContext:
-      runAsUser: 0
-      env:
-        - name: namespace
-          value: "rack-resiliency"
     cray-rrs-init:
       name: cray-rrs-init
       image:
@@ -65,6 +56,22 @@ cray-service:
           value: "rrs-mon-static"
         - name: dynamic_cm_name
           value: "rrs-mon-dynamic"
+        - name: namespace
+          value: "rack-resiliency"
+      volumeMounts:
+        - name: ssh-config
+          mountPath: /etc/ssh
+          readOnly: true
+        - name: ssh-hostpath
+          mountPath: /root/.ssh
+          readOnly: true
+    cray-rrs-check:
+      name: cray-rrs-check
+      image:
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-check
+      securityContext:
+        runAsUser: 0
+      env:
         - name: namespace
           value: "rack-resiliency"
       volumeMounts:

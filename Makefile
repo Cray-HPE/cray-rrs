@@ -32,12 +32,12 @@ IMAGE ?= artifactory.algol60.net/csm-docker/$(STABLE)/$(NAME)
 
 RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
 RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
-RRS_WAIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-wait
+RRS_WAIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-check
 RRS_RMS_CONTAINER_NAME ?= cray-rrs/cray-rrs-rms
 
 DOCKERFILE_API ?= Dockerfile.rrs.api
 DOCKERFILE_INIT ?= Dockerfile.rrs.init
-DOCKERFILE_WAIT ?= Dockerfile.rrs.wait
+DOCKERFILE_WAIT ?= Dockerfile.rrs.check
 DOCKERFILE_RMS ?= Dockerfile.rrs.rms
 
 CHART_METADATA_IMAGE ?= artifactory.algol60.net/csm-docker/stable/chart-metadata
@@ -97,7 +97,7 @@ chart-metadata:
 		--version "${CHART_VERSION}" --app-version "${DOCKER_VERSION}" \
 		-i cray-rrs-api ${IMAGE}/cray-rrs-api:${DOCKER_VERSION} \
 		-i cray-rrs-init ${IMAGE}/cray-rrs-init:${DOCKER_VERSION} \
-		-i cray-rrs-wait ${IMAGE}/cray-rrs-wait:${DOCKER_VERSION} \
+		-i cray-rrs-check ${IMAGE}/cray-rrs-check:${DOCKER_VERSION} \
 		-i cray-rrs-rms ${IMAGE}/cray-rrs-rms:${DOCKER_VERSION} \
 		--cray-service-globals
 
