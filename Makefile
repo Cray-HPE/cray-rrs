@@ -32,7 +32,7 @@ IMAGE ?= artifactory.algol60.net/csm-docker/$(STABLE)/$(NAME)
 
 RRS_API_CONTAINER_NAME ?= cray-rrs/cray-rrs-api
 RRS_INIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-init
-RRS_WAIR_CONTAINER_NAME ?= cray-rrs/cray-rrs-wait
+RRS_WAIT_CONTAINER_NAME ?= cray-rrs/cray-rrs-wait
 RRS_RMS_CONTAINER_NAME ?= cray-rrs/cray-rrs-rms
 
 DOCKERFILE_API ?= Dockerfile.rrs.api
