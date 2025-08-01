@@ -22,6 +22,15 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
+"""
+RRS Check Rack Resiliency(RR) enablement and zones Module.
+
+This module checks to see if RR is enabled and Kubernetes and CEPH
+zones are created. If RR is enabled and zones are craeted it will continue
+to deploy RRS (Rack Resiliency Service) otherwise it will wait to deploy 
+till RR is enabled and zones are created.
+"""
+
 import subprocess
 import base64
 import json
