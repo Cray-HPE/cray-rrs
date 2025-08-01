@@ -51,6 +51,9 @@ cray-service:
         repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-wait
       securityContext:
       runAsUser: 0
+      env:
+        - name: namespace
+          value: "rack-resiliency"
     cray-rrs-init:
       name: cray-rrs-init
       image:
