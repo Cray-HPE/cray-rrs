@@ -138,7 +138,13 @@ def get_ceph_zones():
 def get_kubernetes_nodes():
     """Get Kubernetes nodes."""
     try:
-        config.load_kube_config()
+        # Try to load in-cluster config first (when running inside a pod)
+        try:
+            config.load_incluster_config()
+        except config.ConfigException:
+            # Fallback to loading kube config file (when running outside cluster)
+            config.load_kube_config()
+
         v1 = client.CoreV1Api()
         nodes = v1.list_node().items
         return nodes
@@ -175,41 +181,56 @@ def get_kubernetes_zones():
 
 def check_rr_enablement():
     """Check if RR is enabled or not."""
-    config.load_kube_config()
-    v1 = client.CoreV1Api()
-    namespace = "loftsman"
-    secret_name = "site-init"
+    try:
+        # Try to load in-cluster config first (when running inside a pod)
+        config.load_incluster_config()
+    except config.ConfigException:
+        try:
+            # Fallback to loading kube config file (when running outside cluster)
+            config.load_kube_config()
+        except config.ConfigException as e:
+            print(f"Error loading Kubernetes config: {e}")
+            return "false"
 
-    # Get the secret using Kubernetes API
-    secret = v1.read_namespaced_secret(name=secret_name, namespace=namespace)
+    try:
+        v1 = client.CoreV1Api()
+        namespace = "loftsman"
+        secret_name = "site-init"
 
-    # Extract and decode the base64 data
-    encoded_yaml = secret.data["customizations.yaml"]
-    decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
+        # Get the secret using Kubernetes API
+        secret = v1.read_namespaced_secret(name=secret_name, namespace=namespace)
 
-    # Write the yaml output to a file
-    output_file = "/tmp/customization.yaml"
-    with open(output_file, "w", encoding="utf-8") as f:
-        f.write(decoded_yaml)
+        # Extract and decode the base64 data
+        encoded_yaml = secret.data["customizations.yaml"]
+        decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
 
-    # Define the key path
-    key_path = "spec.kubernetes.services.rack-resiliency.enabled"
+        # Write the yaml output to a file
+        output_file = "/tmp/customization.yaml"
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(decoded_yaml)
 
-    # Run yq command to extract the value
-    yq_cmd = ["yq", "r", output_file, key_path]
-    result = subprocess.run(
-        yq_cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-        check=True,
-    )
+        # Define the key path
+        key_path = "spec.kubernetes.services.rack-resiliency.enabled"
 
-    # Extract and clean the output
-    rr_check = result.stdout.strip()
+        # Run yq command to extract the value
+        yq_cmd = ["yq", "r", output_file, key_path]
+        result = subprocess.run(
+            yq_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+            check=True,
+        )
 
-    print(f"Rack Resiliency Enabled: {rr_check}")
-    return rr_check
+        # Extract and clean the output
+        rr_check = result.stdout.strip()
+
+        print(f"Rack Resiliency Enabled: {rr_check}")
+        return rr_check
+
+    except Exception as e:
+        print(f"Error checking RR enablement: {e}")
+        return "false"
 
 
 def check_rr_setup():

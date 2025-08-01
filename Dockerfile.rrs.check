@@ -28,8 +28,8 @@ WORKDIR /app
 
 RUN apk add --upgrade --no-cache apk-tools && \
     apk update && \
-    apk add --no-cache curl ca-certificates python3 py3-pip openssh python3-dev build-base && \
-    update-ca-certificates kubectl
+    apk add --no-cache curl ca-certificates python3 py3-pip openssh python3-dev build-base yq && \
+    update-ca-certificates
 
 ADD requirements.txt constraints.txt /app/
 ENV VIRTUAL_ENV=/app/venv
