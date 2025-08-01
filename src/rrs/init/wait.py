@@ -98,17 +98,10 @@ def get_ceph_zones():
 
     return zones if zones else {"error": "No CEPH zones present"}
 
-def load_kubernetes_config():
-    """ Load Kuernetes onfig."""
-    try:
-        config.load_kube_config()
-    except Exception as e:
-        return {"error": str(e)}
-
 def get_kubernetes_nodes():
     """ Get Kubernetes nodes."""
     try:
-        load_kubernetes_config()
+        config.load_kube_config()
         v1 = client.CoreV1Api()
         nodes = v1.list_node().items
         return nodes
@@ -197,10 +190,14 @@ def check_rr_setup():
 
 
 def main():
+     """ 
+     Check for RR enablement and Kubernetes and CEPH zoning.
+     Wait till the RR is enabled and zones are created/ present.
+     """
     while True:
         if check_rr_setup():
             break
-        time.sleep(10)
+        time.sleep(120)
 
 if __name__ == "__main__":
     main()
