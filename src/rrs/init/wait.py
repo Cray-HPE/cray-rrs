@@ -175,32 +175,16 @@ def get_kubernetes_zones():
 
 def check_rr_enablement():
     """Check if RR is enabled or not."""
+    config.load_kube_config()
+    v1 = client.CoreV1Api()
     namespace = "loftsman"
     secret_name = "site-init"
 
-    kubectl_cmd = [
-        "kubectl",
-        "-n",
-        namespace,
-        "get",
-        "secret",
-        secret_name,
-        "-o",
-        "json",
-    ]
-    kubectl_output = subprocess.run(
-        kubectl_cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-        check=True,
-    )
-
-    # Parse JSON output
-    secret_data = json.loads(kubectl_output.stdout)
+    # Get the secret using Kubernetes API
+    secret = v1.read_namespaced_secret(name=secret_name, namespace=namespace)
 
     # Extract and decode the base64 data
-    encoded_yaml = secret_data["data"]["customizations.yaml"]
+    encoded_yaml = secret.data["customizations.yaml"]
     decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
 
     # Write the yaml output to a file
@@ -209,7 +193,6 @@ def check_rr_enablement():
         f.write(decoded_yaml)
 
     # Define the key path
-    output_file = "/tmp/customization.yaml"
     key_path = "spec.kubernetes.services.rack-resiliency.enabled"
 
     # Run yq command to extract the value
@@ -227,7 +210,6 @@ def check_rr_enablement():
 
     print(f"Rack Resiliency Enabled: {rr_check}")
     return rr_check
-
 
 def check_rr_setup():
     """Check if RR is setup with Kubernetes and CEPH zones or not."""
