@@ -62,7 +62,7 @@ rrs_init_image:
 	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_INIT} --tag '${RRS_INIT_CONTAINER_NAME}:${DOCKER_VERSION}' .
 
 rrs_wait_image:
-	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_INIT} --tag '${RRS_WAIT_CONTAINER_NAME}:${DOCKER_VERSION}' .
+	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_WAIT} --tag '${RRS_WAIT_CONTAINER_NAME}:${DOCKER_VERSION}' .
 
 rrs_rms_image:
 	docker buildx build --platform linux/amd64 --no-cache --pull ${DOCKER_ARGS} -f ${DOCKERFILE_RMS} --tag '${RRS_RMS_CONTAINER_NAME}:${DOCKER_VERSION}' .
