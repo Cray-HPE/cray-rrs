@@ -97,7 +97,7 @@ chart-metadata:
 		--version "${CHART_VERSION}" --app-version "${DOCKER_VERSION}" \
 		-i cray-rrs-api ${IMAGE}/cray-rrs-api:${DOCKER_VERSION} \
 		-i cray-rrs-init ${IMAGE}/cray-rrs-init:${DOCKER_VERSION} \
-		-i cray-rrs-wait ${IMAGE}/cray-rrs-wair:${DOCKER_VERSION} \
+		-i cray-rrs-wait ${IMAGE}/cray-rrs-wait:${DOCKER_VERSION} \
 		-i cray-rrs-rms ${IMAGE}/cray-rrs-rms:${DOCKER_VERSION} \
 		--cray-service-globals
 
