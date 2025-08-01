@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 #
 # MIT License
 #
@@ -28,8 +27,6 @@ import base64
 import json
 import time
 from kubernetes import client, config
-
-CUSTOMIZATIONS="/tmp/customization.yaml"
 
 def get_ceph_details():
     """ Get CEPH zones details."""
