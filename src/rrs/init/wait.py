@@ -26,17 +26,18 @@
 import subprocess
 import base64
 import json
-import sys
 import time
 from kubernetes import client, config
 
 CUSTOMIZATIONS="/tmp/customization.yaml"
 
 def get_ceph_details():
+    """ Get CEPH zones details."""
     host = 'ncn-m002'
     cmd = f"ssh {host} 'ceph osd tree -f json-pretty'"
     try:
-        result = subprocess.run(cmd,shell=True,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
+        result = subprocess.run(cmd,shell=True,check=True,stdout=subprocess.PIPE,\
+                stderr=subprocess.PIPE,universal_newlines=True)
         if result.returncode != 0:
             raise ValueError(f"Error fetching CEPH details: {result.stderr}")
         return json.loads(result.stdout)
@@ -44,10 +45,12 @@ def get_ceph_details():
         return {"error": str(e)}
 
 def get_ceph_hosts():
+    """ Get CEPH hosts details."""
     host = 'ncn-m002'
     cmd = f"ssh {host} 'ceph orch host ls -f json-pretty'"
     try:
-        result = subprocess.run(cmd,shell=True,check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,universal_newlines=True)
+        result = subprocess.run(cmd,shell=True,check=True,stdout=subprocess.PIPE,\
+                stderr=subprocess.PIPE,universal_newlines=True)
         if result.returncode != 0:
             raise ValueError(f"Error fetching CEPH details: {result.stderr}")
         return json.loads(result.stdout)
@@ -93,16 +96,17 @@ def get_ceph_zones():
 
             zones[rack_name] = storage_nodes
 
-    return zones if zones else "No CEPH zones present"
-
+    return zones if zones else {"error": "No CEPH zones present"}
 
 def load_kubernetes_config():
+    """ Load Kuernetes onfig."""
     try:
         config.load_kube_config()
     except Exception as e:
         return {"error": str(e)}
 
 def get_kubernetes_nodes():
+    """ Get Kubernetes nodes."""
     try:
         load_kubernetes_config()
         v1 = client.CoreV1Api()
@@ -112,6 +116,7 @@ def get_kubernetes_nodes():
         return {"error": str(e)}
 
 def get_kubernetes_zones():
+    """ Get Kubernetes zones details."""
     nodes = get_kubernetes_nodes()
     if isinstance(nodes, dict) and "error" in nodes:
         return "No Kubernetes topology zone present"
@@ -130,15 +135,14 @@ def get_kubernetes_zones():
                 zone_mapping[node_zone]['workers'].append({"name": node_name, "status": node_status})
     return zone_mapping
 
-
-# To check the enablement of rack resiliency feature flag
 def check_rr_enablement():
-    # Run kubectl command and capture JSON output
+    """ Check if RR is enabled or not."""
     namespace = "loftsman"
     secret_name = "site-init"
 
     kubectl_cmd = ["kubectl", "-n", namespace, "get", "secret", secret_name, "-o", "json"]
-    kubectl_output = subprocess.run(kubectl_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
+    kubectl_output = subprocess.run(kubectl_cmd, stdout=subprocess.PIPE,\
+                      stderr=subprocess.PIPE, universal_newlines=True, check=True)
 
     # Parse JSON output
     secret_data = json.loads(kubectl_output.stdout)
@@ -149,7 +153,7 @@ def check_rr_enablement():
 
     # Write the yaml output to a file
     output_file = "/tmp/customization.yaml"
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write(decoded_yaml)
 
     # Define the key path
@@ -158,7 +162,8 @@ def check_rr_enablement():
 
     # Run yq command to extract the value
     yq_cmd = ["yq", "r", output_file, key_path]
-    result = subprocess.run(yq_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
+    result = subprocess.run(yq_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,\
+              universal_newlines=True, check=True)
 
     # Extract and clean the output
     rr_check = result.stdout.strip()
@@ -167,6 +172,7 @@ def check_rr_enablement():
     return rr_check
 
 def check_rr_setup():
+    """Check if RR is setup with Kubernetes and CEPH zones or not."""
     print("Checking Rack Resiliency enablement and Kubernetes/ CEPH creation...")
     rr_enabled = check_rr_enablement()
     if rr_enabled == "false":
@@ -182,7 +188,7 @@ def check_rr_setup():
         return False
 
     kubernetes_zones = get_kubernetes_zones()
-    if isinstance(ceph_zones, dict):
+    if isinstance(kubernetes_zones, dict):
         print("Kubernetes zones are created.")
     else:
         print("Not deploying the cray-rrs chart.")
