@@ -63,6 +63,8 @@ def rr_enabled() -> bool:
     secret = v1.read_namespaced_secret(name=secret_name, namespace=namespace)
 
     # Extract and decode the base64 data
+    if secret.data is None:
+        raise ValueError(f"{namespace}/{secret_name} secret contains no data")
     encoded_yaml = secret.data["customizations.yaml"]
     decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
     customizations_yaml = yaml.safe_load(decoded_yaml)
