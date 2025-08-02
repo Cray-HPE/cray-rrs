@@ -96,33 +96,20 @@ def rr_enabled() -> bool:
         raise ValueError(f"{namespace}/{secret_name} secret contains no data")
     encoded_yaml = secret.data["customizations.yaml"]
     decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
-    customizations_yaml: CustYaml = yaml.safe_load(decoded_yaml)
+    cust_yaml: CustYaml = yaml.safe_load(decoded_yaml)
 
-    if not isinstance(customizations_yaml, dict):
+    if not isinstance(cust_yaml, dict):
         raise TypeError("customizations.yaml field should contain a dict, but actual "
-                        f"type is {type(customizations_yaml).__name__}")
+                        f"type is {type(cust_yaml).__name__}")
 
-    current_dict = customizations_yaml
-    path = ""
-    for field in ["spec", "kubernetes", "services", "rack-resiliency"]:
-        path = f"{path}.{field}" if path else field
-        if field not in current_dict:
-            print(f"{path} does not exist in customizations.yaml")
-            return False
-        if not isinstance(current_dict[field], dict):
-            raise TypeError(f"{path} in customizations.yaml should be a dict, but actual "
-                            f"type is {type(current_dict[field]).__name__}")
-        current_dict = current_dict[field]
+    try:
+        enabled = cust_yaml["spec"]["kubernetes"]["services"]["rack-resiliency"]["enabled"]
+    except Exception:
+        print("spec.kubernetes.services.rack-resiliency.enabled not found in customizations.yaml")
+        raise
 
-    # If we get here, it means current_dict is pointing to spec.kubernetes.services.rack-resiliency,
-    # and we have confirmed that it is a dict
-    path += ".enabled"
-
-    if "enabled" not in current_dict:
-        print(f"{path} does not exist in customizations.yaml")
-        return False
-    enabled = current_dict["enabled"]
-    print(f"{path} value is: {enabled}")
+    print("'spec.kubernetes.services.rack-resiliency.enabled' value in "
+          f"customizations.yaml is: {enabled}")
 
     # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
     # should do the same here. That filter interprets the following values as True:
