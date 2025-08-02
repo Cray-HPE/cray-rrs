@@ -67,7 +67,7 @@ def rr_enabled() -> bool:
         raise ValueError(f"{namespace}/{secret_name} secret contains no data")
     encoded_yaml = secret.data["customizations.yaml"]
     decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
-    customizations_yaml = yaml.safe_load(decoded_yaml)
+    customizations_yaml: dict = yaml.safe_load(decoded_yaml)
 
     if not isinstance(customizations_yaml, dict):
         raise TypeError("customizations.yaml field should contain a dict, but actual "
@@ -114,7 +114,8 @@ def rr_enabled_and_setup() -> bool:
     print("Checking Rack Resiliency enablement and Kubernetes/CEPH zone creation...")
     try:
         ConfigMapHelper.load_k8s_config()
-    except config.ConfigException as e:
+    # Ignoring attr-defined false-positive errors here, due to known issue with kubernetes-stubs module:
+    except config.ConfigException as e:  # type: ignore[attr-defined]
         print(f"Error loading Kubernetes config: {e}")
         return False
 
@@ -123,7 +124,7 @@ def rr_enabled_and_setup() -> bool:
     except Exception as e:
         print(f"Error checking RR enablement: {e}")
         return False
-    if enabled():
+    if enabled:
         print("Rack resiliency is enabled.")
     else:
         print("Rack Resiliency is disabled.")
