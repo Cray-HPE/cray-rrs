@@ -54,56 +54,56 @@ def kubernetes_zones_exist() -> bool:
 
 def rr_enabled() -> bool:
     """Check if RR is enabled or not."""
-        v1 = client.CoreV1Api()
-        namespace = "loftsman"
-        secret_name = "site-init"
+    v1 = client.CoreV1Api()
+    namespace = "loftsman"
+    secret_name = "site-init"
 
-        # Get the secret using Kubernetes API
-        secret = v1.read_namespaced_secret(name=secret_name, namespace=namespace)
+    # Get the secret using Kubernetes API
+    secret = v1.read_namespaced_secret(name=secret_name, namespace=namespace)
 
-        # Extract and decode the base64 data
-        encoded_yaml = secret.data["customizations.yaml"]
-        decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
-        customizations_yaml = yaml.safe_load(decoded_yaml)
+    # Extract and decode the base64 data
+    encoded_yaml = secret.data["customizations.yaml"]
+    decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
+    customizations_yaml = yaml.safe_load(decoded_yaml)
 
-        if not isinstance(customizations_yaml, dict):
-            raise TypeError("customizations.yaml field should contain a dict, but actual "
-                            f"type is {type(customizations_yaml).__name__}")
+    if not isinstance(customizations_yaml, dict):
+        raise TypeError("customizations.yaml field should contain a dict, but actual "
+                        f"type is {type(customizations_yaml).__name__}")
 
-        current_dict = customizations_yaml
-        path = ""
-        for field in [ "spec", "kubernetes", "services", "rack-resiliency" ]:
-            path = f"{path}.{field}" if path else field
-            if field not in current_dict:
-                print(f"{path} does not exist in customizations.yaml")
-                return False
-            if not isinstance(current_dict[field], dict):
-                raise TypeError(f"{path} in customizations.yaml should be a dict, but actual "
-                                f"type is {type(current_dict[field]).__name__}")
-            current_dict = current_dict[field]
-
-        # If we get here, it means current_dict is pointing to spec.kubernetes.services.rack-resiliency,
-        # and we have confirmed that it is a dict
-        path += ".enabled"
-
-        if "enabled" not in current_dict:
+    current_dict = customizations_yaml
+    path = ""
+    for field in [ "spec", "kubernetes", "services", "rack-resiliency" ]:
+        path = f"{path}.{field}" if path else field
+        if field not in current_dict:
             print(f"{path} does not exist in customizations.yaml")
             return False
-        enabled = current_dict["enabled"]
-        print(f"{path} value is: {enabled}")
+        if not isinstance(current_dict[field], dict):
+            raise TypeError(f"{path} in customizations.yaml should be a dict, but actual "
+                            f"type is {type(current_dict[field]).__name__}")
+        current_dict = current_dict[field]
 
-        # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
-        # should do the same here. That filter interprets the following values are True:
-        # strings (case insensitive): 'true', 't', 'yes', 'y', 'on', '1'
-        # int: 1
-        # float: 1.0
-        # boolean: True
+    # If we get here, it means current_dict is pointing to spec.kubernetes.services.rack-resiliency,
+    # and we have confirmed that it is a dict
+    path += ".enabled"
 
-        if any(enabled is tvalue for tvalue in [ 1, 1.0, True ]):
-            return True
-        if not isinstance(enabled, str):
-            return False
-        return enabled.lower() in { 'true', 't', 'yes', 'y', 'on', '1' }
+    if "enabled" not in current_dict:
+        print(f"{path} does not exist in customizations.yaml")
+        return False
+    enabled = current_dict["enabled"]
+    print(f"{path} value is: {enabled}")
+
+    # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
+    # should do the same here. That filter interprets the following values as True:
+    # strings (case insensitive): 'true', 't', 'yes', 'y', 'on', '1'
+    # int: 1
+    # float: 1.0
+    # boolean: True
+
+    if any(enabled is tvalue for tvalue in [ 1, 1.0, True ]):
+        return True
+    if not isinstance(enabled, str):
+        return False
+    return enabled.lower() in { 'true', 't', 'yes', 'y', 'on', '1' }
 
 
 
