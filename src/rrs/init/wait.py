@@ -33,6 +33,7 @@ till RR is enabled and zones are created.
 
 import base64
 import time
+from typing import TypedDict
 
 import yaml
 from kubernetes import client, config
@@ -53,6 +54,25 @@ def kubernetes_zones_exist() -> bool:
     return k8s_zones is not None and len(k8s_zones) > 0
 
 
+# For the purposes of helping out poor mypy, we define the expected formats of the
+# fields in customizations.yaml that we care about.
+class CustYamlSpecK8sSrvRR(TypedDict, total=False):
+    enabled: bool | str | int | float
+
+# Have to declare this one using the functional syntax, since the field contains a dash
+CustYamlSpecK8sSrv = TypedDict("CustYamlSpecK8sSrv",
+                               { "rack-resiliency": CustYamlSpecK8sSrvRR},
+                               total=False)
+
+class CustYamlSpecK8s(TypedDict, total=False):
+    services: CustYamlSpecK8sSrv
+
+class CustYamlSpec(TypedDict, total=False):
+    kubernetes: CustYamlSpecK8s
+
+class CustYaml(TypedDict, total=False):
+    spec: CustYamlSpec
+
 def rr_enabled() -> bool:
     """Check if RR is enabled or not."""
     v1 = client.CoreV1Api()
@@ -67,7 +87,7 @@ def rr_enabled() -> bool:
         raise ValueError(f"{namespace}/{secret_name} secret contains no data")
     encoded_yaml = secret.data["customizations.yaml"]
     decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
-    customizations_yaml: dict = yaml.safe_load(decoded_yaml)
+    customizations_yaml: CustYaml = yaml.safe_load(decoded_yaml)
 
     if not isinstance(customizations_yaml, dict):
         raise TypeError("customizations.yaml field should contain a dict, but actual "
