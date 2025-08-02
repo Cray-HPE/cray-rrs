@@ -630,11 +630,12 @@ class cephHelper:
                             if osd.get("id") in osd_ids and osd.get("type") == "osd"
                         ]
 
-                    osd_status_list: list[OSDSchema] = []
-                    for osd in osds:
-                        osd_name = osd.get("name", "")
-                        osd_status = osd["status"]
-                        osd_status_list.append({"name": osd_name, "status": osd_status})
+                    osd_status_list: list[OSDSchema] = [
+                        {
+                            "name": osd.get("name", ""),
+                            "status": osd["status"]
+                        } for osd in osds
+                    ]
 
                     node_status = host_status_map.get(host_node_name, "No Status")
                     storage_node_status: Literal["Ready", "NotReady"]
