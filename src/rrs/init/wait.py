@@ -31,166 +31,33 @@ to deploy RRS (Rack Resiliency Service) otherwise it will wait to deploy
 till RR is enabled and zones are created.
 """
 
-import subprocess
 import base64
-import json
 import time
+
+import yaml
 from kubernetes import client, config
 
-
-def get_ceph_details():
-    """Get CEPH zones details."""
-    host = "ncn-m002"
-    cmd = f"ssh {host} 'ceph osd tree -f json-pretty'"
-    try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        if result.returncode != 0:
-            raise ValueError(f"Error fetching CEPH details: {result.stderr}")
-        return json.loads(result.stdout)
-    except Exception as e:
-        return {"error": str(e)}
+from src.lib.lib_rms import Helper
 
 
-def get_ceph_hosts():
-    """Get CEPH hosts details."""
-    host = "ncn-m002"
-    cmd = f"ssh {host} 'ceph orch host ls -f json-pretty'"
-    try:
-        result = subprocess.run(
-            cmd,
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        if result.returncode != 0:
-            raise ValueError(f"Error fetching CEPH details: {result.stderr}")
-        return json.loads(result.stdout)
-    except Exception as e:
-        return {"error": str(e)}
+def ceph_zones_exist() -> bool:
+    """Fetch CEPH zones. Return True if any are found, False otherwise."""
+    ceph_zones, _ = Helper.get_ceph_status(check_health=False)
+    return len(ceph_zones) > 0
 
 
-def get_ceph_zones():
-    """Fetch CEPH storage nodes and their OSD statuses."""
-    ceph_tree = get_ceph_details()
-    ceph_hosts = get_ceph_hosts()
+def kubernetes_zones_exist() -> bool:
+    """Get Kubernetes zones details. Return True if any are found, False otherwise."""
+    k8s_zones = Helper.get_k8s_nodes_data()
+    return k8s_zones is not None and len(k8s_zones) > 0
 
-    if isinstance(ceph_tree, dict) and "error" in ceph_tree:
-        return {"error": ceph_tree["error"]}
-
-    if isinstance(ceph_hosts, dict) and "error" in ceph_hosts:
-        return {"error": ceph_hosts["error"]}
-
-    host_status_map = {host["hostname"]: host["status"] for host in ceph_hosts}
-    zones = {}
-
-    for item in ceph_tree.get("nodes", []):
-        if item["type"] == "rack":  # Zone (Rack)
-            rack_name = item["name"]
-            storage_nodes = []
-
-            for child_id in item.get("children", []):
-                host_node = next(
-                    (x for x in ceph_tree["nodes"] if x["id"] == child_id), None
-                )
-
-                if (
-                    host_node
-                    and host_node["type"] == "host"
-                    and host_node["name"].startswith("ncn-s")
-                ):
-                    osd_ids = host_node.get("children", [])
-                    osds = [
-                        osd
-                        for osd in ceph_tree["nodes"]
-                        if osd["id"] in osd_ids and osd["type"] == "osd"
-                    ]
-                    osd_status_list = [
-                        {"name": osd["name"], "status": osd.get("status", "unknown")}
-                        for osd in osds
-                    ]
-
-                    node_status = host_status_map.get(host_node["name"], "No status")
-                    if node_status in ["", "online"]:
-                        node_status = "Ready"
-
-                    storage_nodes.append(
-                        {
-                            "name": host_node["name"],
-                            "status": node_status,
-                            "osds": osd_status_list,
-                        }
-                    )
-
-            zones[rack_name] = storage_nodes
-
-    return zones if zones else {"error": "No CEPH zones present"}
-
-
-def get_kubernetes_nodes():
-    """Get Kubernetes nodes."""
-    try:
-        # Try to load in-cluster config first (when running inside a pod)
-        try:
-            config.load_incluster_config()
-        except config.ConfigException:
-            # Fallback to loading kube config file (when running outside cluster)
-            config.load_kube_config()
-
-        v1 = client.CoreV1Api()
-        nodes = v1.list_node().items
-        return nodes
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def get_kubernetes_zones():
-    """Get Kubernetes zones details."""
-    nodes = get_kubernetes_nodes()
-    if isinstance(nodes, dict) and "error" in nodes:
-        return "No Kubernetes topology zone present"
-
-    zone_mapping = {}
-    for node in nodes:
-        node_name = node.metadata.name
-        node_status = (
-            node.status.conditions[-1].type if node.status.conditions else "Unknown"
-        )
-        node_zone = node.metadata.labels.get("topology.kubernetes.io/zone", None)
-        if node_zone:
-            if node_zone not in zone_mapping:
-                zone_mapping[node_zone] = {"masters": [], "workers": []}
-            if node_name.startswith("ncn-m"):
-                zone_mapping[node_zone]["masters"].append(
-                    {"name": node_name, "status": node_status}
-                )
-            elif node_name.startswith("ncn-w"):
-                zone_mapping[node_zone]["workers"].append(
-                    {"name": node_name, "status": node_status}
-                )
-    return zone_mapping
-
-
-def check_rr_enablement():
+def rr_enabled() -> bool:
     """Check if RR is enabled or not."""
     try:
-        # Try to load in-cluster config first (when running inside a pod)
-        config.load_incluster_config()
-    except config.ConfigException:
-        try:
-            # Fallback to loading kube config file (when running outside cluster)
-            config.load_kube_config()
-        except config.ConfigException as e:
-            print(f"Error loading Kubernetes config: {e}")
-            return "false"
+        ConfigMapHelper.load_k8s_config()
+    except config.ConfigException as e:
+        print(f"Error loading Kubernetes config: {e}")
+        return False
 
     try:
         v1 = client.CoreV1Api()
@@ -203,54 +70,69 @@ def check_rr_enablement():
         # Extract and decode the base64 data
         encoded_yaml = secret.data["customizations.yaml"]
         decoded_yaml = base64.b64decode(encoded_yaml).decode("utf-8")
+        customizations_yaml = yaml.safe_load(decoded_yaml)
 
-        # Write the yaml output to a file
-        output_file = "/tmp/customization.yaml"
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(decoded_yaml)
+        if not isinstance(customizations_yaml, dict):
+            raise TypeError("customizations.yaml field should contain a dict, but actual "
+                            f"type is {type(customizations_yaml).__name__}")
 
-        # Define the key path
-        key_path = "spec.kubernetes.services.rack-resiliency.enabled"
+        current_dict = customizations_yaml
+        path = ""
+        for field in [ "spec", "kubernetes", "services", "rack-resiliency" ]:
+            path = f"{path}.{field}" if path else field
+            if field not in current_dict:
+                print(f"{path} does not exist in customizations.yaml")
+                return False
+            if not isinstance(current_dict[field], dict):
+                raise TypeError(f"{path} in customizations.yaml should be a dict, but actual "
+                                f"type is {type(current_dict[field]).__name__}")
+            current_dict = current_dict[field]
 
-        # Run yq command to extract the value
-        yq_cmd = ["yq", "r", output_file, key_path]
-        result = subprocess.run(
-            yq_cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            check=True,
-        )
+        # If we get here, it means current_dict is pointing to spec.kubernetes.services.rack-resiliency,
+        # and we have confirmed that it is a dict
+        path += ".enabled"
 
-        # Extract and clean the output
-        rr_check = result.stdout.strip()
+        if "enabled" not in current_dict:
+            print(f"{path} does not exist in customizations.yaml")
+            return False
+        rr_enabled = current_dict["enabled"]
+        print(f"{path} value is: {rr_enabled}")
 
-        print(f"Rack Resiliency Enabled: {rr_check}")
-        return rr_check
+        # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
+        # should do the same here. That filter interprets the following values are True:
+        # strings (case insensitive): 'true', 't', 'yes', 'y', 'on', '1'
+        # int: 1
+        # float: 1.0
+        # boolean: True
+
+        if rr_enabled in { 1, 1.0, True }:
+            return True
+        if not isinstance(rr_enabled, str):
+            return False
+        return rr_enabled.lower() in { 'true', 't', 'yes', 'y', 'on', '1' }
 
     except Exception as e:
         print(f"Error checking RR enablement: {e}")
-        return "false"
+        return False
 
 
-def check_rr_setup():
+def rr_enabled_and_setup() -> bool:
     """Check if RR is setup with Kubernetes and CEPH zones or not."""
-    print("Checking Rack Resiliency enablement and Kubernetes/ CEPH creation...")
-    rr_enabled = check_rr_enablement()
-    if rr_enabled == "false":
+    print("Checking Rack Resiliency enablement and Kubernetes/CEPH zone creation...")
+    if rr_enabled():
+        print("Rack resiliency is enabled.")
+    else"
         print("Rack Resiliency is disabled.")
         return False
 
     print("Checking zoning for Kubernetes and CEPH nodes...")
-    ceph_zones = get_ceph_zones()
-    if isinstance(ceph_zones, dict) and "error" not in ceph_zones:
+    if ceph_zones_exist():
         print("CEPH zones are created.")
     else:
         print("CEPH zones are not created.")
         return False
 
-    kubernetes_zones = get_kubernetes_zones()
-    if isinstance(kubernetes_zones, dict):
+    if kubernetes_zones_exist():
         print("Kubernetes zones are created.")
     else:
         print("Not deploying the cray-rrs chart.")
@@ -258,14 +140,12 @@ def check_rr_setup():
     return True
 
 
-def main():
+def main() -> None:
     """
     Check for RR enablement and Kubernetes and CEPH zoning.
-    Wait till the RR is enabled and zones are created/ present.
+    Wait till RR is enabled and zones are created/present.
     """
-    while True:
-        if check_rr_setup():
-            break
+    while not rr_enabled_and_setup():
         time.sleep(120)
 
 

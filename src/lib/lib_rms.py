@@ -572,10 +572,13 @@ class cephHelper:
         return cephTreeDataType(), cast(list[cephHostDataType], [])
 
     @staticmethod
-    def get_ceph_status() -> tuple[cephNodesResultType, bool]:
+    def get_ceph_status(check_health: bool = True) -> tuple[cephNodesResultType, bool]:
         """
         Fetch Ceph storage nodes and their OSD statuses.
         This function processes Ceph data fetched from the Ceph OSD tree and the host status.
+        If check_health is False, the boolean value returned is always True.
+        If check_health is True, then a Ceph health check is performed, and the boolean value
+        returned indicates whether Ceph is healthy (True) or unhealthy (False)
         """
         try:
             ceph_tree, ceph_hosts = cephHelper.fetch_ceph_data()
@@ -663,9 +666,11 @@ class cephHelper:
                     len(ceph_hosts),
                 )
 
-            ceph_healthy = cephHelper.check_ceph_health()
-            ceph_services_health = cephHelper.check_ceph_services()
-            return final_output, ceph_healthy and ceph_services_health
+            if check_health:
+                ceph_healthy = cephHelper.check_ceph_health()
+                ceph_services_health = cephHelper.check_ceph_services()
+                return final_output, ceph_healthy and ceph_services_health
+            return final_output, True
         except Exception as e:
             logger.exception("Error occurred while processing CEPH status: %s", e)
             return {}, False
