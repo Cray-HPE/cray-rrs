@@ -52,6 +52,7 @@ def kubernetes_zones_exist() -> bool:
     k8s_zones = k8sHelper.get_k8s_nodes_data()
     return k8s_zones is not None and len(k8s_zones) > 0
 
+
 def rr_enabled() -> bool:
     """Check if RR is enabled or not."""
     v1 = client.CoreV1Api()
@@ -72,7 +73,7 @@ def rr_enabled() -> bool:
 
     current_dict = customizations_yaml
     path = ""
-    for field in [ "spec", "kubernetes", "services", "rack-resiliency" ]:
+    for field in ["spec", "kubernetes", "services", "rack-resiliency"]:
         path = f"{path}.{field}" if path else field
         if field not in current_dict:
             print(f"{path} does not exist in customizations.yaml")
@@ -99,12 +100,11 @@ def rr_enabled() -> bool:
     # float: 1.0
     # boolean: True
 
-    if any(enabled is tvalue for tvalue in [ 1, 1.0, True ]):
+    if any(enabled is tvalue for tvalue in [1, 1.0, True]):
         return True
     if not isinstance(enabled, str):
         return False
-    return enabled.lower() in { 'true', 't', 'yes', 'y', 'on', '1' }
-
+    return enabled.lower() in {'true', 't', 'yes', 'y', 'on', '1'}
 
 
 def rr_enabled_and_setup() -> bool:
