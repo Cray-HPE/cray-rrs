@@ -60,22 +60,27 @@ class CustYamlSpecK8sSrvRR(TypedDict, total=False):
     """partial format of spec.kubernetes.services.rack-resiliency"""
     enabled: bool | str | int | float
 
+
 # Have to declare this one using the functional syntax, since the field contains a dash
 CustYamlSpecK8sSrv = TypedDict("CustYamlSpecK8sSrv",
-                               { "rack-resiliency": CustYamlSpecK8sSrvRR},
+                               {"rack-resiliency": CustYamlSpecK8sSrvRR},
                                total=False)
+
 
 class CustYamlSpecK8s(TypedDict, total=False):
     """partial format of spec.kubernetes"""
     services: CustYamlSpecK8sSrv
 
+
 class CustYamlSpec(TypedDict, total=False):
     """partial format of spec"""
     kubernetes: CustYamlSpecK8s
 
+
 class CustYaml(TypedDict, total=False):
     """partial format of customizations.yaml"""
     spec: CustYamlSpec
+
 
 def rr_enabled() -> bool:
     """Check if RR is enabled or not."""
