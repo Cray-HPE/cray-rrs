@@ -49,7 +49,7 @@ def ceph_zones_exist() -> bool:
 
 def kubernetes_zones_exist() -> bool:
     """Get Kubernetes zones details. Return True if any are found, False otherwise."""
-    k8s_zones = Helper.get_k8s_nodes_data()
+    k8s_zones = k8sHelper.get_k8s_nodes_data()
     return k8s_zones is not None and len(k8s_zones) > 0
 
 def rr_enabled() -> bool:
