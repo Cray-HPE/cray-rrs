@@ -121,7 +121,7 @@ def rr_enabled_and_setup() -> bool:
     print("Checking Rack Resiliency enablement and Kubernetes/CEPH zone creation...")
     if rr_enabled():
         print("Rack resiliency is enabled.")
-    else"
+    else:
         print("Rack Resiliency is disabled.")
         return False
 
