@@ -57,6 +57,7 @@ def kubernetes_zones_exist() -> bool:
 # For the purposes of helping out poor mypy, we define the expected formats of the
 # fields in customizations.yaml that we care about.
 class CustYamlSpecK8sSrvRR(TypedDict, total=False):
+    """partial format of spec.kubernetes.services.rack-resiliency"""
     enabled: bool | str | int | float
 
 # Have to declare this one using the functional syntax, since the field contains a dash
@@ -65,12 +66,15 @@ CustYamlSpecK8sSrv = TypedDict("CustYamlSpecK8sSrv",
                                total=False)
 
 class CustYamlSpecK8s(TypedDict, total=False):
+    """partial format of spec.kubernetes"""
     services: CustYamlSpecK8sSrv
 
 class CustYamlSpec(TypedDict, total=False):
+    """partial format of spec"""
     kubernetes: CustYamlSpecK8s
 
 class CustYaml(TypedDict, total=False):
+    """partial format of customizations.yaml"""
     spec: CustYamlSpec
 
 def rr_enabled() -> bool:
