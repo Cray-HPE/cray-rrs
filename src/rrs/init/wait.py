@@ -37,12 +37,13 @@ import time
 import yaml
 from kubernetes import client, config
 
-from src.lib.lib_rms import Helper
+from src.lib.lib_configmap import ConfigMapHelper
+from src.lib.lib_rms import cephHelper, k8sHelper
 
 
 def ceph_zones_exist() -> bool:
     """Fetch CEPH zones. Return True if any are found, False otherwise."""
-    ceph_zones, _ = Helper.get_ceph_status(check_health=False)
+    ceph_zones, _ = cephHelper.get_ceph_status(check_health=False)
     return len(ceph_zones) > 0
 
 
@@ -53,13 +54,6 @@ def kubernetes_zones_exist() -> bool:
 
 def rr_enabled() -> bool:
     """Check if RR is enabled or not."""
-    try:
-        ConfigMapHelper.load_k8s_config()
-    except config.ConfigException as e:
-        print(f"Error loading Kubernetes config: {e}")
-        return False
-
-    try:
         v1 = client.CoreV1Api()
         namespace = "loftsman"
         secret_name = "site-init"
@@ -95,8 +89,8 @@ def rr_enabled() -> bool:
         if "enabled" not in current_dict:
             print(f"{path} does not exist in customizations.yaml")
             return False
-        rr_enabled = current_dict["enabled"]
-        print(f"{path} value is: {rr_enabled}")
+        enabled = current_dict["enabled"]
+        print(f"{path} value is: {enabled}")
 
         # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
         # should do the same here. That filter interprets the following values are True:
@@ -105,21 +99,29 @@ def rr_enabled() -> bool:
         # float: 1.0
         # boolean: True
 
-        if rr_enabled in { 1, 1.0, True }:
+        if any(enabled is tvalue for tvalue in [ 1, 1.0, True ]):
             return True
-        if not isinstance(rr_enabled, str):
+        if not isinstance(enabled, str):
             return False
-        return rr_enabled.lower() in { 'true', 't', 'yes', 'y', 'on', '1' }
+        return enabled.lower() in { 'true', 't', 'yes', 'y', 'on', '1' }
 
-    except Exception as e:
-        print(f"Error checking RR enablement: {e}")
-        return False
 
 
 def rr_enabled_and_setup() -> bool:
     """Check if RR is setup with Kubernetes and CEPH zones or not."""
     print("Checking Rack Resiliency enablement and Kubernetes/CEPH zone creation...")
-    if rr_enabled():
+    try:
+        ConfigMapHelper.load_k8s_config()
+    except config.ConfigException as e:
+        print(f"Error loading Kubernetes config: {e}")
+        return False
+
+    try:
+        enabled = rr_enabled()
+    except Exception as e:
+        print(f"Error checking RR enablement: {e}")
+        return False
+    if enabled():
         print("Rack resiliency is enabled.")
     else:
         print("Rack Resiliency is disabled.")
