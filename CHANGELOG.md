@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2025-08-04
+### Fixed
+- CASM-5499: Conditional enablement of RRS (Rack Resiliency Service)
+    - RRS init to sleep till the Rack Resiliency is enabled and setup with Kubernetes and Ceph zones.
+        
 ## [1.0.2] - 2025-07-24
 ### Fixed
 - CASMTRIAGE-8508 - Critical Services balanced staus is not shown correctly by RMS

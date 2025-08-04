@@ -65,6 +65,22 @@ cray-service:
         - name: ssh-hostpath
           mountPath: /root/.ssh
           readOnly: true
+    cray-rrs-check:
+      name: cray-rrs-check
+      image:
+        repository: artifactory.algol60.net/csm-docker/S-T-A-B-L-E/cray-rrs/cray-rrs-check
+      securityContext:
+        runAsUser: 0
+      env:
+        - name: namespace
+          value: "rack-resiliency"
+      volumeMounts:
+        - name: ssh-config
+          mountPath: /etc/ssh
+          readOnly: true
+        - name: ssh-hostpath
+          mountPath: /root/.ssh
+          readOnly: true
   containers:
     cray-rrs-rms:
       name: cray-rrs-rms
