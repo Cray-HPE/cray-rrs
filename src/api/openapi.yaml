@@ -161,6 +161,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/RackResiliencyNotReady'
   /zones/{zone_name}:
     get:
       summary: Get Detailed Zone Information
@@ -234,6 +236,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/RackResiliencyNotReady'
   /criticalservices:
     get:
       summary: Get Critical Services
@@ -279,6 +283,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/RackResiliencyNotReady'
     patch:
       summary: Update Critical Services ConfigMap
       tags:
@@ -317,6 +323,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/RackResiliencyNotReady'
   /criticalservices/{critical_service_name}:
     get:
       summary: Get Critical Service Details (Summarized)
@@ -353,6 +361,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/RackResiliencyNotReady'
   /criticalservices/status:
     get:
       summary: Get Critical Services Status
@@ -418,6 +428,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/RackResiliencyNotReady'
   /criticalservices/status/{critical_service_name}:
     get:
       summary: Get Critical Service Status by Name (Detailed)
@@ -474,6 +486,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/RackResiliencyNotReady'
   /healthz/ready:
     get:
       summary: Retrieve RRS Readiness Probe
@@ -984,6 +998,12 @@ components:
             $ref: '#/components/schemas/ProblemDetails'
     NotFound:
       description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    RackResiliencyNotReady:
+      description: Rack Resiliency is not enabled and configured
       content:
         application/json:
           schema:

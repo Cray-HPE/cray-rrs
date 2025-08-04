@@ -977,3 +977,21 @@ class ApiTimestampFailedResponse(TypedDict):
     """
 
     error: Literal["Failed to update API timestamp"]
+
+
+RRStatusMessages = Literal[
+    "Rack Resiliency is not enabled in customizations.yaml",
+    "Rack Resiliency Ceph zones do not exist",
+    "Rack Resiliency Kubernetes zones do not exist"
+]
+
+
+@final
+class RackResiliencyNotReadyResponse(TypedDict):
+    """
+    This represents the response body to calls to RMS endpoints when RR is not enabled and configured.
+    (except for healthz, liveness, and version, which work even in that case)
+    OAS: #/components/schemas/RackResiliencyNotReadyResponse
+    """
+
+    error: RRStatusMessages | Literal["RMS initialization still running"]

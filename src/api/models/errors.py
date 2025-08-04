@@ -25,9 +25,15 @@
 API Error formatting for the Artifact Repository Service which conforms to
 RFC 7807. Also, some frequently used errors encapsulated in functions.
 """
+from collections.abc import Callable
+import functools
 from http import HTTPStatus
+from typing import ParamSpec, TypeVar
+
 from flask import Response
 from httpproblem import problem_http_response
+
+from src.rrs.init.wait import RackResiliencyReady
 
 
 def problemify(status: HTTPStatus, detail: str) -> Response:
@@ -94,3 +100,26 @@ def generate_internal_server_error_response(detail: str) -> Response:
     Returns: results of problemify
     """
     return problemify(status=HTTPStatus.INTERNAL_SERVER_ERROR, detail=detail)
+
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+def reject_if_rr_not_ready(func: Callable[P, R]) -> Callable[P, R | Response]:
+    """
+    Decorator for method controllers
+    If RR is not ready, then return 503 with appropriate message without
+    calling endpoint. Otherwise, call as usual.
+    """
+
+    rr_readiness = RackResiliencyReady()
+
+    @functools.wraps(func)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R | Response:
+        rr_not_ready_msg = rr_readiness.rr_not_ready
+        if rr_not_ready_msg is not None:
+            return problemify(status=HTTPStatus.SERVICE_UNAVAILABLE, detail=rr_not_ready_msg)
+        return func(*args, **kwargs)
+
+    return wrapper

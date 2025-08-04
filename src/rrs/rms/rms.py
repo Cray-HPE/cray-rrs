@@ -52,6 +52,7 @@ import requests
 import urllib3
 from src.lib import lib_rms
 from src.lib import lib_configmap
+from src.rrs.init.wait import RackResiliencyReady
 from src.rrs.rms import rms_monitor
 from src.rrs.rms.rms_statemanager import RMSStateManager
 from src.lib.lib_rms import Helper
@@ -76,6 +77,7 @@ from src.lib.schema import (
     SCNInternalServerErrorResponse,
     ApiTimestampSuccessResponse,
     ApiTimestampFailedResponse,
+    RackResiliencyNotReadyResponse,
     DynamicDataSchema,
     RMSState,
     ValidateHmnfdNotificationPost,
@@ -119,6 +121,7 @@ with app.app_context():
     lib_configmap.set_logger(app.logger)
     rms_monitor.set_logger(app.logger)
 
+rr_readiness = RackResiliencyReady()
 state_manager = RMSStateManager()
 monitor = RMSMonitor(state_manager, app)
 
@@ -130,6 +133,10 @@ gunicorn_process: Optional[subprocess.Popen[str]] = None
 # off  which results in a InsecureRequestWarning. The following line
 # disables only the InsecureRequestWarning.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+# Used to make sure the initialization is only done once
+_initial_check_and_update_done = False
 
 
 def check_failure_type(components: list[str]) -> None:
@@ -235,6 +242,7 @@ POST_METHODS: list[Literal["POST"]] = ["POST"]
 def update_api_timestamp() -> (
     tuple[ApiTimestampSuccessResponse, Literal[HTTPStatus.OK]]
     | tuple[ApiTimestampFailedResponse, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]]
+    | tuple[RackResiliencyNotReadyResponse, Literal[HTTPStatus.SERVICE_UNAVAILABLE]]
 ):
     """
     RMS OAS: #/paths/api-ts (post)
@@ -243,6 +251,17 @@ def update_api_timestamp() -> (
     Returns:
         tuple[str, int]: A success message and HTTP status code.
     """
+    rr_not_ready_msg = rr_readiness.rr_not_ready
+    if rr_not_ready_msg is not None:
+        return (
+            RackResiliencyNotReadyResponse(error=rr_not_ready_msg),
+            HTTPStatus.SERVICE_UNAVAILABLE,
+        )
+    if not _initial_check_and_update_done:
+        return (
+            RackResiliencyNotReadyResponse(error="RMS initialization still running"),
+            HTTPStatus.SERVICE_UNAVAILABLE,
+        )
     app.logger.info("Request received from API server, updating API start timestamp")
     try:
         Helper.update_state_timestamp(
@@ -266,6 +285,7 @@ def handleSCN() -> (
     tuple[SCNSuccessResponse, Literal[HTTPStatus.OK]]
     | tuple[SCNBadRequestResponse, Literal[HTTPStatus.BAD_REQUEST]]
     | tuple[SCNInternalServerErrorResponse, Literal[HTTPStatus.INTERNAL_SERVER_ERROR]]
+    | tuple[RackResiliencyNotReadyResponse, Literal[HTTPStatus.SERVICE_UNAVAILABLE]]
 ):
     """
     RMS OAS: #/paths/scn (post)
@@ -278,6 +298,17 @@ def handleSCN() -> (
         - 400 for bad requests (missing data)
         - 500 for internal server errors
     """
+    rr_not_ready_msg = rr_readiness.rr_not_ready
+    if rr_not_ready_msg is not None:
+        return (
+            RackResiliencyNotReadyResponse(error=rr_not_ready_msg),
+            HTTPStatus.SERVICE_UNAVAILABLE,
+        )
+    if not _initial_check_and_update_done:
+        return (
+            RackResiliencyNotReadyResponse(error="RMS initialization still running"),
+            HTTPStatus.SERVICE_UNAVAILABLE,
+        )
     app.logger.info("Notification received from HMNFD")
     try:
         notification_json: hmnfdNotificationPost = request.get_json()
@@ -382,7 +413,8 @@ def check_and_create_hmnfd_subscription() -> None:
         if isinstance(dynamic_cm_data, str):
             # This means it is an error message
             app.logger.error(
-                "Error fetching dynamic ConfigMap data: %s", dynamic_cm_data,
+                "Error fetching dynamic ConfigMap data: %s",
+                dynamic_cm_data,
             )
             return
         yaml_content = dynamic_cm_data.get(DYNAMIC_DATA_KEY, None)
@@ -497,7 +529,9 @@ def initial_check_and_update() -> bool:
     if isinstance(dynamic_cm_data, str):
         # This means it contains an error message
         app.logger.error(
-            "Could not read dynamic configmap %s: %s", DYNAMIC_CM, dynamic_cm_data,
+            "Could not read dynamic configmap %s: %s",
+            DYNAMIC_CM,
+            dynamic_cm_data,
         )
         sys.exit(1)
     try:
@@ -679,10 +713,19 @@ if __name__ == "__main__":
             )
             sys.exit(1)
 
-        launch_monitoring = initial_check_and_update()
-
         # Start Gunicorn server for Flask endpoints
         run_flask_with_gunicorn()
+
+        # Wait until RR is ready
+        app.logger.info("Waiting until rack resiliency is enabled and configured")
+        while rr_readiness.rr_not_ready is not None:
+            app.logger.debug("Sleeping 2 minutes and re-checking")
+            time.sleep(120)
+        app.logger.info("Rack resiliency is enabled and configured.")
+
+        launch_monitoring = initial_check_and_update()
+        # Mark that this is done so that the endpoints will start responding
+        _initial_check_and_update_done = True
 
         check_and_create_hmnfd_subscription()
         if launch_monitoring:

@@ -94,7 +94,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SCNInternalServerErrorResponse'
-
+        '503':
+          description: Rack resiliency not enabled and configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RackResiliencyNotReadyResponse'
   /api-ts:
     post:
       summary: Update API Timestamp
@@ -115,6 +120,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiTimestampFailedResponse'
+        '503':
+          description: Rack resiliency not enabled and configured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RackResiliencyNotReadyResponse'
 
   /healthz/ready:
     get:
@@ -256,6 +267,21 @@ components:
           examples:
             - "Internal server error"
           enum: ["Internal server error"]
+
+    RackResiliencyNotReadyResponse:
+      type: object
+      required:
+        - error
+      description: Response to requests when Rack Resiliency is not yet enabled and configured
+      properties:
+        error:
+          type: string
+          description: Failure message
+          examples:
+            - "Rack Resiliency is not enabled in customizations.yaml"
+            - "Rack Resiliency Kubernetes zones do not exist"
+            - "Rack Resiliency Ceph zones do not exist"
+            - "RMS initialization still running"
 
     ApiTimestampSuccessResponse:
       type: object

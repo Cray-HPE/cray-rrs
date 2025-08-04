@@ -54,6 +54,7 @@ from flask_restful import Api
 from src.lib.schema import ApiTimestampSuccessResponse
 from src.lib.healthz import Ready, Live
 from src.lib.version import Version
+from src.rrs.init.wait import RackResiliencyReady
 from src.api.controllers.controls import (
     ZoneListResource,
     ZoneDescribeResource,
@@ -101,6 +102,40 @@ def create_app() -> Flask:
         "Gunicorn worker timeout: %s", os.getenv("GUNICORN_WORKER_TIMEOUT", "-1")
     )
 
+    # This version value is substituted dynamically at build time
+    app.config["VERSION"] = "Unknown"
+
+    # Flask has some Anys in its type stubs, so the lines relating to the api object
+    # have to have comments to suppress mypy errors.
+
+    # Register healthz and version endpoints
+    api.add_resource(Ready, "/healthz/ready")  # type: ignore[misc]
+    api.add_resource(Live, "/healthz/live")  # type: ignore[misc]
+    api.add_resource(Version, "/version")  # type: ignore[misc]
+
+    # Register Zones endpoints
+    api.add_resource(ZoneListResource, "/zones")  # type: ignore[misc]
+    api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")  # type: ignore[misc]
+
+    # Register Criticalservices endpoints
+    api.add_resource(CriticalServiceListResource, "/criticalservices")  # type: ignore[misc]
+    api.add_resource(  # type: ignore[misc]
+        CriticalServiceDescribeResource, "/criticalservices/<service_name>"
+    )
+    api.add_resource(CriticalServiceUpdateResource, "/criticalservices")  # type: ignore[misc]
+    api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")  # type: ignore[misc]
+    api.add_resource(  # type: ignore[misc]
+        CriticalServiceStatusDescribeResource, "/criticalservices/status/<service_name>"
+    )
+
+    # Wait until RR is ready
+    rr_readiness = RackResiliencyReady()
+    app.logger.info("Waiting until rack resiliency is enabled and configured")
+    while rr_readiness.rr_not_ready is not None:
+        app.logger.debug("Sleeping 2 minutes and re-checking")
+        time.sleep(120)
+    app.logger.info("Rack resiliency is enabled and configured.")
+
     # Timestamp logging via API call
     with app.app_context():
         app.logger.info("Update API start timestamp")
@@ -136,31 +171,5 @@ def create_app() -> Flask:
         except Exception as e:
             app.logger.exception("Error %s occurred. Exiting...", str(e))
             sys.exit(1)
-
-    # This version value is substituted dynamically at build time
-    app.config["VERSION"] = "Unknown"
-
-    # Flask has some Anys in its type stubs, so the lines relating to the api object
-    # have to have comments to suppress mypy errors.
-
-    # Register healthz and version endpoints
-    api.add_resource(Ready, "/healthz/ready")  # type: ignore[misc]
-    api.add_resource(Live, "/healthz/live")  # type: ignore[misc]
-    api.add_resource(Version, "/version")  # type: ignore[misc]
-
-    # Register Zones endpoints
-    api.add_resource(ZoneListResource, "/zones")  # type: ignore[misc]
-    api.add_resource(ZoneDescribeResource, "/zones/<zone_name>")  # type: ignore[misc]
-
-    # Register Criticalservices endpoints
-    api.add_resource(CriticalServiceListResource, "/criticalservices")  # type: ignore[misc]
-    api.add_resource(  # type: ignore[misc]
-        CriticalServiceDescribeResource, "/criticalservices/<service_name>"
-    )
-    api.add_resource(CriticalServiceUpdateResource, "/criticalservices")  # type: ignore[misc]
-    api.add_resource(CriticalServiceStatusListResource, "/criticalservices/status")  # type: ignore[misc]
-    api.add_resource(  # type: ignore[misc]
-        CriticalServiceStatusDescribeResource, "/criticalservices/status/<service_name>"
-    )
 
     return app

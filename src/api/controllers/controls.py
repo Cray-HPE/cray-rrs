@@ -71,6 +71,7 @@ from src.api.models.errors import (
     generate_internal_server_error_response,
     generate_missing_input_response,
     generate_resource_not_found_response,
+    reject_if_rr_not_ready,
 )
 
 
@@ -84,6 +85,7 @@ class ZoneListResource(Resource):  # type: ignore[misc,no-any-unimported]
     It returns a list of zones in JSON format.
     """
 
+    @reject_if_rr_not_ready
     def get(
         self,
     ) -> Union[
@@ -122,6 +124,7 @@ class ZoneDescribeResource(Resource):  # type: ignore[misc,no-any-unimported]
     particular zone, identified by its name.
     """
 
+    @reject_if_rr_not_ready
     def get(
         self, zone_name: str
     ) -> Union[tuple[ZoneDescribeSchema, Literal[HTTPStatus.OK]], Response]:
@@ -171,6 +174,7 @@ class CriticalServiceListResource(Resource):  # type: ignore[misc,no-any-unimpor
     It returns a list of critical services in JSON format.
     """
 
+    @reject_if_rr_not_ready
     def get(
         self,
     ) -> Union[
@@ -210,6 +214,7 @@ class CriticalServiceDescribeResource(Resource):  # type: ignore[misc,no-any-uni
     particular critical service, identified by its name.
     """
 
+    @reject_if_rr_not_ready
     def get(self, service_name: str) -> Union[
         tuple[CriticalServiceDescribeSchema, Literal[HTTPStatus.OK]],
         Response,
@@ -256,6 +261,7 @@ class CriticalServiceUpdateResource(Resource):  # type: ignore[misc,no-any-unimp
     This resource handles the PATCH request to update the critical services list.
     """
 
+    @reject_if_rr_not_ready
     def patch(
         self,
     ) -> Union[
@@ -316,6 +322,7 @@ class CriticalServiceStatusListResource(Resource):  # type: ignore[misc,no-any-u
     It returns a list of critical service statuses in JSON format.
     """
 
+    @reject_if_rr_not_ready
     def get(
         self,
     ) -> Union[
@@ -354,6 +361,7 @@ class CriticalServiceStatusDescribeResource(Resource):  # type: ignore[misc,no-a
     particular critical service, identified by its name.
     """
 
+    @reject_if_rr_not_ready
     def get(
         self, service_name: str
     ) -> Union[
