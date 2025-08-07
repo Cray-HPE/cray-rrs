@@ -49,7 +49,7 @@ from pydantic import (
 ################################################
 
 # RRS OAS: #/components/schemas/ZoneName
-ZoneName = Annotated[str, StringConstraints(min_length=1, max_length=1000)]
+ZoneName = Annotated[str, StringConstraints(min_length=1, max_length=63)]
 
 
 # pydantic BaseModel contains an explicit Any, which mypy dislikes

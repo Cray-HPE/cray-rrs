@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4] - 2025-08-07
+### Fixed
+CASM-5675: The length of zone name to be fixed
+- The length of the name to be fixed. Since the zone name is a label, as per Kubernetes standards, the name should be 1-63.
+ 
 ## [1.0.3] - 2025-08-04
 ### Fixed
 - CASM-5499: Conditional enablement of RRS (Rack Resiliency Service)
