@@ -41,7 +41,7 @@ from kubernetes import client, config
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.lib_rms import cephHelper, k8sHelper
 from src.lib.rrs_constants import (NAMESPACE, DYNAMIC_CM, DYNAMIC_DATA_KEY)
-from src.lib.schema import DynamicDataSchema
+from src.lib.schema import DynamicDataSchema, StateSchema
 
 
 logging.basicConfig(
@@ -157,8 +157,8 @@ def restart_completed() -> bool:
         cm_key = DYNAMIC_DATA_KEY
         if cm_key in cm_data:
             config_data: DynamicDataSchema = yaml.safe_load(cm_data[cm_key])
-        if "state" in config_data:
-            return config_data["state"]["rollout_complete"]
+        state: StateSchema = config_data["state"]
+        return state["rollout_complete"]
     except Exception as e:
         logger.exception("Error checking restart completion: %s", e)
         return False
