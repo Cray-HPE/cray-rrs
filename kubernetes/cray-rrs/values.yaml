@@ -74,6 +74,8 @@ cray-service:
       env:
         - name: namespace
           value: "rack-resiliency"
+        - name: dynamic_cm_name
+          value: "rrs-mon-dynamic"
       volumeMounts:
         - name: ssh-config
           mountPath: /etc/ssh
