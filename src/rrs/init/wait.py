@@ -35,12 +35,13 @@ import logging
 import base64
 import time
 from typing import TypedDict
-
 import yaml
 from kubernetes import client, config
 
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.lib_rms import cephHelper, k8sHelper
+from src.lib.rrs_constants import (NAMESPACE, DYNAMIC_CM, DYNAMIC_DATA_KEY)
+from src.lib.schema import DynamicDataSchema
 
 
 logging.basicConfig(
@@ -145,6 +146,24 @@ def rr_enabled() -> bool:
     return enabled.lower() in {"true", "t", "yes", "y", "on", "1"}
 
 
+def restart_completed() -> bool:
+    """Check if the restart of the critical-services is completed or not."""
+    logger.info("Checking if the critical-services restart is completed...")
+    try:
+        cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+        if isinstance(cm_data, str):
+            # This means it contains an error message
+            raise ValueError(cm_data)
+        cm_key = DYNAMIC_DATA_KEY
+        if cm_key in cm_data:
+            config_data: DynamicDataSchema = yaml.safe_load(cm_data[cm_key])
+        if "state" in config_data:
+            return config_data["state"]["rollout_complete"]
+    except Exception as e:
+        logger.exception("Error checking restart completion: %s", e)
+        return False
+
+
 def rr_enabled_and_setup() -> bool:
     """Check if RR is setup with Kubernetes and CEPH zones or not."""
     logger.info(
@@ -166,6 +185,17 @@ def rr_enabled_and_setup() -> bool:
         logger.info("Rack resiliency is enabled.")
     else:
         logger.info("Rack Resiliency is disabled.")
+        return False
+
+    try:
+        rollout_status = restart_completed()
+    except Exception as e:
+        logger.exception("Error checking rollout status: %s", e)
+        return False
+    if rollout_status:
+        logger.info("Rollout restart of services is completed.")
+    else:
+        logger.info("Rollout restart of services is not completed.")
         return False
 
     logger.info("Checking zoning for Kubernetes and CEPH nodes...")

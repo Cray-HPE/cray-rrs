@@ -48,6 +48,7 @@ data:
       k8s_monitoring: ''
       ceph_monitoring: ''
       rms_state: ''
+      rollout_complete: false
     cray_rrs_pod:
       zone: ''
       node: ''
