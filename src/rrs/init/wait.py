@@ -147,8 +147,8 @@ def rr_enabled() -> bool:
 
 
 def restart_completed() -> bool:
-    """Check if the restart of the critical-services is completed or not."""
-    logger.info("Checking if the critical-services restart is completed...")
+    """Check if the rollout restart of all the critical services is completed."""
+    logger.info("Checking if the rollout restart of all the critical services is completed...")
     try:
         cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
         if isinstance(cm_data, str):
@@ -187,6 +187,19 @@ def rr_enabled_and_setup() -> bool:
         logger.info("Rack Resiliency is disabled.")
         return False
 
+    logger.info("Checking zoning for Kubernetes and CEPH nodes...")
+    if kubernetes_zones_exist():
+        logger.info("Kubernetes zones are created.")
+    else:
+        logger.info("Not deploying the cray-rrs chart.")
+        return False
+
+    if ceph_zones_exist():
+        logger.info("CEPH zones are created.")
+    else:
+        logger.info("CEPH zones are not created.")
+        return False
+
     try:
         rollout_status = restart_completed()
     except Exception as e:
@@ -196,19 +209,6 @@ def rr_enabled_and_setup() -> bool:
         logger.info("Rollout restart of services is completed.")
     else:
         logger.info("Rollout restart of services is not completed.")
-        return False
-
-    logger.info("Checking zoning for Kubernetes and CEPH nodes...")
-    if ceph_zones_exist():
-        logger.info("CEPH zones are created.")
-    else:
-        logger.info("CEPH zones are not created.")
-        return False
-
-    if kubernetes_zones_exist():
-        logger.info("Kubernetes zones are created.")
-    else:
-        logger.info("Not deploying the cray-rrs chart.")
         return False
     return True
 
