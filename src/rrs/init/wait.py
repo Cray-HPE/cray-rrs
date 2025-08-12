@@ -35,6 +35,7 @@ import logging
 import base64
 import time
 from typing import TypedDict
+
 import yaml
 from kubernetes import client, config
 
@@ -191,13 +192,13 @@ def rr_enabled_and_setup() -> bool:
     if kubernetes_zones_exist():
         logger.info("Kubernetes zones are created.")
     else:
-        logger.info("Not deploying the cray-rrs chart.")
+        logger.info("Kubernetes zones are not created.")
         return False
 
     if ceph_zones_exist():
-        logger.info("CEPH zones are created.")
+        logger.info("Ceph zones are created.")
     else:
-        logger.info("CEPH zones are not created.")
+        logger.info("Ceph zones are not created.")
         return False
 
     try:
