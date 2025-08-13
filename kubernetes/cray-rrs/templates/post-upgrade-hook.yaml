@@ -77,8 +77,7 @@ spec:
 
           echo "Patching ClusterPolicy to remove 'exclude' section"
           PATCH='[{"op": "remove", "path": "/spec/rules/'"$RULE_INDEX"'/exclude"}]'
-          kubectl patch clusterpolicy insert-labels-topology-constraints --type=json -p "$PATCH"
-          if [ $? -eq 0 ]; then
+          if kubectl patch clusterpolicy insert-labels-topology-constraints --type=json -p "$PATCH"; then
             echo "Successfully removed 'exclude' section"
             exit 0
           fi
