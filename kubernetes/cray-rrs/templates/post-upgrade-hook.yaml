@@ -61,11 +61,26 @@ spec:
             echo "'enabled' flag is missing for 'rack-resiliency' service in customization.yaml. Exiting."
             exit 1
           fi
-
-          if [ "$RR_ENABLED" = "false" ]; then
-            echo " Rack Resiliency is not enabled. Skipping further steps."
-            exit 0
-          fi
+          # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
+          # should do the same here. That filter interprets the following values as True:
+          # strings (case insensitive): 'true', 't', 'yes', 'y', 'on', '1'
+          # int: 1
+          # float: 1.0
+          # boolean: True
+          
+          # Convert to lowercase for case-insensitive comparison
+          RR_ENABLED_LOWER=$(echo "$RR_ENABLED" | tr '[:upper:]' '[:lower:]')
+          
+          # Check if the value matches any of the truthy values using case statement
+          case "$RR_ENABLED_LOWER" in
+            "true"|"t"|"yes"|"y"|"on"|"1"|"1.0")
+              echo "Rack Resiliency is enabled. Proceeding with policy update."
+              ;;
+            *)
+              echo "Rack Resiliency is not enabled. Skipping further steps."
+              exit 0
+              ;;
+          esac
 
           RULE_INDEX=$(kubectl get clusterpolicy insert-labels-topology-constraints -o json | \
             jq '.spec.rules | to_entries[] | select(.value.name=="insert-rack-res-label") | .key')
