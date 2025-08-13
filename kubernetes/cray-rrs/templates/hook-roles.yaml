@@ -27,7 +27,7 @@ kind: ClusterRole
 metadata:
   name: update-policy-hook-role
   annotations:
-    "helm.sh/hook": post-upgrade, post-install
+    "helm.sh/hook": post-upgrade,post-install
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
     "helm.sh/hook-weight": "-5"
 rules:
@@ -43,7 +43,7 @@ kind: ClusterRoleBinding
 metadata:
   name: update-policy-hook-rolebinding
   annotations:
-    "helm.sh/hook": post-upgrade, post-install
+    "helm.sh/hook": post-upgrade,post-install
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
     "helm.sh/hook-weight": "-5"
 subjects:

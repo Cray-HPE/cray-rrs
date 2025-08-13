@@ -27,13 +27,13 @@ kind: Job
 metadata:
   name: update-policy-hook
   annotations:
-    "helm.sh/hook": post-upgrade, post-install
+    "helm.sh/hook": post-upgrade,post-install
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed # Clean up the Job resource after execution
 spec:
-  restartPolicy: OnFailure
   backoffLimit: 4 # Maximum number of retries before considering the Job failed
   template:
     spec:
+      restartPolicy: OnFailure
       serviceAccountName: cray-rrs-service
       containers:
       - name: update-policy
@@ -77,7 +77,7 @@ spec:
               echo "Rack Resiliency is enabled. Proceeding with policy update."
               ;;
             *)
-              echo "Rack Resiliency is not enabled. Skipping further steps." 1>&2
+              echo "Rack Resiliency is not enabled. Skipping further steps."
               exit 0
               ;;
           esac
