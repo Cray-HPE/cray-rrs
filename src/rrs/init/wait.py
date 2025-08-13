@@ -156,10 +156,8 @@ def restart_completed() -> bool:
             # This means it contains an error message
             raise ValueError(cm_data)
         cm_key = DYNAMIC_DATA_KEY
-        if cm_key in cm_data:
-            config_data: DynamicDataSchema = yaml.safe_load(cm_data[cm_key])
-        else:
-            raise KeyError(cm_key)
+        # This will raise a KeyError if cm_key is not in cm_data
+        config_data: DynamicDataSchema = yaml.safe_load(cm_data[cm_key])
         state: StateSchema = config_data["state"]
         return state["rollout_complete"]
     except Exception as e:
