@@ -391,3 +391,8 @@ criticalServices:
   sshot-net-operator:
     namespace: sshot-net-operator
     type: Deployment
+kubectl:
+  image:
+    repository: artifactory.algol60.net/csm-docker/stable/docker-kubectl
+    tag: 1.32.2
+    pullPolicy: IfNotPresent

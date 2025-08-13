@@ -1,0 +1,96 @@
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: update-policy-hook
+  annotations:
+    "helm.sh/hook": post-upgrade
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed # Clean up the Job resource after execution
+spec:
+  backoffLimit: 4 # Maximum number of retries before considering the Job failed
+  template:
+    spec:
+      serviceAccountName: cray-rrs-service
+      containers:
+      - name: update-policy
+        image: "{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
+        imagePullPolicy: "{{ .Values.kubectl.image.pullPolicy }}"
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          set -e
+
+          echo "Fetching secret and decoding YAML..."
+          SECRET_JSON=$(kubectl -n loftsman get secret site-init -o json)
+          ENCODED_YAML=$(echo "$SECRET_JSON" | jq -r '.data["customizations.yaml"]')
+          DECODED_YAML=$(echo "$ENCODED_YAML" | base64 -d)
+
+          echo "$DECODED_YAML" > /tmp/customizations.yaml
+
+          # Check if rack_resiliency service is present
+          SERVICE_EXISTS=$(yq r /tmp/customizations.yaml spec.kubernetes.services | grep -q "rack_resiliency" && echo "true" || echo "false")
+          if [ "$SERVICE_EXISTS" != "true" ]; then
+            echo "'rack_resiliency' service not found in customizations.yaml. Exiting."
+            exit 1
+          fi
+
+          # Check if the enabled field exists and is non-empty
+          RR_ENABLED=$(yq r /tmp/customizations.yaml spec.kubernetes.services[rack_resiliency].enabled)
+          if [ -z "$RR_ENABLED" ]; then
+            echo "'enabled' flag is missing for 'rack_resiliency' service in customization.yaml. Exiting."
+            exit 1
+          fi
+
+          echo "rr_enabled = $RR_ENABLED"
+
+          if [ "$RR_ENABLED" = "false" ]; then
+            echo "rr_enabled flag is false. Skipping further steps."
+            exit 0
+          fi
+
+          echo "rr_enabled is true. Removing exclude section from 'insert-rack-res-label' rule of 'insert-rack-res-label' ClusterPolicy..."
+
+          RULE_INDEX=$(kubectl get clusterpolicy insert-labels-topology-constraints -o json | \
+            jq '.spec.rules | to_entries[] | select(.value.name=="insert-rack-res-label") | .key')
+
+          if [ -z "$RULE_INDEX" ]; then
+            echo "Rule 'insert-rack-res-label' not found. Exiting."
+            exit 1
+          fi
+
+          echo "Found rule at index: $RULE_INDEX"
+          echo "Patching ClusterPolicy to remove 'exclude' field from rule index $RULE_INDEX..."
+
+          PATCH='[{"op": "remove", "path": "/spec/rules/'"$RULE_INDEX"'/exclude"}]'
+
+          kubectl patch clusterpolicy insert-labels-topology-constraints --type=json -p "$PATCH"
+          if [ $? -eq 0 ]; then
+            echo "Successfully removed 'exclude' field from the rule."
+          else
+            echo "Failed to remove 'exclude' field from the rule."
+            exit 1
+          fi
+ 
