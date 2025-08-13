@@ -218,7 +218,6 @@ def main() -> None:
     """
     while not rr_enabled_and_setup():
         time.sleep(120)
-
-
+        
 if __name__ == "__main__":
     main()
