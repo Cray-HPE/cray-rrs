@@ -58,7 +58,7 @@ spec:
           # Check if the enabled field exists and is non-empty
           RR_ENABLED=$(yq r /tmp/customizations.yaml spec.kubernetes.services[rack-resiliency].enabled)
           if [ -z "$RR_ENABLED" ]; then
-            echo "'enabled' flag is missing for 'rack-resiliency' service in customization.yaml. Exiting."
+            echo "'enabled' flag is missing for 'rack-resiliency' service in customization.yaml. Exiting." 1>&2
             exit 1
           fi
           # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
@@ -77,7 +77,7 @@ spec:
               echo "Rack Resiliency is enabled. Proceeding with policy update."
               ;;
             *)
-              echo "Rack Resiliency is not enabled. Skipping further steps."
+              echo "Rack Resiliency is not enabled. Skipping further steps." 1>&2
               exit 0
               ;;
           esac
