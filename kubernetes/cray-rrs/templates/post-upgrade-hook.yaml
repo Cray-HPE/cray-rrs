@@ -42,13 +42,12 @@ spec:
         command: ["/bin/bash", "-c"]
         args:
         - |
-          set -e
+          set -euo pipefail
 
           echo "Fetching secret and decoding YAML..."
-          SECRET_JSON=$(kubectl -n loftsman get secret site-init -o json)
-          ENCODED_YAML=$(echo "$SECRET_JSON" | jq -r '.data["customizations.yaml"]')
-          DECODED_YAML=$(echo "$ENCODED_YAML" | base64 -d)
-          echo "$DECODED_YAML" > /tmp/customizations.yaml
+          kubectl -n loftsman get secret site-init -o json \
+            | jq -r '.data["customizations.yaml"]' \
+            | base64 -d > /tmp/customizations.yaml
 
           # Check if rack-resiliency service is present
           if ! yq r /tmp/customizations.yaml spec.kubernetes.services | grep -Eq '^rack-resiliency:'; then
@@ -72,7 +71,7 @@ spec:
             jq '.spec.rules | to_entries[] | select(.value.name=="insert-rack-res-label") | .key')
 
           if [ -z "$RULE_INDEX" ]; then
-            echo "Rule 'insert-rack-res-label' not found. Exiting."
+            echo "Rule 'insert-rack-res-label' not found. Exiting." 1>&2
             exit 1
           fi
 
@@ -82,6 +81,6 @@ spec:
             echo "Successfully removed 'exclude' section"
             exit 0
           fi
-          echo "Failed to remove 'exclude' section"
+          echo "Failed to remove 'exclude' section" 1>&2
           exit 1
  
