@@ -50,7 +50,7 @@ spec:
             | base64 -d > /tmp/customizations.yaml
 
           # Check if rack-resiliency service is present
-          if ! yq r /tmp/customizations.yaml spec.kubernetes.services | grep -Eq '^rack-resiliency:'; then
+          if ! yq r --exitStatus /tmp/customizations.yaml spec.kubernetes.services.rack-resiliency; then
             echo "'rack-resiliency' service not found in customizations.yaml. Exiting."
             exit 1
           fi
