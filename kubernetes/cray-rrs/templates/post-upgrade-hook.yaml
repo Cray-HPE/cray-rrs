@@ -27,7 +27,7 @@ kind: Job
 metadata:
   name: update-policy-hook
   annotations:
-    "helm.sh/hook": post-upgrade, post_install
+    "helm.sh/hook": post-upgrade, post-install
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed # Clean up the Job resource after execution
 spec:
   restartPolicy: OnFailure
