@@ -39,7 +39,7 @@ spec:
       - name: update-policy
         image: "{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
         imagePullPolicy: "{{ .Values.kubectl.image.pullPolicy }}"
-        command: ["/bin/bash", "-c"]
+        command: ["/bin/sh", "-c"]
         args:
         - |
           set -euo pipefail
