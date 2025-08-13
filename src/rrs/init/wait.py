@@ -158,6 +158,8 @@ def restart_completed() -> bool:
         cm_key = DYNAMIC_DATA_KEY
         if cm_key in cm_data:
             config_data: DynamicDataSchema = yaml.safe_load(cm_data[cm_key])
+        else:
+            raise KeyError(cm_key)
         state: StateSchema = config_data["state"]
         return state["rollout_complete"]
     except Exception as e:
@@ -201,18 +203,13 @@ def rr_enabled_and_setup() -> bool:
         logger.info("Ceph zones are not created.")
         return False
 
-    try:
-        rollout_status = restart_completed()
-    except Exception as e:
-        logger.exception("Error checking rollout status: %s", e)
-        return False
+    rollout_status = restart_completed()
     if rollout_status:
         logger.info("Rollout restart of services is completed.")
     else:
         logger.info("Rollout restart of services is not completed.")
         return False
     return True
-
 
 def main() -> None:
     """
