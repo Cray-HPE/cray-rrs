@@ -39,6 +39,11 @@ spec:
             kinds:
             - Deployment
             - StatefulSet
+      exclude: # Temporarily exclude resources in all namespaces
+        any:
+        - resources:
+            namespaces:
+            - "*"
       # Mutates the Deployment resource to add fields.
       mutate:
         patchStrategicMerge:
