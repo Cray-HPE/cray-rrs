@@ -47,7 +47,6 @@ spec:
           SECRET_JSON=$(kubectl -n loftsman get secret site-init -o json)
           ENCODED_YAML=$(echo "$SECRET_JSON" | jq -r '.data["customizations.yaml"]')
           DECODED_YAML=$(echo "$ENCODED_YAML" | base64 -d)
-
           echo "$DECODED_YAML" > /tmp/customizations.yaml
 
           # Check if rack_resiliency service is present
@@ -64,14 +63,10 @@ spec:
             exit 1
           fi
 
-          echo "rr_enabled = $RR_ENABLED"
-
           if [ "$RR_ENABLED" = "false" ]; then
-            echo "rr_enabled flag is false. Skipping further steps."
+            echo " Rack Resiliency is not enabled. Skipping further steps."
             exit 0
           fi
-
-          echo "rr_enabled is true. Removing exclude section from 'insert-rack-res-label' rule of 'insert-rack-res-label' ClusterPolicy..."
 
           RULE_INDEX=$(kubectl get clusterpolicy insert-labels-topology-constraints -o json | \
             jq '.spec.rules | to_entries[] | select(.value.name=="insert-rack-res-label") | .key')
@@ -81,16 +76,13 @@ spec:
             exit 1
           fi
 
-          echo "Found rule at index: $RULE_INDEX"
-          echo "Patching ClusterPolicy to remove 'exclude' field from rule index $RULE_INDEX..."
-
+          echo "Patching ClusterPolicy to remove 'exclude' section"
           PATCH='[{"op": "remove", "path": "/spec/rules/'"$RULE_INDEX"'/exclude"}]'
-
           kubectl patch clusterpolicy insert-labels-topology-constraints --type=json -p "$PATCH"
           if [ $? -eq 0 ]; then
-            echo "Successfully removed 'exclude' field from the rule."
+            echo "Successfully removed 'exclude' section"
           else
-            echo "Failed to remove 'exclude' field from the rule."
+            echo "Failed to remove 'exclude' section"
             exit 1
           fi
  
