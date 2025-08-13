@@ -209,6 +209,7 @@ def rr_enabled_and_setup() -> bool:
         return False
     return True
 
+
 def main() -> None:
     """
     Check for RR enablement and Kubernetes and CEPH zoning.
@@ -216,6 +217,7 @@ def main() -> None:
     """
     while not rr_enabled_and_setup():
         time.sleep(120)
+
 
 if __name__ == "__main__":
     main()
