@@ -80,8 +80,8 @@ spec:
           kubectl patch clusterpolicy insert-labels-topology-constraints --type=json -p "$PATCH"
           if [ $? -eq 0 ]; then
             echo "Successfully removed 'exclude' section"
-          else
-            echo "Failed to remove 'exclude' section"
-            exit 1
+            exit 0
           fi
+          echo "Failed to remove 'exclude' section"
+          exit 1
  
