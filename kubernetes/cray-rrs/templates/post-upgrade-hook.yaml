@@ -50,8 +50,7 @@ spec:
           echo "$DECODED_YAML" > /tmp/customizations.yaml
 
           # Check if rack_resiliency service is present
-          SERVICE_EXISTS=$(yq r /tmp/customizations.yaml spec.kubernetes.services | grep -q "rack_resiliency" && echo "true" || echo "false")
-          if [ "$SERVICE_EXISTS" != "true" ]; then
+          if ! yq r /tmp/customizations.yaml spec.kubernetes.services | grep -Eq '^rack_resiliency:'; then
             echo "'rack_resiliency' service not found in customizations.yaml. Exiting."
             exit 1
           fi
