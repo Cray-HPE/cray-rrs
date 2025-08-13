@@ -27,9 +27,10 @@ kind: Job
 metadata:
   name: update-policy-hook
   annotations:
-    "helm.sh/hook": post-upgrade
+    "helm.sh/hook": post-upgrade, post_install
     "helm.sh/hook-delete-policy": hook-succeeded,hook-failed # Clean up the Job resource after execution
 spec:
+  restartPolicy: OnFailure
   backoffLimit: 4 # Maximum number of retries before considering the Job failed
   template:
     spec:
@@ -49,16 +50,16 @@ spec:
           DECODED_YAML=$(echo "$ENCODED_YAML" | base64 -d)
           echo "$DECODED_YAML" > /tmp/customizations.yaml
 
-          # Check if rack_resiliency service is present
-          if ! yq r /tmp/customizations.yaml spec.kubernetes.services | grep -Eq '^rack_resiliency:'; then
-            echo "'rack_resiliency' service not found in customizations.yaml. Exiting."
+          # Check if rack-resiliency service is present
+          if ! yq r /tmp/customizations.yaml spec.kubernetes.services | grep -Eq '^rack-resiliency:'; then
+            echo "'rack-resiliency' service not found in customizations.yaml. Exiting."
             exit 1
           fi
 
           # Check if the enabled field exists and is non-empty
-          RR_ENABLED=$(yq r /tmp/customizations.yaml spec.kubernetes.services[rack_resiliency].enabled)
+          RR_ENABLED=$(yq r /tmp/customizations.yaml spec.kubernetes.services[rack-resiliency].enabled)
           if [ -z "$RR_ENABLED" ]; then
-            echo "'enabled' flag is missing for 'rack_resiliency' service in customization.yaml. Exiting."
+            echo "'enabled' flag is missing for 'rack-resiliency' service in customization.yaml. Exiting."
             exit 1
           fi
 
