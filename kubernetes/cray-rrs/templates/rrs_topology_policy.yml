@@ -35,7 +35,7 @@ spec:
       match:
         any:
         - resources:
-            names:
+            names: {{ include "cray-rrs.criticalServiceNamesList" . | nindent 12 }}
             kinds:
             - Deployment
             - StatefulSet
