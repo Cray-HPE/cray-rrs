@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.5] - 2025-08-14
+## [1.1.0] - 2025-08-14
 ### Added
 CASM-5676/CASM-5677/CASM-5678: Add and handle rollout_complete flag for critical services rollout completion for enabling RRS
 
