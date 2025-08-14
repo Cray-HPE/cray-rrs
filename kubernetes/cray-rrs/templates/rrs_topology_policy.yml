@@ -51,7 +51,7 @@ spec:
             template:
               metadata:
                 labels:
-                  rrflag: "rr-'{{ `{{ request.object.metadata.name }}` }}'"
+                  rrflag: "rr-{{ `{{ request.object.metadata.name }}` }}"
               spec:
                 # Add the `topologySpreadConstraint`if not already specified.
                 +(topologySpreadConstraints):
@@ -60,4 +60,4 @@ spec:
                   maxSkew: 1
                   labelSelector:
                     matchLabels:
-                      rrflag: "rr-'{{ `{{ request.object.metadata.name }}` }}'"
+                      rrflag: "rr-{{ `{{ request.object.metadata.name }}` }}"
