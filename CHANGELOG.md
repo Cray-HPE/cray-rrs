@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.5] - 2025-08-14
+### Added
+CASM-5676/CASM-5677/CASM-5678: Add and handle rollout_complete flag for critical services rollout completion for enabling RRS
+
+CASM-5683: Make Kyverno policy as part of RRS helm chart
+* move kyverno policy to cray RRS
+* add new flag "rollout_complete" (default to "false") in static ConfigMap and schema
+* add new handler restart_completed in RRS wait container in order to wait for rollout restart of the critical services before enabling the RRS.
+  
 ## [1.0.4] - 2025-08-07
 ### Fixed
 CASM-5675: The length of zone name to be fixed
