@@ -225,9 +225,6 @@ criticalServices:
   cray-console-data:
     namespace: services
     type: Deployment
-  cray-console-data-postgres:
-    namespace: services
-    type: StatefulSet
   cray-console-node:
     namespace: services
     type: StatefulSet
@@ -237,15 +234,9 @@ criticalServices:
   cray-dhcp-kea:
     namespace: services
     type: Deployment
-  cray-dhcp-kea-postgres:
-    namespace: services
-    type: StatefulSet
   cray-dns-powerdns:
     namespace: services
     type: Deployment
-  cray-dns-powerdns-postgres:
-    namespace: services
-    type: StatefulSet
   cray-dns-unbound:
     namespace: services
     type: Deployment
@@ -288,18 +279,9 @@ criticalServices:
   cray-sls:
     namespace: services
     type: Deployment
-  cray-sls-postgres:
-    namespace: services
-    type: StatefulSet
   cray-smd:
     namespace: services
     type: Deployment
-  cray-smd-postgres:
-    namespace: services
-    type: StatefulSet
-  cray-spire-postgres:
-    namespace: spire
-    type: StatefulSet
   cray-spire-server:
     namespace: spire
     type: StatefulSet
@@ -339,9 +321,6 @@ criticalServices:
   istiod:
     namespace: istio-system
     type: Deployment
-  keycloak-postgres:
-    namespace: services
-    type: StatefulSet
   kyverno-admission-controller:
     namespace: kyverno
     type: Deployment
