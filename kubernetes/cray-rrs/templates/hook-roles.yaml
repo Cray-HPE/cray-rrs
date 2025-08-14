@@ -22,29 +22,36 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-apiVersion: v1
-kind: ConfigMap
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: rrs-mon-static
+  name: update-policy-hook-role
+  annotations:
+    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+    "helm.sh/hook-weight": "-5"
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+- apiGroups: ["kyverno.io"]
+  resources: ["clusterpolicies"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: update-policy-hook-rolebinding
+  annotations:
+    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+    "helm.sh/hook-weight": "-5"
+subjects:
+- kind: ServiceAccount
+  name: cray-rrs-service
   namespace: rack-resiliency
-  labels:
-    app.kubernetes.io/name: rrs-mon-static
-    app.kubernetes.io/instance: rack-resiliency
-    app.kubernetes.io/part-of: cray-rrs
-    app.kubernetes.io/managed-by: Helm
-    type: rr-services
-data:
-  log_dir: "/var/log/rr"
-  unit_of_time: "seconds"
-  k8s_pre_monitoring_delay: "40"
-  k8s_monitoring_polling_interval: "60"
-  k8s_monitoring_total_time: "600"
-  ceph_pre_monitoring_delay: "60"
-  ceph_monitoring_polling_interval: "60"
-  ceph_monitoring_total_time: "600"
-  default_message_level: "debug"
-  last_updated_timestamp: ""
-  critical-service-config.json: |-
-    {
-      "critical_services": {{ .Values.criticalServices | toJson }}
-    }
+roleRef:
+  kind: ClusterRole
+  name: update-policy-hook-role
+  apiGroup: rbac.authorization.k8s.io
+---

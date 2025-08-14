@@ -1,0 +1,101 @@
+#
+# MIT License
+#
+#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+# OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+# ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: update-policy-hook
+  annotations:
+    "helm.sh/hook": post-upgrade,post-install
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed # Clean up the Job resource after execution
+spec:
+  backoffLimit: 4 # Maximum number of retries before considering the Job failed
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: cray-rrs-service
+      containers:
+      - name: update-policy
+        image: "{{ .Values.kubectl.image.repository }}:{{ .Values.kubectl.image.tag }}"
+        imagePullPolicy: "{{ .Values.kubectl.image.pullPolicy }}"
+        command: ["/bin/sh", "-c"]
+        args:
+        - |
+          set -euo pipefail
+
+          echo "Fetching secret and decoding YAML..."
+          kubectl -n loftsman get secret site-init -o json \
+            | jq -r '.data["customizations.yaml"]' \
+            | base64 -d > /tmp/customizations.yaml
+
+          # Check if rack-resiliency service is present
+          if [ "$(yq e '.spec.kubernetes.services | has("rack-resiliency")' /tmp/customizations.yaml)" != "true" ]; then
+            echo "'rack-resiliency' service not found in customizations.yaml. Exiting."
+            exit 1
+          fi
+
+          # Check if the enabled field exists and is non-empty
+          RR_ENABLED=$(yq e '.spec.kubernetes.services["rack-resiliency"].enabled' /tmp/customizations.yaml)
+          if [ -z "$RR_ENABLED" ]; then
+            echo "'enabled' flag is missing for 'rack-resiliency' service in customization.yaml. Exiting." 1>&2
+            exit 1
+          fi
+          # The csm-config Ansible code uses its built-in `bool` filter when parsing thie field, so we
+          # should do the same here. That filter interprets the following values as True:
+          # strings (case insensitive): 'true', 't', 'yes', 'y', 'on', '1'
+          # int: 1
+          # float: 1.0
+          # boolean: True
+          
+          # Convert to lowercase for case-insensitive comparison
+          RR_ENABLED_LOWER=$(echo "$RR_ENABLED" | tr '[:upper:]' '[:lower:]')
+          
+          # Check if the value matches any of the truthy values using case statement
+          case "$RR_ENABLED_LOWER" in
+            "true"|"t"|"yes"|"y"|"on"|"1"|"1.0")
+              echo "Rack Resiliency is enabled. Proceeding with policy update."
+              ;;
+            *)
+              echo "Rack Resiliency is not enabled. Skipping further steps."
+              exit 0
+              ;;
+          esac
+
+          RULE_INDEX=$(kubectl get clusterpolicy insert-labels-topology-constraints -o json | \
+            jq '.spec.rules | to_entries[] | select(.value.name=="insert-rack-res-label") | .key')
+
+          if [ -z "$RULE_INDEX" ]; then
+            echo "Rule 'insert-rack-res-label' not found. Exiting." 1>&2
+            exit 1
+          fi
+
+          echo "Patching ClusterPolicy to remove 'exclude' section"
+          PATCH='[{"op": "remove", "path": "/spec/rules/'"$RULE_INDEX"'/exclude"}]'
+          if kubectl patch clusterpolicy insert-labels-topology-constraints --type=json -p "$PATCH"; then
+            echo "Successfully removed 'exclude' section"
+            exit 0
+          fi
+          echo "Failed to remove 'exclude' section" 1>&2
+          exit 1
+ 
