@@ -898,6 +898,7 @@ class StateSchema(TypedDict):
     ceph_monitoring: str
     k8s_monitoring: str
     rms_state: RMS_STATES | None
+    rollout_complete: bool
 
 
 # Zone Schema

@@ -41,6 +41,8 @@ from kubernetes import client, config
 
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.lib_rms import cephHelper, k8sHelper
+from src.lib.rrs_constants import (NAMESPACE, DYNAMIC_CM, DYNAMIC_DATA_KEY)
+from src.lib.schema import DynamicDataSchema, StateSchema
 
 
 logging.basicConfig(
@@ -145,6 +147,24 @@ def rr_enabled() -> bool:
     return enabled.lower() in {"true", "t", "yes", "y", "on", "1"}
 
 
+def restart_completed() -> bool:
+    """Check if the rollout restart of all the critical services is completed."""
+    logger.info("Checking if the rollout restart of all the critical services is completed...")
+    try:
+        cm_data = ConfigMapHelper.read_configmap(NAMESPACE, DYNAMIC_CM)
+        if isinstance(cm_data, str):
+            # This means it contains an error message
+            raise ValueError(cm_data)
+        cm_key = DYNAMIC_DATA_KEY
+        # This will raise a KeyError if cm_key is not in cm_data
+        config_data: DynamicDataSchema = yaml.safe_load(cm_data[cm_key])
+        state: StateSchema = config_data["state"]
+        return state["rollout_complete"]
+    except Exception as e:
+        logger.exception("Error checking restart completion: %s", e)
+        return False
+
+
 def rr_enabled_and_setup() -> bool:
     """Check if RR is setup with Kubernetes and CEPH zones or not."""
     logger.info(
@@ -169,16 +189,23 @@ def rr_enabled_and_setup() -> bool:
         return False
 
     logger.info("Checking zoning for Kubernetes and CEPH nodes...")
-    if ceph_zones_exist():
-        logger.info("CEPH zones are created.")
-    else:
-        logger.info("CEPH zones are not created.")
-        return False
-
     if kubernetes_zones_exist():
         logger.info("Kubernetes zones are created.")
     else:
-        logger.info("Not deploying the cray-rrs chart.")
+        logger.info("Kubernetes zones are not created.")
+        return False
+
+    if ceph_zones_exist():
+        logger.info("Ceph zones are created.")
+    else:
+        logger.info("Ceph zones are not created.")
+        return False
+
+    rollout_status = restart_completed()
+    if rollout_status:
+        logger.info("Rollout restart of services is completed.")
+    else:
+        logger.info("Rollout restart of services is not completed.")
         return False
     return True
 
