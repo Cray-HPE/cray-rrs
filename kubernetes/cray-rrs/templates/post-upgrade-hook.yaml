@@ -50,13 +50,13 @@ spec:
             | base64 -d > /tmp/customizations.yaml
 
           # Check if rack-resiliency service is present
-          if ! yq r /tmp/customizations.yaml spec.kubernetes.services | grep -Eq '^rack-resiliency:'; then
+          if [ "$(yq e '.spec.kubernetes.services | has("rack-resiliency")' /tmp/customizations.yaml)" != "true" ]; then
             echo "'rack-resiliency' service not found in customizations.yaml. Exiting."
             exit 1
           fi
 
           # Check if the enabled field exists and is non-empty
-          RR_ENABLED=$(yq r /tmp/customizations.yaml spec.kubernetes.services[rack-resiliency].enabled)
+          RR_ENABLED=$(yq e '.spec.kubernetes.services["rack-resiliency"].enabled' /tmp/customizations.yaml)
           if [ -z "$RR_ENABLED" ]; then
             echo "'enabled' flag is missing for 'rack-resiliency' service in customization.yaml. Exiting." 1>&2
             exit 1
