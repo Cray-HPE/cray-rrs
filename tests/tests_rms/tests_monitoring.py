@@ -33,11 +33,12 @@ from flask.testing import FlaskClient
 from flask.ctx import AppContext
 from src.rrs.rms.rms import app
 
+
 class TestRMS(unittest.TestCase):
     """Unit tests for RMS Flask app and utility functions."""
 
     app: ClassVar[Flask]
-    client: ClassVar[FlaskClient]
+    client: ClassVar['FlaskClient[Response]']
     app_context: ClassVar[AppContext]
 
     @classmethod
@@ -45,7 +46,6 @@ class TestRMS(unittest.TestCase):
         """Set up the Flask app for testing."""
         cls.app = app  # Use the Flask app from rms.py
         cls.app.config["TESTING"] = True
-        # test_client() return type is already suitable; avoid redundant cast
         cls.client = cls.app.test_client()
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
