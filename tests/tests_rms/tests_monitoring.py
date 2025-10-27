@@ -37,7 +37,7 @@ class TestRMS(unittest.TestCase):
     """Unit tests for RMS Flask app and utility functions."""
 
     app: ClassVar[Flask]
-    client: ClassVar[FlaskClient[Response]]
+    client: ClassVar[FlaskClient]
     app_context: ClassVar[AppContext]
 
     @classmethod
@@ -83,7 +83,7 @@ class TestRMS(unittest.TestCase):
         self.assertEqual(json_data["message"], "API timestamp updated successfully")
 
     @patch("src.lib.lib_rms.Helper.update_state_timestamp", side_effect=Exception)
-    def test_update_api_timestamp_failure(self, mock_update: MagicMock) -> None:
+    def test_update_api_timestamp_failure(self, _mock_update: MagicMock) -> None:
         """Test the /api-ts endpoint for failure in timestamp update."""
         response: Response = self.client.post("/api-ts")
         self.assertEqual(response.status_code, 500)
