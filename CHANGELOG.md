@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.1] - 2025-10-28
+### Added
+CASM-5643/CASM-5644: 
+- Add test cases for Resiliency Monitoring Service
+
 ## [1.1.0] - 2025-08-14
 ### Added
 CASM-5676/CASM-5677/CASM-5678: Add and handle rollout_complete flag for critical services rollout completion for enabling RRS
