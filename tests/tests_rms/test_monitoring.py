@@ -35,8 +35,6 @@ from src.rrs.rms.rms import app
 from src.lib.schema import (
     ApiTimestampFailedResponse,
     ApiTimestampSuccessResponse,
-    EmptyDict,
-    SCNBadRequestResponse,
     VersionInfo,
 )
 
@@ -73,18 +71,15 @@ class TestRMS(unittest.TestCase):
         """Test the /healthz/ready endpoint for readiness check."""
         response: Response = self.client.get("/healthz/ready")
         self.assertEqual(response.status_code, 200)
-        _ = cast(EmptyDict, json.loads(response.get_data(as_text=True)))
 
     def test_healthz_live(self) -> None:
         """Test the /healthz/live endpoint for liveness check."""
         response: Response = self.client.get("/healthz/live")
         self.assertEqual(response.status_code, 200)
-        _ = cast(EmptyDict, json.loads(response.get_data(as_text=True)))
 
     @patch("src.lib.lib_rms.Helper.update_state_timestamp")
     def test_update_api_timestamp_success(self, _mock_update: MagicMock) -> None:
         """Test the /api-ts endpoint for successful timestamp update."""
-        _mock_update.return_value = None
         response: Response = self.client.post("/api-ts")
         self.assertEqual(response.status_code, 200)
         data = cast(ApiTimestampSuccessResponse, json.loads(response.get_data(as_text=True)))
@@ -103,7 +98,6 @@ class TestRMS(unittest.TestCase):
         payload: Dict[str, object] = {}
         response: Response = self.client.post("/scn", json=payload)
         self.assertEqual(response.status_code, 400)
-        _ = cast(SCNBadRequestResponse, json.loads(response.get_data(as_text=True)))
 
 
 if __name__ == "__main__":
