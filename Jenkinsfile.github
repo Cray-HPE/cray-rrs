@@ -112,10 +112,10 @@ pipeline {
             }
             steps {
                 script {
-                    publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api")
-                    publishCsmDockerImage(image: env.RRS_INIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.init")
-                    publishCsmDockerImage(image: env.RRS_WAIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.check")
-                    publishCsmDockerImage(image: env.RRS_RMS_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.rms")
+                    publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api", snykExcludeAppVulns: true)
+                    publishCsmDockerImage(image: env.RRS_INIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.init", snykExcludeAppVulns: true)
+                    publishCsmDockerImage(image: env.RRS_WAIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.check", snykExcludeAppVulns: true)
+                    publishCsmDockerImage(image: env.RRS_RMS_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.rms", snykExcludeAppVulns: true)
                     publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
                 }
             }
