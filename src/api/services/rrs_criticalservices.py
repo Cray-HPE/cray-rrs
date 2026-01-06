@@ -43,6 +43,7 @@ from datetime import datetime
 from flask import current_app as app
 from typing_extensions import assert_never
 from kubernetes import client
+from kubernetes.client import V1Deployment, V1StatefulSet
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
@@ -67,12 +68,6 @@ from src.lib.schema import (
     CriticalServiceCmStaticSchema,
     ErrorDict,
 )
-
-
-# To shorten some type annotations
-V1Deployment = client.models.v1_deployment.V1Deployment
-V1StatefulSet = client.models.v1_stateful_set.V1StatefulSet
-
 
 class CriticalServices:
     """Class to list, describe and update criticalservices related to Rack Resiliency."""
