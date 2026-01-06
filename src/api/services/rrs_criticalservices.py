@@ -69,6 +69,7 @@ from src.lib.schema import (
     ErrorDict,
 )
 
+
 class CriticalServices:
     """Class to list, describe and update criticalservices related to Rack Resiliency."""
 
