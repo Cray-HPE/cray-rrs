@@ -19,7 +19,8 @@ iniconfig==2.3.0
 isort==7.0.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
-kubernetes==34.1.0
+# CSM 1.7 uses Kubernetes 1.32, so use client v32.x to ensure compatability
+kubernetes>=32.0.1,<33.0
 kubernetes-stubs==22.6.0.post1
 librt==0.7.7
 MarkupSafe==3.0.3
