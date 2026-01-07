@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-01-07
+### Added
+CASMTRIAGE-8975: 
+- Updated and freezed package versions
+
 ## [1.1.1] - 2025-10-28
 ### Added
 CASM-5643/CASM-5644: 
