@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-#  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+#  (C) Copyright 2025-2026 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -43,6 +43,7 @@ from datetime import datetime
 from flask import current_app as app
 from typing_extensions import assert_never
 from kubernetes import client
+from kubernetes.client import V1Deployment, V1StatefulSet
 from src.lib.lib_configmap import ConfigMapHelper
 from src.lib.rrs_logging import get_log_id
 from src.api.models.criticalservice import CriticalServiceHelper
@@ -67,11 +68,6 @@ from src.lib.schema import (
     CriticalServiceCmStaticSchema,
     ErrorDict,
 )
-
-
-# To shorten some type annotations
-V1Deployment = client.models.v1_deployment.V1Deployment
-V1StatefulSet = client.models.v1_stateful_set.V1StatefulSet
 
 
 class CriticalServices:

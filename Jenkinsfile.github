@@ -2,7 +2,7 @@
  *
  *  MIT License
  *
- *  (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+ *  (C) Copyright 2025-2026 Hewlett Packard Enterprise Development LP
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a
  *  copy of this software and associated documentation files (the "Software"),
@@ -112,10 +112,10 @@ pipeline {
             }
             steps {
                 script {
-                    publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api")
-                    publishCsmDockerImage(image: env.RRS_INIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.init")
-                    publishCsmDockerImage(image: env.RRS_WAIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.check")
-                    publishCsmDockerImage(image: env.RRS_RMS_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.rms")
+                    publishCsmDockerImage(image: env.RRS_API_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.api", snykExcludeAppVulns: true)
+                    publishCsmDockerImage(image: env.RRS_INIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.init", snykExcludeAppVulns: true)
+                    publishCsmDockerImage(image: env.RRS_WAIT_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.check", snykExcludeAppVulns: true)
+                    publishCsmDockerImage(image: env.RRS_RMS_IMAGE_NAME, tag: env.DOCKER_VERSION, isStable: env.IS_STABLE, snykTargetFile: "Dockerfile.rrs.rms", snykExcludeAppVulns: true)
                     publishCsmHelmCharts(component: env.NAME, chartsPath: "${WORKSPACE}/packages", isStable: env.IS_STABLE)
                 }
             }

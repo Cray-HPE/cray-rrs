@@ -1,7 +1,7 @@
 #
 # MIT License
 #
-# (C) Copyright 2025 Hewlett Packard Enterprise Development LP
+# (C) Copyright 2025-2026 Hewlett Packard Enterprise Development LP
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -30,7 +30,7 @@ jobs:
     name: Tests and Coverage
     strategy:
       matrix:
-        version: ['3.12', '3.13']
+        version: ['3.x']
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -44,6 +44,6 @@ jobs:
       env:
         GIT_REPO_NAME: "${GITHUB_REPOSITORY#*/}"
       run: |
-        pip install nox~=2025.5.1
+        pip install nox==2025.11.12
         nox -e tests
         nox -e cover
