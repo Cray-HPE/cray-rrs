@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] - 2026-09-03
+### Fixed
+CVE-2026-31789:
+- Updated the Alpine base image from 3.21 to 3.22 in all RRS images (api, init, rms, check) to pick up a patched OpenSSL (libcrypto3/libssl3)
+
 ## [1.1.2] - 2026-01-07
 ### Added
 CASMTRIAGE-8975: 
