@@ -22,13 +22,16 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 #
 
-FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.21 AS base
+FROM artifactory.algol60.net/csm-docker/stable/docker.io/library/alpine:3.22 AS base
 
 WORKDIR /app
 
+# libcrypto3/libssl3 pinned to >=3.5.6-r0 for CVE-2025-15467 (CMS stack buffer overflow) and CVE-2026-31789 (OCTET STRING heap overflow)
 RUN apk add --upgrade --no-cache apk-tools && \
     apk update && \
-    apk add --no-cache curl ca-certificates python3 py3-pip openssh python3-dev build-base && \
+    apk upgrade --no-cache --available && \
+    apk add --no-cache curl ca-certificates python3 py3-pip openssh python3-dev build-base \
+        "libcrypto3>=3.5.6-r0" "libssl3>=3.5.6-r0" && \
     update-ca-certificates
 
 ADD requirements.txt constraints.txt /app/
